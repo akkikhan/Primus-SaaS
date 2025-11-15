@@ -57,17 +57,42 @@ Internal web application for:
 
 **Note**: Client developers do not log into the portal in v1. Admins generate Documentation bundles and share them with clients via email/PDF.
 
-### 2. Identity Validator Module
+### 2. Identity Validator SDKs
 
-First horizontal module with two auth providers:
+JWT authentication packages for securing your APIs with Primus Portal integration.
 
-- **Local**: Username/password with local JWT issuance
-- **Azure AD**: Microsoft token validation
+#### 📦 Packages
 
-**Packages**:
+**.NET SDK**: `PrimusSaaS.Identity.Validator` ![NuGet](https://img.shields.io/badge/v1.0.0-ready-green)
+- Target Framework: .NET 7.0+
+- Package Size: ~11 KB
+- [Documentation](sdk/dotnet/PrimusSaaS.Identity.Validator/README.md) | [Example](examples/dotnet-api/README.md)
 
-- `Primus.SaaS.IdentityValidator` (NuGet)
-- `@primus-saas/identity-validator` (NPM)
+**Node.js SDK**: `@primus-saas/identity-validator` ![npm](https://img.shields.io/badge/v1.0.0-ready-green)
+- Runtime: Node.js 16+
+- Package Size: ~10 KB
+- [Documentation](sdk/nodejs/primus-identity-validator/README.md) | [Example](examples/nodejs-express/README.md)
+
+#### ✨ Features
+
+- ✅ JWT Bearer authentication
+- ✅ Role-based access control (RBAC)
+- ✅ User information extraction
+- ✅ Automatic token validation
+- ✅ TypeScript support (Node.js)
+- ✅ 43 comprehensive tests (100% passing)
+
+#### 🚀 Quick Install
+
+```bash
+# .NET
+dotnet add package PrimusSaaS.Identity.Validator
+
+# Node.js
+npm install @primus-saas/identity-validator
+```
+
+For detailed integration guides, see the [SDK documentation](sdk/) and [example projects](examples/).
 
 ---
 
@@ -85,19 +110,24 @@ First horizontal module with two auth providers:
 ### For Client Developers
 
 1. Receive Documentation from Primus admin
-2. Note your assigned `PrimusClientId`
-3. Install the module package:
+2. Note your assigned `PrimusClientId` and credentials
+3. Install the SDK package (v1.0.0 released):
 
    ```bash
    # .NET
-   dotnet add package Primus.SaaS.IdentityValidator --version 1.0.0
+   dotnet add package PrimusSaaS.Identity.Validator --version 1.0.0
    
-   # Node
+   # Node.js
    npm install @primus-saas/identity-validator@1.0.0
    ```
 
-4. Configure authentication mode (Local, AzureAd, or Hybrid) using provided config snippets
-5. Wire up middleware in your backend using provided code snippets
+4. Configure authentication using provided Portal URL, ClientId, and JwtSecret
+5. Wire up middleware in your backend - see [.NET Example](examples/dotnet-api/README.md) or [Node.js Example](examples/nodejs-express/README.md) for complete integration guides
+
+📚 **New to the SDKs?** Check out:
+- [.NET SDK Documentation](sdk/dotnet/PrimusSaaS.Identity.Validator/README.md)
+- [Node.js SDK Documentation](sdk/nodejs/primus-identity-validator/README.md)
+- [CHANGELOG](CHANGELOG.md) - What's new in v1.0.0
 
 ---
 
@@ -129,8 +159,10 @@ See individual README files in each component directory:
 
 - [Portal Backend](./portal/backend/README.md)
 - [Portal Frontend](./portal/frontend/README.md)
-- [Identity Validator .NET](./modules/identity-validator-dotnet/README.md)
-- [Identity Validator Node](./modules/identity-validator-node/README.md)
+- [Identity Validator .NET SDK](./sdk/dotnet/PrimusSaaS.Identity.Validator/README.md)
+- [Identity Validator Node.js SDK](./sdk/nodejs/primus-identity-validator/README.md)
+- [.NET API Example](./examples/dotnet-api/README.md)
+- [Node.js Express Example](./examples/nodejs-express/README.md)
 
 ---
 

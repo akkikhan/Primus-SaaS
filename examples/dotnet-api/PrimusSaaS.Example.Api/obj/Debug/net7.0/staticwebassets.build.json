@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "IHkFkKH62PZISqYMpT8htADk320xyjlDZ0pK6neQoFw=",
+  "Source": "PrimusSaaS.Example.Api",
+  "BasePath": "_content/PrimusSaaS.Example.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
