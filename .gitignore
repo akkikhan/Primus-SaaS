@@ -26,4 +26,6 @@ test-apps/azure-ad-token.txt
 
 # Generated config artifacts
 portal/frontend/vite.config.d.ts
+portal/frontend/vite.config.js
+portal/frontend/src/vite-env.d.ts
 
