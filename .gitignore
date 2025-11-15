@@ -2,3 +2,28 @@
 
 #Ignore vscode AI rules
 .github\instructions\codacy.instructions.md
+node_modules/
+
+# DotNet build artifacts
+**/bin/
+**/obj/
+*.db
+*.cache
+*.assets.cache
+
+# Frontend build output
+portal/frontend/dist/
+*.tsbuildinfo
+
+# Logs
+*.log
+
+# Secrets / tokens (do not commit real tokens)
+test-apps/azure-ad-token.txt
+
+# IDE/editor
+.vscode/
+
+# Generated config artifacts
+portal/frontend/vite.config.d.ts
+

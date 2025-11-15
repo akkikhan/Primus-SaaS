@@ -21,14 +21,20 @@ public class ApplicationsController : ControllerBase
 
     // GET: api/applications
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Application>>> GetApplications()
+    public async Task<ActionResult<IEnumerable<ApplicationDto>>> GetApplications()
     {
         var applications = await _context.Applications
-            .Include(a => a.Owner)
-            .Include(a => a.ApplicationModules)
-                .ThenInclude(am => am.Module)
-            .Include(a => a.ApplicationModules)
-                .ThenInclude(am => am.ModuleVersion)
+            .Select(a => new ApplicationDto
+            {
+                Id = a.Id,
+                Name = a.Name,
+                Stack = a.Stack.ToString(),
+                PrimusClientId = a.PrimusClientId,
+                Description = a.Description,
+                OwnerEmail = a.Owner.Email,
+                ModuleCount = a.ApplicationModules.Count,
+                CreatedAt = a.CreatedAt
+            })
             .ToListAsync();
 
         return Ok(applications);
@@ -36,15 +42,36 @@ public class ApplicationsController : ControllerBase
 
     // GET: api/applications/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<Application>> GetApplication(int id)
+    public async Task<ActionResult<ApplicationDetailDto>> GetApplication(int id)
     {
         var application = await _context.Applications
-            .Include(a => a.Owner)
-            .Include(a => a.ApplicationModules)
-                .ThenInclude(am => am.Module)
-            .Include(a => a.ApplicationModules)
-                .ThenInclude(am => am.ModuleVersion)
-            .FirstOrDefaultAsync(a => a.Id == id);
+            .Where(a => a.Id == id)
+            .Select(a => new ApplicationDetailDto
+            {
+                Id = a.Id,
+                Name = a.Name,
+                Stack = a.Stack.ToString(),
+                PrimusClientId = a.PrimusClientId,
+                Description = a.Description,
+                OwnerEmail = a.Owner.Email,
+                CreatedAt = a.CreatedAt,
+                UpdatedAt = a.UpdatedAt,
+                IntegratedModules = a.ApplicationModules.Select(am => new IntegratedModuleDto
+                {
+                    ModuleId = am.ModuleId,
+                    ModuleName = am.Module.Name,
+                    Version = am.ModuleVersion.Version,
+                    LatestVersion = am.Module.Versions.OrderByDescending(v => v.ReleasedAt).First().Version,
+                    VersionStatus = am.ModuleVersion.Version == am.Module.Versions.OrderByDescending(v => v.ReleasedAt).First().Version 
+                        ? "UpToDate" 
+                        : "UpdateAvailable",
+                    IsBreakingChange = am.ModuleVersion.IsBreakingChange,
+                    ReleaseNotes = am.ModuleVersion.ReleaseNotes,
+                    ConfigJson = am.ConfigJson,
+                    IntegratedAt = am.IntegratedAt
+                }).ToList()
+            })
+            .FirstOrDefaultAsync();
 
         if (application == null)
         {
@@ -60,19 +87,41 @@ public class ApplicationsController : ControllerBase
     {
         var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
+        // Parse stack enum
+        if (!Enum.TryParse<AppStack>(request.Stack, out var stack))
+        {
+            return BadRequest(new { message = "Invalid stack specified" });
+        }
+
+        // Auto-generate Primus Client ID for tracking
+        var primusClientId = GeneratePrimusClientId();
+
         var application = new Application
         {
             OwnerUserId = userId,
             Name = request.Name,
-            ClientId = request.ClientId,
-            ClientSecret = request.ClientSecret,
-            Stack = AppStack.DotNet  // Default stack for now
+            Stack = stack,
+            Description = request.Description,
+            PrimusClientId = primusClientId
         };
 
         _context.Applications.Add(application);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetApplication), new { id = application.Id }, application);
+        // Return DTO instead of entity
+        var dto = new ApplicationDto
+        {
+            Id = application.Id,
+            Name = application.Name,
+            Stack = application.Stack.ToString(),
+            PrimusClientId = application.PrimusClientId,
+            Description = application.Description,
+            OwnerEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "",
+            ModuleCount = 0,
+            CreatedAt = application.CreatedAt
+        };
+
+        return CreatedAtAction(nameof(GetApplication), new { id = application.Id }, dto);
     }
 
     // POST: api/applications/5/modules
@@ -140,6 +189,35 @@ public class ApplicationsController : ControllerBase
         return NoContent();
     }
 
+    // POST: api/applications/5/modules/3/version
+    [HttpPost("{applicationId}/modules/{moduleId}/version")]
+    public async Task<IActionResult> ChangeModuleVersion(int applicationId, int moduleId, [FromBody] ChangeVersionRequest request)
+    {
+        var appModule = await _context.ApplicationModules
+            .Include(am => am.Application)
+            .FirstOrDefaultAsync(am => am.ApplicationId == applicationId && am.ModuleId == moduleId);
+
+        if (appModule == null)
+        {
+            return NotFound("Module not integrated with this application");
+        }
+
+        var newVersion = await _context.ModuleVersions
+            .FirstOrDefaultAsync(mv => mv.ModuleId == moduleId && mv.Version == request.Version);
+
+        if (newVersion == null)
+        {
+            return NotFound($"Version {request.Version} not found for this module");
+        }
+
+        appModule.ModuleVersionId = newVersion.Id;
+        appModule.Application.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = $"Module version updated to {request.Version}" });
+    }
+
     // DELETE: api/applications/5
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteApplication(int id)
@@ -156,9 +234,12 @@ public class ApplicationsController : ControllerBase
         return NoContent();
     }
 
-    private string GenerateClientId()
+    private string GeneratePrimusClientId()
     {
-        return $"primus_{Guid.NewGuid():N}";
+        // Format: PSP-CLI-000123
+        var random = new Random();
+        var number = random.Next(1, 999999);
+        return $"PSP-CLI-{number:D6}";
     }
 }
 
@@ -168,8 +249,7 @@ public record ApplicationDto
     public string Name { get; init; } = string.Empty;
     public string Stack { get; init; } = string.Empty;
     public string PrimusClientId { get; init; } = string.Empty;
-    public string ClientId { get; init; } = string.Empty;
-    public string ClientSecret { get; init; } = string.Empty;
+    public string? Description { get; init; }
     public string OwnerEmail { get; init; } = string.Empty;
     public int ModuleCount { get; init; }
     public DateTime CreatedAt { get; init; }
@@ -181,10 +261,10 @@ public record ApplicationDetailDto
     public string Name { get; init; } = string.Empty;
     public string Stack { get; init; } = string.Empty;
     public string PrimusClientId { get; init; } = string.Empty;
-    public string ClientId { get; init; } = string.Empty;
-    public string ClientSecret { get; init; } = string.Empty;
+    public string? Description { get; init; }
     public string OwnerEmail { get; init; } = string.Empty;
     public DateTime CreatedAt { get; init; }
+    public DateTime UpdatedAt { get; init; }
     public List<IntegratedModuleDto> IntegratedModules { get; init; } = new();
 }
 
@@ -193,9 +273,14 @@ public record IntegratedModuleDto
     public int ModuleId { get; init; }
     public string ModuleName { get; init; } = string.Empty;
     public string Version { get; init; } = string.Empty;
+    public string LatestVersion { get; init; } = string.Empty;
+    public string VersionStatus { get; init; } = string.Empty; // "UpToDate" or "UpdateAvailable"
+    public bool IsBreakingChange { get; init; }
+    public string ReleaseNotes { get; init; } = string.Empty;
     public string ConfigJson { get; init; } = string.Empty;
     public DateTime IntegratedAt { get; init; }
 }
 
-public record CreateApplicationRequest(string Name, string ClientId, string ClientSecret);
+public record CreateApplicationRequest(string Name, string Stack, string? Description = null);
 public record IntegrateModuleRequest(int ModuleId, int ModuleVersionId, string ConfigJson);
+public record ChangeVersionRequest(string Version);

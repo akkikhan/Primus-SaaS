@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\build\PrimusSaaS.Portal.Api.props" />
-</Project>

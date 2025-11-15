@@ -99,6 +99,7 @@ describe('Modules Store', () => {
       versionNumber: '2.0.0',
       releaseNotes: 'Major update',
       isBreakingChange: true,
+      releasedAt: new Date().toISOString(),
     };
 
     const mockModules = [

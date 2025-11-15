@@ -33,7 +33,11 @@ export const ModulesPage = () => {
     e.preventDefault();
     if (showVersionModal) {
       try {
-        await addVersion(showVersionModal, versionForm);
+        const versionPayload = {
+          ...versionForm,
+          releasedAt: new Date().toISOString(),
+        };
+        await addVersion(showVersionModal, versionPayload);
         setShowVersionModal(null);
         setVersionForm({ versionNumber: '', releaseNotes: '', isBreakingChange: false });
       } catch (error) {

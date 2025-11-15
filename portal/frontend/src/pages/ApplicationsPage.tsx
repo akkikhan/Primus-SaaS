@@ -4,10 +4,22 @@ import { useApplicationsStore } from '../state/applicationsStore';
 import { SkeletonCard } from '../components/Skeleton';
 import './ApplicationsPage.css';
 
+interface ApplicationFormData {
+  name: string;
+  stack: string;
+  primusClientId: string;
+  description: string;
+}
+
 export const ApplicationsPage = () => {
   const { applications, fetchApplications, createApplication, deleteApplication, isLoading } = useApplicationsStore();
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ name: '', stack: 'NodeJS', description: '' });
+  const [formData, setFormData] = useState<ApplicationFormData>({
+    name: '',
+    stack: 'NodeJS',
+    primusClientId: '',
+    description: '',
+  });
 
   useEffect(() => {
     void fetchApplications();
@@ -18,7 +30,12 @@ export const ApplicationsPage = () => {
     try {
       await createApplication(formData);
       setShowModal(false);
-      setFormData({ name: '', stack: 'NodeJS', description: '' });
+      setFormData({
+        name: '',
+        stack: 'NodeJS',
+        primusClientId: '',
+        description: '',
+      });
     } catch (error) {
       // Error handled by store
     }
@@ -103,6 +120,17 @@ export const ApplicationsPage = () => {
                   <option value="DotNet">.NET</option>
                   <option value="Python">Python</option>
                 </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="primusClientId">Primus Client ID</label>
+                <input
+                  id="primusClientId"
+                  type="text"
+                  value={formData.primusClientId}
+                  onChange={(e) => setFormData({ ...formData, primusClientId: e.target.value })}
+                  placeholder="client-app-123"
+                  required
+                />
               </div>
               <div className="form-group">
                 <label htmlFor="description">Description (Optional)</label>

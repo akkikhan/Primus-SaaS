@@ -18,7 +18,7 @@ export const DashboardPage = () => {
   const totalModules = modules.length;
   const totalApplications = applications.length;
   const totalIntegrations = applications.reduce(
-    (sum, app) => sum + (app.applicationModules?.length || 0),
+    (sum, app) => sum + (app.integratedModules?.length || 0),
     0
   );
   const totalVersions = modules.reduce(

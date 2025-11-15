@@ -6,9 +6,9 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add database context
+// Add database context - Use SQLite for easy testing
 builder.Services.AddDbContext<PortalDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite("Data Source=portal.db"));
 
 // Add JWT authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -55,7 +55,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Commented out for HTTP testing
 
 app.UseCors("AllowAll");
 
@@ -63,5 +63,12 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Initialize database before running
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<PortalDbContext>();
+    db.Database.EnsureCreated();
+}
 
 app.Run();

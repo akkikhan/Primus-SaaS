@@ -1,23 +1,36 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useApplicationsStore } from '../state/applicationsStore';
+import { useApplicationsStore, type Application } from '../state/applicationsStore';
 import apiClient from '../services/apiClient';
 
 // Mock apiClient
 vi.mock('../services/apiClient');
 
 describe('Applications Store', () => {
+  const createMockApplication = (overrides: Partial<Application> = {}): Application => ({
+    id: overrides.id ?? 1,
+    name: overrides.name ?? 'App 1',
+    stack: overrides.stack ?? 'NodeJS',
+    primusClientId: overrides.primusClientId ?? 'client-1',
+    description: overrides.description ?? 'Test app',
+    ownerEmail: overrides.ownerEmail ?? 'owner@example.com',
+    moduleCount: overrides.moduleCount ?? 0,
+    createdAt: overrides.createdAt ?? new Date().toISOString(),
+    updatedAt: overrides.updatedAt,
+    integratedModules: overrides.integratedModules ?? [],
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset store state
     const { setState } = useApplicationsStore;
-    setState({ applications: [], currentApplication: null, isLoading: false });
+    setState({ applications: [], currentApplication: null, isLoading: false, error: null });
   });
 
   it('should fetch applications successfully', async () => {
     const mockApplications = [
-      { id: 1, name: 'App 1', clientId: 'client-1', clientSecret: 'secret-1', createdAt: new Date().toISOString(), applicationModules: [] },
-      { id: 2, name: 'App 2', clientId: 'client-2', clientSecret: 'secret-2', createdAt: new Date().toISOString(), applicationModules: [] },
+      createMockApplication({ id: 1, name: 'App 1', primusClientId: 'client-1' }),
+      createMockApplication({ id: 2, name: 'App 2', primusClientId: 'client-2' }),
     ];
 
     vi.mocked(apiClient.get).mockResolvedValue({ data: mockApplications });
@@ -34,8 +47,8 @@ describe('Applications Store', () => {
   });
 
   it('should create application successfully', async () => {
-    const newApp = { name: 'New App', clientId: 'new-client', clientSecret: 'new-secret' };
-    const createdApp = { id: 1, ...newApp, createdAt: new Date().toISOString(), applicationModules: [] };
+    const newApp = { name: 'New App', stack: 'NodeJS', primusClientId: 'new-client', description: 'Test app' };
+    const createdApp = createMockApplication({ id: 1, ...newApp });
 
     vi.mocked(apiClient.post).mockResolvedValue({ data: createdApp });
     vi.mocked(apiClient.get).mockResolvedValue({ data: [createdApp] });
@@ -53,8 +66,8 @@ describe('Applications Store', () => {
 
   it('should delete application successfully', async () => {
     const mockApplications = [
-      { id: 1, name: 'App 1', clientId: 'client-1', clientSecret: 'secret-1', createdAt: new Date().toISOString(), applicationModules: [] },
-      { id: 2, name: 'App 2', clientId: 'client-2', clientSecret: 'secret-2', createdAt: new Date().toISOString(), applicationModules: [] },
+      createMockApplication({ id: 1, name: 'App 1', primusClientId: 'client-1' }),
+      createMockApplication({ id: 2, name: 'App 2', primusClientId: 'client-2' }),
     ];
 
     vi.mocked(apiClient.get).mockResolvedValue({ data: mockApplications });
@@ -99,14 +112,7 @@ describe('Applications Store', () => {
   });
 
   it('should add module to application', async () => {
-    const mockApp = {
-      id: 1,
-      name: 'App 1',
-      clientId: 'client-1',
-      clientSecret: 'secret-1',
-      createdAt: new Date().toISOString(),
-      applicationModules: [],
-    };
+    const mockApp = createMockApplication({ id: 1, primusClientId: 'client-1' });
 
     vi.mocked(apiClient.post).mockResolvedValue({ data: {} });
     vi.mocked(apiClient.get).mockResolvedValue({ data: mockApp });
@@ -124,14 +130,7 @@ describe('Applications Store', () => {
   });
 
   it('should remove module from application', async () => {
-    const mockApp = {
-      id: 1,
-      name: 'App 1',
-      clientId: 'client-1',
-      clientSecret: 'secret-1',
-      createdAt: new Date().toISOString(),
-      applicationModules: [],
-    };
+    const mockApp = createMockApplication({ id: 1, primusClientId: 'client-1' });
 
     vi.mocked(apiClient.delete).mockResolvedValue({ data: {} });
     vi.mocked(apiClient.get).mockResolvedValue({ data: mockApp });
