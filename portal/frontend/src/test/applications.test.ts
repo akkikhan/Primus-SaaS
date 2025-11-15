@@ -47,8 +47,8 @@ describe('Applications Store', () => {
   });
 
   it('should create application successfully', async () => {
-    const newApp = { name: 'New App', stack: 'NodeJS', primusClientId: 'new-client', description: 'Test app' };
-    const createdApp = createMockApplication({ id: 1, ...newApp });
+    const newApp = { name: 'New App', stack: 'NodeJS', description: 'Test app' };
+    const createdApp = createMockApplication({ id: 1, ...newApp, primusClientId: 'generated-id' });
 
     vi.mocked(apiClient.post).mockResolvedValue({ data: createdApp });
     vi.mocked(apiClient.get).mockResolvedValue({ data: [createdApp] });

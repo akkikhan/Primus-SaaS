@@ -133,17 +133,38 @@ This document identifies gaps between the current implementation and the compreh
 ### 2.2 ❌ MISSING Features
 
 #### Azure AD Token Validation
+
+**✅ .NET SDK - COMPLETE (Verified November 15, 2025)**
+- ✅ **JWKS Key Fetching & Caching** - IMPLEMENTED
+  - `JwksService` and `JwksCache` fetch keys from Azure AD with 24-hour TTL
+  - In-memory cache with thread-safe concurrent dictionary
+  - Automatic RSA key conversion from JWK format
+  
+- ✅ **OpenID Connect Metadata Discovery** - IMPLEMENTED
+  - `OpenIdConfigurationService` fetches from `.well-known/openid-configuration`
+  - Dynamic discovery of issuer, JWKS URI, supported algorithms
+  - Cached configuration with configurable TTL
+
+- ✅ **Token Validation (Azure AD)** - IMPLEMENTED
+  - ✅ Signature validation using Azure AD public keys (RS256)
+  - ✅ Issuer validation (supports v1 and v2 endpoints)
+  - ✅ Audience validation (client ID)
+  - ✅ Algorithm enforcement (RS256 only)
+  - ✅ Tenant extraction from `tid` claim
+  - ✅ Comprehensive test suite (15+ scenarios with mocked Azure AD)
+
+**❌ Node.js SDK - NOT IMPLEMENTED**
 - ❌ **JWKS Key Fetching & Caching**
   - **Gap**: Core Azure AD validation not implemented
-  - **Current**: Only local JWT mode works
-  - **Required**: Fetch keys from `https://login.microsoftonline.com/{tenant}/discovery/keys`
-  - **Impact**: **CRITICAL** - Azure AD mode is non-functional
+  - **Current**: Only local JWT mode works (symmetric key validation)
+  - **Required**: Port .NET implementation - fetch keys from Azure AD JWKS endpoint
+  - **Impact**: **CRITICAL** - Azure AD mode is non-functional in Node.js SDK
 
 - ❌ **OpenID Connect Metadata Discovery**
   - **Gap**: No `.well-known/openid-configuration` endpoint support
-  - **Current**: Hardcoded validation logic
+  - **Current**: Hardcoded validation logic (local JWT only)
   - **Required**: Dynamic discovery of issuer, JWKS URI, algorithms
-  - **Impact**: **CRITICAL** - Standard OIDC compliance
+  - **Impact**: **CRITICAL** - Standard OIDC compliance missing
 
 - ❌ **Token Validation (Azure AD)**
   - Signature validation using Azure AD public keys ❌
@@ -180,16 +201,28 @@ This document identifies gaps between the current implementation and the compreh
   - **Impact**: High - Microservice communication
 
 #### Performance & Scalability
+
+**✅ .NET SDK - COMPLETE**
+- ✅ **JWKS Caching Strategy** - IMPLEMENTED
+  - In-memory cache with configurable TTL (default 24 hours)
+  - Thread-safe ConcurrentDictionary implementation
+  - Automatic cache invalidation on expiry
+  - **Note**: Redis support for multi-instance deployments is future work
+
+- ✅ **Connection Pooling** - IMPLEMENTED
+  - HttpClient injected via dependency injection (singleton pattern)
+  - Proper connection pooling managed by .NET framework
+  - SemaphoreSlim for concurrent request throttling
+
+**❌ Node.js SDK - NOT IMPLEMENTED**
 - ❌ **JWKS Caching Strategy**
-  - **Gap**: No caching implemented (will be slow)
-  - **Current**: N/A (Azure AD not implemented)
-  - **Required**: In-memory cache with TTL, Redis support for multi-instance
+  - **Gap**: No caching (Azure AD not implemented)
+  - **Required**: In-memory cache with TTL, similar to .NET implementation
   - **Impact**: High - Latency and reliability
 
 - ❌ **Connection Pooling**
-  - **Gap**: No HTTP client management
-  - **Current**: N/A
-  - **Required**: Reuse HttpClient for JWKS fetching
+  - **Gap**: No HTTP client management (Azure AD not implemented)
+  - **Required**: Reuse HTTP client for JWKS fetching (axios with keepAlive)
   - **Impact**: Medium - Resource efficiency
 
 #### Observability Integration
@@ -460,10 +493,12 @@ This document identifies gaps between the current implementation and the compreh
 
 | Gap Category | Priority | Effort | Impact | Recommended Phase |
 |---|---|---|---|---|
-| **Azure AD Token Validation** | P0 | High | Critical | Phase 1 (MVP Blocker) |
-| **JWKS Caching** | P0 | Medium | Critical | Phase 1 (MVP Blocker) |
+| **Azure AD Token Validation (.NET SDK)** | ✅ COMPLETE | N/A | N/A | ✅ Completed Nov 15, 2025 |
+| **JWKS Caching (.NET SDK)** | ✅ COMPLETE | N/A | N/A | ✅ Completed Nov 15, 2025 |
+| **Azure AD Integration Tests (.NET)** | ✅ COMPLETE | N/A | N/A | ✅ Completed Nov 15, 2025 |
+| **Azure AD Token Validation (Node.js SDK)** | P0 | High | Critical | Phase 1 (MVP Blocker) |
+| **JWKS Caching (Node.js SDK)** | P0 | Medium | Critical | Phase 1 (MVP Blocker) |
 | **Tenant Resolution** | P0 | High | Critical | Phase 1 (MVP Blocker) |
-| **Azure AD Integration Tests** | P0 | High | Critical | Phase 1 (MVP Blocker) |
 | **Production Database Setup** | P0 | Medium | Critical | Phase 1 (MVP Blocker) |
 | **Secrets Management (Key Vault)** | P0 | Medium | Critical | Phase 1 (MVP Blocker) |
 | **Security Testing (JWT Vulnerabilities)** | P0 | High | Critical | Phase 1 (MVP Blocker) |
@@ -485,14 +520,15 @@ This document identifies gaps between the current implementation and the compreh
 
 ## 10. Recommended Roadmap
 
-### Phase 1: MVP (Azure AD Functional) – 4-6 weeks
-**Goal**: Make Azure AD mode production-ready
+### Phase 1: MVP (Azure AD Functional) – 2-4 weeks
 
-1. **Implement Azure AD Validation in SDK** (2-3 weeks)
-   - JWKS fetching & caching
-   - OpenID Connect metadata discovery
-   - Full token validation (signature, issuer, audience, expiry)
-   - .NET and Node.js implementations
+**Goal**: Complete Azure AD mode implementation across all SDKs
+
+1. **Port Azure AD Validation to Node.js SDK** (1-2 weeks)
+   - ✅ .NET SDK already complete with JWKS fetching, caching, OIDC discovery, and full token validation
+   - Port OpenIdConfigurationService, JwksService, JwksCache, AzureAdValidator to Node.js/TypeScript
+   - Add ValidationMode enum and Azure AD configuration options
+   - Create comprehensive test suite (equivalent to .NET SDK's 15+ test scenarios)
 
 2. **Security Hardening** (1 week)
    - Azure Key Vault integration for portal
@@ -586,11 +622,13 @@ This document identifies gaps between the current implementation and the compreh
 - Test apps demonstrating SDK usage
 
 ### Critical Blockers for MVP ❌
-1. **Azure AD validation not implemented** (P0)
-2. **No JWKS caching** (P0)
-3. **Tenant resolution missing** (P0)
-4. **No security testing** (P0)
-5. **No production infrastructure** (P0)
+
+1. **Azure AD validation not implemented in Node.js SDK** (P0)
+   - ✅ .NET SDK fully implemented with JWKS caching, OIDC discovery, and comprehensive tests
+   - ❌ Node.js SDK requires full Azure AD implementation port
+2. **Tenant resolution missing** (P0)
+3. **No security testing** (P0)
+4. **No production infrastructure** (P0 - Key Vault, Azure SQL)
 
 ### Architecture Alignment
 The current implementation follows the **correct high-level architecture**:
@@ -605,11 +643,12 @@ The current implementation follows the **correct high-level architecture**:
 
 ## Next Steps
 
-1. **Prioritize Phase 1 (Azure AD MVP)** – Blocking for any Azure AD client
-2. **Allocate resources**: 2-3 engineers for 6 weeks
-3. **Define success criteria**: 
-   - Azure AD integration test suite passing
-   - Production deployment to Azure
+1. **Prioritize Phase 1 (Node.js Azure AD Port)** – Blocking for Node.js clients using Azure AD
+2. **Allocate resources**: 1-2 engineers for 2-4 weeks
+3. **Define success criteria**:
+   - Node.js SDK Azure AD validation matching .NET SDK feature parity
+   - Azure AD integration test suite passing for both SDKs
+   - Production deployment to Azure with Key Vault integration
    - 1-2 early adopter clients integrated successfully
 4. **Track progress**: Weekly checkpoint against this gap analysis
 

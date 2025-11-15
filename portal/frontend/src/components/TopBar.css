@@ -3,26 +3,28 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e4e7ec;
-  background: #fff;
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .topbar__title {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 600;
-  color: #101828;
+  color: var(--color-text);
 }
 
 .topbar__logout {
-  border: none;
-  background: #f04438;
-  color: #fff;
-  padding: 0.5rem 1.25rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  color: #0b1220;
+  padding: 0.55rem 1.25rem;
+  border-radius: var(--radius-md);
   font-weight: 600;
 }
 
 .topbar__logout:hover {
-  background: #d92d20;
+  transform: translateY(-1px);
 }

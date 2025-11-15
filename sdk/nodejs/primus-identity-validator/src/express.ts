@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrimusIdentityOptions, PrimusUser } from './types';
-import { validateOptions, applyDefaults, validateToken, extractUser } from './validator';
+import { PrimusIdentityValidator, extractUser } from './validator';
 
 /**
  * Extends Express Request to include Primus user
@@ -21,10 +21,9 @@ declare global {
 export function primusIdentityMiddleware(
   options: PrimusIdentityOptions
 ): (req: Request, res: Response, next: NextFunction) => void {
-  validateOptions(options);
-  const fullOptions = applyDefaults(options);
+  const validator = new PrimusIdentityValidator(options);
 
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       // Extract token from Authorization header
       const authHeader = req.headers.authorization;
@@ -45,10 +44,15 @@ export function primusIdentityMiddleware(
       }
 
       // Validate token
-      const payload = validateToken(token, fullOptions);
+      const result = await validator.validateToken(token);
+
+      if (!result.isValid) {
+        res.status(401).json({ error: result.error || 'Token validation failed' });
+        return;
+      }
 
       // Extract user information
-      const user = extractUser(payload);
+      const user = extractUser(result.claims!);
 
       // Attach user to request
       req.primusUser = user;

@@ -12,44 +12,44 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   padding: 0.75rem 0;
 }
 
 .breadcrumb a {
-  color: #7f56d9;
+  color: var(--color-primary);
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .breadcrumb a:hover {
-  color: #6941c6;
+  color: var(--color-primary-dark);
   text-decoration: underline;
 }
 
 .breadcrumb .separator {
-  color: #9ca3af;
+  color: var(--color-text-secondary);
   user-select: none;
 }
 
 .breadcrumb .current {
-  color: #111827;
+  color: var(--color-text);
   font-weight: 500;
 }
 
 /* Blueprint Header */
 .app-detail__blueprint-header {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 0.75rem;
   padding: 2rem;
-  background: #fff;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  background: var(--color-panel);
+  box-shadow: var(--shadow-sm);
 }
 
 .app-detail__header-primary h1 {
   margin: 0 0 1rem 0;
   font-size: 2rem;
-  color: #111827;
+  color: var(--color-text);
   font-weight: 600;
 }
 
@@ -68,7 +68,7 @@
 
 .header-field label {
   font-weight: 500;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   min-width: 140px;
 }
 
@@ -79,27 +79,29 @@
 }
 
 .value-with-copy code {
-  background: #f3f4f6;
+  background: var(--color-panel);
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   font-family: 'Courier New', monospace;
   font-size: 0.9rem;
-  color: #1f2937;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .copy-btn-inline {
   background: transparent;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   cursor: pointer;
   transition: all 0.2s;
   font-size: 0.875rem;
+  color: var(--color-text);
 }
 
 .copy-btn-inline:hover {
-  background: #f9fafb;
-  border-color: #7f56d9;
+  background: var(--glass);
+  border-color: var(--color-primary);
 }
 
 .app-detail header {
@@ -107,7 +109,7 @@
   justify-content: space-between;
   align-items: flex-start;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .app-detail__header-content {
@@ -119,7 +121,7 @@
 .back-button {
   background: transparent;
   border: none;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   font-size: 0.875rem;
   cursor: pointer;
   padding: 0;
@@ -130,13 +132,13 @@
 }
 
 .back-button:hover {
-  color: #374151;
+  color: var(--color-text);
 }
 
 .app-detail header h1 {
   margin: 0.5rem 0 0 0;
   font-size: 2rem;
-  color: #111827;
+  color: var(--color-text);
 }
 
 .app-detail__meta {
@@ -146,8 +148,8 @@
 }
 
 .badge {
-  background: #eff6ff;
-  color: #1e40af;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
   padding: 0.25rem 0.75rem;
   border-radius: 0.375rem;
   font-size: 0.875rem;
@@ -161,8 +163,8 @@
 }
 
 .app-detail__actions button {
-  background: #7f56d9;
-  color: #fff;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #0b1220;
   padding: 0.625rem 1.25rem;
   border: none;
   border-radius: 0.5rem;
@@ -172,7 +174,7 @@
 }
 
 .app-detail__actions button:hover {
-  background: #6941c6;
+  transform: translateY(-1px);
 }
 
 .app-detail__grid {
@@ -182,35 +184,35 @@
 }
 
 .app-detail__panel {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 0.75rem;
   padding: 2rem;
-  background: #fff;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  background: var(--color-panel);
+  box-shadow: var(--shadow-sm);
 }
 
 .app-detail__panel h2 {
   margin: 0 0 1.5rem 0;
   font-size: 1.5rem;
-  color: #111827;
+  color: var(--color-text);
   font-weight: 600;
 }
 
 .app-detail__panel h3 {
   margin: 0 0 1rem 0;
   font-size: 1.125rem;
-  color: #374151;
+  color: var(--color-text);
   font-weight: 600;
 }
 
 /* Application Info Section */
 .app-detail__info-panel {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, #0f172a 0%, #0b1220 100%);
+  color: var(--color-text);
 }
 
 .app-detail__info-panel h2 {
-  color: white;
+  color: var(--color-text);
 }
 
 .info-grid {
@@ -612,7 +614,7 @@
 }
 
 .app-detail__panel li {
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--color-border);
   padding: 0.75rem 0;
   display: flex;
   flex-direction: column;
@@ -630,18 +632,20 @@
 }
 
 .app-detail__panel li button {
-  background: #fee2e2;
-  color: #ef4444;
-  border: none;
+  background: rgba(239, 68, 68, 0.14);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.35);
   padding: 0.375rem 0.75rem;
   border-radius: 0.375rem;
   cursor: pointer;
   font-size: 0.875rem;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
 }
 
 .app-detail__panel li button:hover {
-  background: #fecaca;
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: translateY(-1px);
 }
 
 /* Modal Styles */
@@ -651,7 +655,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -659,21 +664,22 @@
 }
 
 .modal {
-  background: white;
+  background: var(--color-panel);
   border-radius: 0.75rem;
   padding: 2rem;
   max-width: 500px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border);
 }
 
 .modal h2 {
   margin-top: 0;
   margin-bottom: 1.5rem;
   font-size: 1.5rem;
-  color: #111827;
+  color: var(--color-text);
 }
 
 .modal .form-group {
@@ -684,28 +690,29 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text-secondary);
 }
 
 .modal .form-group select {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
   font-size: 1rem;
-  background: white;
+  background: var(--color-elevated);
+  color: var(--color-text);
   cursor: pointer;
   transition: border-color 0.2s;
 }
 
 .modal .form-group select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-soft);
 }
 
 .modal .form-group select:disabled {
-  background: #f3f4f6;
+  background: var(--color-surface);
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -716,7 +723,7 @@
   justify-content: flex-end;
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border);
 }
 
 .modal-actions button {
@@ -730,21 +737,22 @@
 }
 
 .modal-actions button:first-child {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--glass);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .modal-actions button:first-child:hover {
-  background: #e5e7eb;
+  background: var(--color-border);
 }
 
 .modal-actions button:last-child {
-  background: #667eea;
-  color: white;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #0b1220;
 }
 
 .modal-actions button:last-child:hover {
-  background: #5568d3;
+  transform: translateY(-1px);
 }
 
 .modal-actions button:disabled {

@@ -12,18 +12,22 @@
 }
 
 .apps__card {
-  background: #fff;
-  border: 1px solid #e4e7ec;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
   border-radius: 1rem;
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   position: relative;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .apps__card:hover {
-  border-color: #7f56d9;
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .apps__card-link {
@@ -42,47 +46,52 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.875rem;
-  color: #667085;
+  color: var(--color-text-secondary);
 }
 
 .apps__delete {
-  background: #fee2e2;
-  color: #ef4444;
-  border: none;
+  background: rgba(239, 68, 68, 0.14);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.35);
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   cursor: pointer;
   font-size: 0.875rem;
-  transition: background 0.2s;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  align-self: flex-start;
 }
 
 .apps__delete:hover {
-  background: #fecaca;
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
 }
 
 /* Modal Styles */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.65);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  backdrop-filter: blur(4px);
 }
 
 .modal {
-  background: white;
+  background: var(--color-panel);
   border-radius: 1rem;
   padding: 2rem;
-  max-width: 500px;
+  max-width: 520px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
 }
 
 .modal h2 {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .form-group {
@@ -93,17 +102,19 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #344054;
+  color: var(--color-text-secondary);
 }
 
 .form-group input,
 .form-group textarea,
 .form-group select {
   width: 100%;
-  padding: 0.625rem;
-  border: 1px solid #d0d5dd;
-  border-radius: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
   font-size: 1rem;
+  background: var(--color-elevated);
+  color: var(--color-text);
 }
 
 .form-group textarea {
@@ -121,33 +132,35 @@
 .modal-actions button {
   padding: 0.625rem 1.25rem;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 0.65rem;
   cursor: pointer;
   font-size: 1rem;
-  transition: background 0.2s;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .modal-actions button[type="button"] {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--glass);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .modal-actions button[type="button"]:hover {
-  background: #e5e7eb;
+  background: var(--color-border);
 }
 
 .modal-actions button[type="submit"],
 .modal-actions button:last-child {
-  background: #7f56d9;
-  color: white;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #0b1220;
 }
 
 .modal-actions button[type="submit"]:hover,
 .modal-actions button:last-child:hover {
-  background: #6941c6;
+  transform: translateY(-1px);
 }
 
 .modal-actions button:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: not-allowed;
+  transform: none;
 }

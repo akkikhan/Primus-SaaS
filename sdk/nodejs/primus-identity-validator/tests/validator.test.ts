@@ -1,17 +1,18 @@
-import { validateOptions, applyDefaults, validateToken, extractUser } from '../src/validator';
-import { PrimusIdentityOptions, JwtPayload } from '../src/types';
+import { PrimusIdentityValidator, validateToken, extractUser } from '../src/validator';
+import { PrimusIdentityOptions, JwtPayload, ValidationMode } from '../src/types';
 import { sign } from 'jsonwebtoken';
 
-describe('validateOptions', () => {
-  it('should validate correct options', () => {
+describe('PrimusIdentityValidator - Options Validation', () => {
+  it('should validate correct Local mode options', () => {
     const options: PrimusIdentityOptions = {
       portalUrl: 'https://portal.primus-saas.com',
       clientId: 'test-client',
       clientSecret: 'test-secret',
       jwtSecret: 'test-jwt-secret',
+      mode: ValidationMode.Local,
     };
 
-    expect(() => validateOptions(options)).not.toThrow();
+    expect(() => new PrimusIdentityValidator(options)).not.toThrow();
   });
 
   it('should throw when portalUrl is missing', () => {
@@ -21,7 +22,7 @@ describe('validateOptions', () => {
       jwtSecret: 'test-jwt-secret',
     } as PrimusIdentityOptions;
 
-    expect(() => validateOptions(options)).toThrow('portalUrl is required');
+    expect(() => new PrimusIdentityValidator(options)).toThrow('portalUrl is required');
   });
 
   it('should throw when clientId is missing', () => {
@@ -31,7 +32,7 @@ describe('validateOptions', () => {
       jwtSecret: 'test-jwt-secret',
     } as PrimusIdentityOptions;
 
-    expect(() => validateOptions(options)).toThrow('clientId is required');
+    expect(() => new PrimusIdentityValidator(options)).toThrow('clientId is required');
   });
 
   it('should throw when clientSecret is missing', () => {
@@ -41,17 +42,29 @@ describe('validateOptions', () => {
       jwtSecret: 'test-jwt-secret',
     } as PrimusIdentityOptions;
 
-    expect(() => validateOptions(options)).toThrow('clientSecret is required');
+    expect(() => new PrimusIdentityValidator(options)).toThrow('clientSecret is required');
   });
 
-  it('should throw when jwtSecret is missing', () => {
+  it('should throw when jwtSecret is missing for Local mode', () => {
     const options = {
       portalUrl: 'https://portal.primus-saas.com',
       clientId: 'test-client',
       clientSecret: 'test-secret',
+      mode: ValidationMode.Local,
     } as PrimusIdentityOptions;
 
-    expect(() => validateOptions(options)).toThrow('jwtSecret is required');
+    expect(() => new PrimusIdentityValidator(options)).toThrow('jwtSecret is required for Local and Hybrid modes');
+  });
+
+  it('should throw when tenantId is missing for AzureAd mode', () => {
+    const options = {
+      portalUrl: 'https://portal.primus-saas.com',
+      clientId: 'test-client',
+      clientSecret: 'test-secret',
+      mode: ValidationMode.AzureAd,
+    } as PrimusIdentityOptions;
+
+    expect(() => new PrimusIdentityValidator(options)).toThrow('tenantId is required for AzureAd and Hybrid modes');
   });
 
   it('should throw when portalUrl is invalid', () => {
@@ -62,61 +75,24 @@ describe('validateOptions', () => {
       jwtSecret: 'test-jwt-secret',
     };
 
-    expect(() => validateOptions(options)).toThrow('portalUrl must be a valid URL');
+    expect(() => new PrimusIdentityValidator(options)).toThrow('portalUrl must be a valid URL');
   });
 });
 
-describe('applyDefaults', () => {
-  it('should apply default values', () => {
-    const options: PrimusIdentityOptions = {
-      portalUrl: 'https://portal.primus-saas.com',
-      clientId: 'test-client',
-      clientSecret: 'test-secret',
-      jwtSecret: 'test-jwt-secret',
-    };
-
-    const result = applyDefaults(options);
-
-    expect(result.issuer).toBe('https://portal.primus-saas.com');
-    expect(result.audience).toBe('test-client');
-    expect(result.validateLifetime).toBe(true);
-    expect(result.clockSkew).toBe(300);
-  });
-
-  it('should preserve custom values', () => {
-    const options: PrimusIdentityOptions = {
-      portalUrl: 'https://portal.primus-saas.com',
-      clientId: 'test-client',
-      clientSecret: 'test-secret',
-      jwtSecret: 'test-jwt-secret',
-      issuer: 'custom-issuer',
-      audience: 'custom-audience',
-      validateLifetime: false,
-      clockSkew: 600,
-    };
-
-    const result = applyDefaults(options);
-
-    expect(result.issuer).toBe('custom-issuer');
-    expect(result.audience).toBe('custom-audience');
-    expect(result.validateLifetime).toBe(false);
-    expect(result.clockSkew).toBe(600);
-  });
-});
-
-describe('validateToken', () => {
-  const options: Required<PrimusIdentityOptions> = {
+describe('PrimusIdentityValidator - Local Mode Token Validation', () => {
+  const options: PrimusIdentityOptions = {
     portalUrl: 'https://portal.primus-saas.com',
     clientId: 'test-client',
     clientSecret: 'test-secret',
     jwtSecret: 'test-jwt-secret-key',
+    mode: ValidationMode.Local,
     issuer: 'https://portal.primus-saas.com',
     audience: 'test-client',
     validateLifetime: true,
     clockSkew: 300,
   };
 
-  it('should validate a correct token', () => {
+  it('should validate a correct token', async () => {
     const payload = {
       sub: 'user-123',
       email: 'test@example.com',
@@ -125,15 +101,16 @@ describe('validateToken', () => {
       aud: 'test-client',
     };
 
-    const token = sign(payload, options.jwtSecret, { expiresIn: '1h' });
+    const token = sign(payload, options.jwtSecret!, { expiresIn: '1h' });
 
-    const result = validateToken(token, options);
+    const result = await validateToken(token, options);
 
-    expect(result.sub).toBe('user-123');
-    expect(result.email).toBe('test@example.com');
+    expect(result.isValid).toBe(true);
+    expect(result.claims?.sub).toBe('user-123');
+    expect(result.claims?.email).toBe('test@example.com');
   });
 
-  it('should throw for invalid signature', () => {
+  it('should reject invalid signature', async () => {
     const payload = {
       sub: 'user-123',
       iss: 'https://portal.primus-saas.com',
@@ -142,22 +119,28 @@ describe('validateToken', () => {
 
     const token = sign(payload, 'wrong-secret', { expiresIn: '1h' });
 
-    expect(() => validateToken(token, options)).toThrow('Token validation failed');
+    const result = await validateToken(token, options);
+
+    expect(result.isValid).toBe(false);
+    expect(result.error).toContain('invalid signature');
   });
 
-  it('should throw for expired token when validateLifetime is true', () => {
+  it('should reject expired token when validateLifetime is true', async () => {
     const payload = {
       sub: 'user-123',
       iss: 'https://portal.primus-saas.com',
       aud: 'test-client',
     };
 
-    const token = sign(payload, options.jwtSecret, { expiresIn: '-1h' });
+    const token = sign(payload, options.jwtSecret!, { expiresIn: '-1h' });
 
-    expect(() => validateToken(token, options)).toThrow('Token validation failed');
+    const result = await validateToken(token, options);
+
+    expect(result.isValid).toBe(false);
+    expect(result.error).toContain('expired');
   });
 
-  it('should accept expired token when validateLifetime is false', () => {
+  it('should accept expired token when validateLifetime is false', async () => {
     const modifiedOptions = { ...options, validateLifetime: false };
     const payload = {
       sub: 'user-123',
@@ -165,10 +148,12 @@ describe('validateToken', () => {
       aud: 'test-client',
     };
 
-    const token = sign(payload, options.jwtSecret, { expiresIn: '-1h' });
+    const token = sign(payload, options.jwtSecret!, { expiresIn: '-1h' });
 
-    const result = validateToken(token, modifiedOptions);
-    expect(result.sub).toBe('user-123');
+    const result = await validateToken(token, modifiedOptions);
+    
+    expect(result.isValid).toBe(true);
+    expect(result.claims?.sub).toBe('user-123');
   });
 });
 

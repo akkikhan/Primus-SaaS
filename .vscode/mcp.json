@@ -1,19 +1,5 @@
 {
 	"servers": {
-		"codacy/codacy-mcp-server": {
-			"type": "stdio",
-			"command": "npx",
-			"args": [
-				"-y",
-				"@codacy/codacy-mcp@latest"
-			],
-			"env": {
-				"CODACY_ACCOUNT_TOKEN": "${input:codacy_account_token}",
-				"CODACY_CLI_VERSION": "${input:codacy_cli_version}"
-			},
-			"gallery": "https://api.mcp.github.com",
-			"version": "1.0.0"
-		},
 		"github/github-mcp-server": {
 			"type": "http",
 			"url": "https://api.githubcopilot.com/mcp/",
@@ -69,6 +55,20 @@
 			"args": [
 				"markitdown-mcp==0.0.1a4"
 			],
+			"gallery": "https://api.mcp.github.com",
+			"version": "1.0.0"
+		},
+		"codacy/codacy-mcp-server": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@codacy/codacy-mcp@latest"
+			],
+			"env": {
+				"CODACY_ACCOUNT_TOKEN": "${input:codacy_account_token}",
+				"CODACY_CLI_VERSION": "${input:codacy_cli_version}"
+			},
 			"gallery": "https://api.mcp.github.com",
 			"version": "1.0.0"
 		}

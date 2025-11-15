@@ -1,5 +1,5 @@
 .skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, #1f2937 25%, #111827 50%, #1f2937 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: 4px;
@@ -29,12 +29,13 @@
 }
 
 .skeleton-card {
-  background: white;
-  border: 1px solid #e0e0e0;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   overflow: hidden;
   padding: 0;
   margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
 }
 
 .skeleton-card-content {
@@ -60,19 +61,20 @@
 }
 
 .skeleton-table-header {
-  background: #f8f8f8;
-  border-bottom: 2px solid #e0e0e0;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 2px solid var(--color-border);
 }
 
 .skeleton-table-row {
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .skeleton-stats {
   padding: 20px;
-  background: white;
-  border: 1px solid #e0e0e0;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
+  box-shadow: var(--shadow-sm);
 }
 
 .skeleton-stats .skeleton {

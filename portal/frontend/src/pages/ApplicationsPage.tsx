@@ -7,7 +7,6 @@ import './ApplicationsPage.css';
 interface ApplicationFormData {
   name: string;
   stack: string;
-  primusClientId: string;
   description: string;
 }
 
@@ -17,7 +16,6 @@ export const ApplicationsPage = () => {
   const [formData, setFormData] = useState<ApplicationFormData>({
     name: '',
     stack: 'NodeJS',
-    primusClientId: '',
     description: '',
   });
 
@@ -33,7 +31,6 @@ export const ApplicationsPage = () => {
       setFormData({
         name: '',
         stack: 'NodeJS',
-        primusClientId: '',
         description: '',
       });
     } catch (error) {
@@ -108,7 +105,7 @@ export const ApplicationsPage = () => {
                   required
                 />
               </div>
-              <div className="form-group">
+            <div className="form-group">
                 <label htmlFor="stack">Technology Stack</label>
                 <select
                   id="stack"
@@ -116,21 +113,11 @@ export const ApplicationsPage = () => {
                   onChange={(e) => setFormData({ ...formData, stack: e.target.value })}
                   required
                 >
-                  <option value="NodeJS">Node.js</option>
+                  <option value="NodeJS">Node.js (Express)</option>
                   <option value="DotNet">.NET</option>
+                  <option value="NodeJS-Nest">Node.js (NestJS)</option>
                   <option value="Python">Python</option>
                 </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="primusClientId">Primus Client ID</label>
-                <input
-                  id="primusClientId"
-                  type="text"
-                  value={formData.primusClientId}
-                  onChange={(e) => setFormData({ ...formData, primusClientId: e.target.value })}
-                  placeholder="client-app-123"
-                  required
-                />
               </div>
               <div className="form-group">
                 <label htmlFor="description">Description (Optional)</label>
