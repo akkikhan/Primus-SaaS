@@ -1,20 +1,25 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../providers/AuthProvider';
+import { getErrorMessage } from '../services/apiClient';
 import './LoginPage.css';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
-  const { login, isLoading, error } = useAuth();
+  const { login, isLoading } = useAuth();
   const [email, setEmail] = useState('admin@primussaas.com');
   const [password, setPassword] = useState('Admin123!');
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const success = await login(email, password);
+    setError(null);
 
-    if (success) {
+    try {
+      await login(email, password);
       navigate('/', { replace: true });
+    } catch (err) {
+      setError(getErrorMessage(err));
     }
   };
 

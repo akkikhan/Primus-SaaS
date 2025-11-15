@@ -21,22 +21,14 @@ public class ApplicationsController : ControllerBase
 
     // GET: api/applications
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ApplicationDto>>> GetApplications()
+    public async Task<ActionResult<IEnumerable<Application>>> GetApplications()
     {
         var applications = await _context.Applications
             .Include(a => a.Owner)
             .Include(a => a.ApplicationModules)
                 .ThenInclude(am => am.Module)
-            .Select(a => new ApplicationDto
-            {
-                Id = a.Id,
-                Name = a.Name,
-                Stack = a.Stack.ToString(),
-                PrimusClientId = a.PrimusClientId,
-                OwnerEmail = a.Owner.Email,
-                ModuleCount = a.ApplicationModules.Count,
-                CreatedAt = a.CreatedAt
-            })
+            .Include(a => a.ApplicationModules)
+                .ThenInclude(am => am.ModuleVersion)
             .ToListAsync();
 
         return Ok(applications);
@@ -44,7 +36,7 @@ public class ApplicationsController : ControllerBase
 
     // GET: api/applications/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<ApplicationDetailDto>> GetApplication(int id)
+    public async Task<ActionResult<Application>> GetApplication(int id)
     {
         var application = await _context.Applications
             .Include(a => a.Owner)
@@ -59,23 +51,7 @@ public class ApplicationsController : ControllerBase
             return NotFound();
         }
 
-        return Ok(new ApplicationDetailDto
-        {
-            Id = application.Id,
-            Name = application.Name,
-            Stack = application.Stack.ToString(),
-            PrimusClientId = application.PrimusClientId,
-            OwnerEmail = application.Owner.Email,
-            CreatedAt = application.CreatedAt,
-            IntegratedModules = application.ApplicationModules.Select(am => new IntegratedModuleDto
-            {
-                ModuleId = am.ModuleId,
-                ModuleName = am.Module.Name,
-                Version = am.ModuleVersion.Version,
-                ConfigJson = am.ConfigJson,
-                IntegratedAt = am.IntegratedAt
-            }).ToList()
-        });
+        return Ok(application);
     }
 
     // POST: api/applications
@@ -88,8 +64,9 @@ public class ApplicationsController : ControllerBase
         {
             OwnerUserId = userId,
             Name = request.Name,
-            Stack = Enum.Parse<AppStack>(request.Stack),
-            PrimusClientId = GenerateClientId()
+            ClientId = request.ClientId,
+            ClientSecret = request.ClientSecret,
+            Stack = AppStack.DotNet  // Default stack for now
         };
 
         _context.Applications.Add(application);
@@ -145,6 +122,24 @@ public class ApplicationsController : ControllerBase
         return Ok(new { message = "Module integrated successfully" });
     }
 
+    // DELETE: api/applications/{applicationId}/modules/{moduleId}
+    [HttpDelete("{applicationId}/modules/{moduleId}")]
+    public async Task<IActionResult> RemoveModule(int applicationId, int moduleId)
+    {
+        var appModule = await _context.ApplicationModules
+            .FirstOrDefaultAsync(am => am.ApplicationId == applicationId && am.ModuleId == moduleId);
+
+        if (appModule == null)
+        {
+            return NotFound("Module integration not found");
+        }
+
+        _context.ApplicationModules.Remove(appModule);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
     // DELETE: api/applications/5
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteApplication(int id)
@@ -173,6 +168,8 @@ public record ApplicationDto
     public string Name { get; init; } = string.Empty;
     public string Stack { get; init; } = string.Empty;
     public string PrimusClientId { get; init; } = string.Empty;
+    public string ClientId { get; init; } = string.Empty;
+    public string ClientSecret { get; init; } = string.Empty;
     public string OwnerEmail { get; init; } = string.Empty;
     public int ModuleCount { get; init; }
     public DateTime CreatedAt { get; init; }
@@ -184,6 +181,8 @@ public record ApplicationDetailDto
     public string Name { get; init; } = string.Empty;
     public string Stack { get; init; } = string.Empty;
     public string PrimusClientId { get; init; } = string.Empty;
+    public string ClientId { get; init; } = string.Empty;
+    public string ClientSecret { get; init; } = string.Empty;
     public string OwnerEmail { get; init; } = string.Empty;
     public DateTime CreatedAt { get; init; }
     public List<IntegratedModuleDto> IntegratedModules { get; init; } = new();
@@ -198,5 +197,5 @@ public record IntegratedModuleDto
     public DateTime IntegratedAt { get; init; }
 }
 
-public record CreateApplicationRequest(string Name, string Stack);
+public record CreateApplicationRequest(string Name, string ClientId, string ClientSecret);
 public record IntegrateModuleRequest(int ModuleId, int ModuleVersionId, string ConfigJson);
