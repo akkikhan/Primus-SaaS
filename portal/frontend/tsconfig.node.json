@@ -13,5 +13,5 @@
     "types": ["vite/client"],
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["vite.config.ts", "src"]
+  "include": ["vite.config.ts"]
 }

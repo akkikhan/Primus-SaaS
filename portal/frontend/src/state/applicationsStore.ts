@@ -2,23 +2,29 @@ import { create } from 'zustand';
 import apiClient, { getErrorMessage } from '../services/apiClient';
 import { useUIStore } from './uiStore';
 
-export interface ApplicationModule {
-  id: number;
-  applicationId: number;
+export interface IntegratedModule {
   moduleId: number;
-  moduleVersionId: number;
+  moduleName: string;
+  version: string;
+  latestVersion: string;
+  versionStatus: string; // "UpToDate" or "UpdateAvailable"
+  isBreakingChange: boolean;
+  releaseNotes: string;
+  configJson: string;
   integratedAt: string;
-  moduleName?: string;
-  versionNumber?: string;
 }
 
 export interface Application {
   id: number;
   name: string;
-  clientId: string;
-  clientSecret: string;
+  stack: string;
+  primusClientId: string;
+  description?: string;
+  ownerEmail: string;
+  moduleCount: number;
   createdAt: string;
-  applicationModules: ApplicationModule[];
+  updatedAt?: string; // Only in detail view
+  integratedModules?: IntegratedModule[]; // Only in detail view
 }
 
 interface ApplicationsState {
@@ -28,10 +34,11 @@ interface ApplicationsState {
   error: string | null;
   fetchApplications: () => Promise<void>;
   fetchApplication: (id: number) => Promise<void>;
-  createApplication: (application: Omit<Application, 'id' | 'createdAt' | 'applicationModules'>) => Promise<void>;
+  createApplication: (application: Omit<Application, 'id' | 'createdAt' | 'ownerEmail' | 'moduleCount' | 'integratedModules'>) => Promise<Application>;
   updateApplication: (id: number, application: Partial<Application>) => Promise<void>;
   deleteApplication: (id: number) => Promise<void>;
   addModule: (applicationId: number, moduleId: number, moduleVersionId: number) => Promise<void>;
+  changeModuleVersion: (applicationId: number, moduleId: number, version: string) => Promise<void>;
   removeModule: (applicationId: number, moduleId: number) => Promise<void>;
 }
 
@@ -74,6 +81,7 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
         isLoading: false,
       }));
       useUIStore.getState().addToast('success', 'Application created successfully');
+      return response.data;
     } catch (error) {
       const errorMessage = getErrorMessage(error);
       set({ error: errorMessage, isLoading: false });
@@ -130,6 +138,21 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
       const errorMessage = getErrorMessage(error);
       set({ error: errorMessage, isLoading: false });
       useUIStore.getState().addToast('error', `Failed to add module: ${errorMessage}`);
+      throw error;
+    }
+  },
+
+  changeModuleVersion: async (applicationId, moduleId, version) => {
+    set({ isLoading: true, error: null });
+    try {
+      await apiClient.post(`/applications/${applicationId}/modules/${moduleId}/version`, { version });
+      // Refetch the application to get updated version info
+      await get().fetchApplication(applicationId);
+      useUIStore.getState().addToast('success', `Module version updated to ${version}`);
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({ error: errorMessage, isLoading: false });
+      useUIStore.getState().addToast('error', `Failed to change version: ${errorMessage}`);
       throw error;
     }
   },

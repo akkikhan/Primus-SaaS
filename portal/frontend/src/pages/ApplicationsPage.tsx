@@ -7,7 +7,7 @@ import './ApplicationsPage.css';
 export const ApplicationsPage = () => {
   const { applications, fetchApplications, createApplication, deleteApplication, isLoading } = useApplicationsStore();
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ name: '', clientId: '', clientSecret: '' });
+  const [formData, setFormData] = useState({ name: '', stack: 'NodeJS', description: '' });
 
   useEffect(() => {
     void fetchApplications();
@@ -18,7 +18,7 @@ export const ApplicationsPage = () => {
     try {
       await createApplication(formData);
       setShowModal(false);
-      setFormData({ name: '', clientId: '', clientSecret: '' });
+      setFormData({ name: '', stack: 'NodeJS', description: '' });
     } catch (error) {
       // Error handled by store
     }
@@ -56,8 +56,8 @@ export const ApplicationsPage = () => {
                 <h3>{app.name}</h3>
               </div>
               <div className="apps__card-meta">
-                <span>Modules: {app.applicationModules?.length || 0}</span>
-                <span>Client ID: {app.clientId}</span>
+                <span>Modules: {app.moduleCount || 0}</span>
+                <span>Primus ID: {app.primusClientId}</span>
               </div>
             </Link>
             <button 
@@ -87,27 +87,31 @@ export const ApplicationsPage = () => {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="My Application"
                   required
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="clientId">Client ID</label>
-                <input
-                  id="clientId"
-                  type="text"
-                  value={formData.clientId}
-                  onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
+                <label htmlFor="stack">Technology Stack</label>
+                <select
+                  id="stack"
+                  value={formData.stack}
+                  onChange={(e) => setFormData({ ...formData, stack: e.target.value })}
                   required
-                />
+                >
+                  <option value="NodeJS">Node.js</option>
+                  <option value="DotNet">.NET</option>
+                  <option value="Python">Python</option>
+                </select>
               </div>
               <div className="form-group">
-                <label htmlFor="clientSecret">Client Secret</label>
-                <input
-                  id="clientSecret"
-                  type="password"
-                  value={formData.clientSecret}
-                  onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
-                  required
+                <label htmlFor="description">Description (Optional)</label>
+                <textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Brief description of your application"
+                  rows={3}
                 />
               </div>
               <div className="modal-actions">

@@ -4,6 +4,7 @@ import apiClient from '../services/apiClient';
 interface User {
   id: number;
   email: string;
+  role?: string;
 }
 
 interface AuthContextType {
@@ -50,7 +51,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await apiClient.post('/auth/login', { email, password });
       
-      const { token: newToken, user: newUser } = response.data;
+      const { token: newToken, email: userEmail, role } = response.data;
+
+      // Create user object from response
+      const newUser = { 
+        id: 0, // We'll need to decode this from the token if needed
+        email: userEmail,
+        role 
+      };
 
       // Store in state
       setToken(newToken);
