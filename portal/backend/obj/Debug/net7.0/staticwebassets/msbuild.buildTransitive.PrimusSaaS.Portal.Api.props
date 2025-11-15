@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\buildMultiTargeting\PrimusSaaS.Portal.Api.props" />
+</Project>

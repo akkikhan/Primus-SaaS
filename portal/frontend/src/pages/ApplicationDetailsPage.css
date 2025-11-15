@@ -1,0 +1,50 @@
+.app-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.app-detail header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-detail header h1 {
+  margin: 0;
+}
+
+.app-detail .btn {
+  background: #2563eb;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.app-detail__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.app-detail__panel {
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1rem;
+  background: #fff;
+}
+
+.app-detail__panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.app-detail__panel li {
+  border-bottom: 1px solid #f3f4f6;
+  padding: 0.75rem 0;
+}
+
+.app-detail__panel li:last-child {
+  border-bottom: none;
+}

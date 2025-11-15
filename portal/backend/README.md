@@ -1,0 +1,194 @@
+# Primus SaaS Portal - Backend API
+
+ASP.NET Core 7.0 Web API for the Primus SaaS Platform portal.
+
+## Features
+
+- **Authentication**: JWT-based authentication for admin users
+- **Module Management**: CRUD operations for modules and versions
+- **Application Registry**: Manage client applications and their integrated modules
+- **Documentation Generation**: Auto-generate integration docs with code snippets
+- **Database**: Entity Framework Core with SQL Server
+
+## Prerequisites
+
+- .NET 7.0 SDK or higher
+- SQL Server (LocalDB or full instance)
+
+## Getting Started
+
+### 1. Update Database Connection String
+
+Edit `appsettings.json` if needed:
+
+```json
+"ConnectionStrings": {
+  "DefaultConnection": "Server=localhost;Database=PrimusSaasPortal;Trusted_Connection=True;TrustServerCertificate=True"
+}
+```
+
+### 2. Create Database
+
+Run EF Core migrations to create the database:
+
+```bash
+dotnet ef migrations add InitialCreate
+dotnet ef database update
+```
+
+### 3. Run the API
+
+```bash
+dotnet run
+```
+
+The API will start at:
+
+- HTTPS: `https://localhost:7001`
+- HTTP: `http://localhost:5001`
+
+Swagger UI available at: `https://localhost:7001/swagger`
+
+## Default Credentials
+
+- **Email**: `admin@primussaas.com`
+- **Password**: `Admin123!`
+
+> ⚠️ **Security Note**: This is for development only. In production, implement proper BCrypt password hashing.
+
+## API Endpoints
+
+### Authentication
+
+- `POST /api/auth/login` - Login and receive JWT token
+
+### Modules
+
+- `GET /api/modules` - List all modules
+- `GET /api/modules/{id}` - Get module details with versions
+- `POST /api/modules` - Create new module
+- `POST /api/modules/{id}/versions` - Add new version to module
+- `PUT /api/modules/{id}` - Update module
+- `DELETE /api/modules/{id}` - Delete module
+
+### Applications
+
+- `GET /api/applications` - List all applications
+- `GET /api/applications/{id}` - Get application details
+- `POST /api/applications` - Register new application
+- `POST /api/applications/{id}/modules` - Integrate module into application
+- `DELETE /api/applications/{id}` - Delete application
+
+### Documentation
+
+- `GET /api/documentation/{applicationId}` - Generate integration documentation with code snippets
+
+## Database Schema
+
+### Users Table
+
+- Id, Email, PasswordHash, Role, CreatedAt, UpdatedAt
+
+### Modules Table
+
+- Id, Name, Description
+
+### ModuleVersions Table
+
+- Id, ModuleId, Version, IsBreakingChange, ReleaseNotes, SupportedStacksJson, ReleasedAt
+
+### Applications Table
+
+- Id, OwnerUserId, Name, Stack, PrimusClientId, CreatedAt, UpdatedAt
+
+### ApplicationModules Table
+
+- Id, ApplicationId, ModuleId, ModuleVersionId, ConfigJson, IntegratedAt
+
+## Project Structure
+
+```text
+portal/backend/
+├── Controllers/
+│   ├── AuthController.cs         # JWT authentication
+│   ├── ModulesController.cs      # Module CRUD
+│   ├── ApplicationsController.cs # Application registry
+│   └── DocumentationController.cs # Documentation generation
+├── Data/
+│   └── PortalDbContext.cs        # EF Core DbContext
+├── Models/
+│   ├── User.cs
+│   ├── Module.cs
+│   ├── ModuleVersion.cs
+│   ├── Application.cs
+│   └── ApplicationModule.cs
+├── Program.cs                     # App configuration
+└── appsettings.json               # Configuration
+```
+
+## Configuration
+
+### JWT Settings
+
+Edit in `appsettings.json`:
+
+```json
+"Jwt": {
+  "Key": "YourSuperSecretKeyThatIsAtLeast32CharactersLong!",
+  "Issuer": "PrimusSaasPortal",
+  "Audience": "PrimusSaasPortalUsers",
+  "ExpiryInMinutes": 60
+}
+```
+
+### CORS
+
+Currently configured to allow all origins for development. Update in `Program.cs` for production:
+
+```csharp
+options.AddPolicy("AllowAll", policy =>
+{
+    policy.WithOrigins("https://your-frontend-domain.com")
+          .AllowAnyMethod()
+          .AllowAnyHeader();
+});
+```
+
+## Next Steps
+
+1. **Implement BCrypt password hashing** in `AuthController`
+2. **Create EF migrations** and update database
+3. **Build React frontend** to consume this API
+4. **Add email notification service** for update alerts
+5. **Implement rate limiting** for API endpoints
+6. **Add logging and monitoring** (Application Insights, Serilog)
+
+## Development
+
+### Add New Migration
+
+```bash
+dotnet ef migrations add MigrationName
+dotnet ef database update
+```
+
+### Remove Last Migration
+
+```bash
+dotnet ef migrations remove
+```
+
+### Reset Database
+
+```bash
+dotnet ef database drop
+dotnet ef database update
+```
+
+## Technologies
+
+- **Framework**: ASP.NET Core 7.0
+- **ORM**: Entity Framework Core 7.0
+- **Database**: SQL Server
+- **Authentication**: JWT Bearer tokens
+- **API Documentation**: Swagger/OpenAPI

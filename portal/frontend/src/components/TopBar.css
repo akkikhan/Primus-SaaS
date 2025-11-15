@@ -1,0 +1,28 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e4e7ec;
+  background: #fff;
+}
+
+.topbar__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #101828;
+}
+
+.topbar__logout {
+  border: none;
+  background: #f04438;
+  color: #fff;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.topbar__logout:hover {
+  background: #d92d20;
+}

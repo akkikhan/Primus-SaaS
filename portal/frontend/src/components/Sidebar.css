@@ -1,0 +1,29 @@
+.sidebar {
+  width: 240px;
+  background: #101828;
+  color: #fff;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar__brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+}
+
+.sidebar__link {
+  display: block;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar__link:hover,
+.sidebar__link--active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}

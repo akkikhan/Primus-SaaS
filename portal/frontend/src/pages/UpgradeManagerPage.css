@@ -1,0 +1,42 @@
+.upgrade-manager-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.upgrade-manager-page header {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.upgrade-manager-page .eyebrow {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: #6366f1;
+  margin-bottom: 0.35rem;
+}
+
+.upgrade-manager-page h1 {
+  margin: 0 0 0.5rem;
+}
+
+.empty-state {
+  border: 1px dashed #e5e7eb;
+  border-radius: 1rem;
+  padding: 3rem;
+  background: #fff;
+  text-align: center;
+}
+
+.empty-state h2 {
+  margin-top: 0;
+  color: #111827;
+}
+
+.empty-state p {
+  color: #6b7280;
+  max-width: 600px;
+  margin: 0 auto;
+}
