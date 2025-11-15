@@ -16,15 +16,20 @@
   border: 1px solid #e4e7ec;
   border-radius: 1rem;
   padding: 1.25rem;
-  text-decoration: none;
-  color: inherit;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  position: relative;
 }
 
 .apps__card:hover {
   border-color: #7f56d9;
+}
+
+.apps__card-link {
+  text-decoration: none;
+  color: inherit;
+  flex: 1;
 }
 
 .apps__card-header {
@@ -33,25 +38,116 @@
   align-items: center;
 }
 
-.badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.apps__card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  color: #667085;
 }
 
-.badge--dotnet {
-  background: #d1fadf;
-  color: #027a48;
+.apps__delete {
+  background: #fee2e2;
+  color: #ef4444;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background 0.2s;
 }
 
-.badge--nodejs {
-  background: #fce7f6;
-  color: #c11574;
+.apps__delete:hover {
+  background: #fecaca;
 }
 
-.badge--python {
-  background: #f4ebff;
-  color: #6941c6;
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal h2 {
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #344054;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 0.625rem;
+  border: 1px solid #d0d5dd;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.modal-actions button {
+  padding: 0.625rem 1.25rem;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s;
+}
+
+.modal-actions button[type="button"] {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.modal-actions button[type="button"]:hover {
+  background: #e5e7eb;
+}
+
+.modal-actions button[type="submit"],
+.modal-actions button:last-child {
+  background: #7f56d9;
+  color: white;
+}
+
+.modal-actions button[type="submit"]:hover,
+.modal-actions button:last-child:hover {
+  background: #6941c6;
+}
+
+.modal-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

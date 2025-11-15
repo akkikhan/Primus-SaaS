@@ -1,0 +1,151 @@
+import { create } from 'zustand';
+import apiClient, { getErrorMessage } from '../services/apiClient';
+import { useUIStore } from './uiStore';
+
+export interface ApplicationModule {
+  id: number;
+  applicationId: number;
+  moduleId: number;
+  moduleVersionId: number;
+  integratedAt: string;
+  moduleName?: string;
+  versionNumber?: string;
+}
+
+export interface Application {
+  id: number;
+  name: string;
+  clientId: string;
+  clientSecret: string;
+  createdAt: string;
+  applicationModules: ApplicationModule[];
+}
+
+interface ApplicationsState {
+  applications: Application[];
+  currentApplication: Application | null;
+  isLoading: boolean;
+  error: string | null;
+  fetchApplications: () => Promise<void>;
+  fetchApplication: (id: number) => Promise<void>;
+  createApplication: (application: Omit<Application, 'id' | 'createdAt' | 'applicationModules'>) => Promise<void>;
+  updateApplication: (id: number, application: Partial<Application>) => Promise<void>;
+  deleteApplication: (id: number) => Promise<void>;
+  addModule: (applicationId: number, moduleId: number, moduleVersionId: number) => Promise<void>;
+  removeModule: (applicationId: number, moduleId: number) => Promise<void>;
+}
+
+export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
+  applications: [],
+  currentApplication: null,
+  isLoading: false,
+  error: null,
+
+  fetchApplications: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.get('/applications');
+      set({ applications: response.data, isLoading: false });
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({ error: errorMessage, isLoading: false });
+      useUIStore.getState().addToast('error', `Failed to fetch applications: ${errorMessage}`);
+    }
+  },
+
+  fetchApplication: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.get(`/applications/${id}`);
+      set({ currentApplication: response.data, isLoading: false });
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({ error: errorMessage, isLoading: false });
+      useUIStore.getState().addToast('error', `Failed to fetch application: ${errorMessage}`);
+    }
+  },
+
+  createApplication: async (application) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.post('/applications', application);
+      set((state) => ({
+        applications: [...state.applications, response.data],
+        isLoading: false,
+      }));
+      useUIStore.getState().addToast('success', 'Application created successfully');
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({ error: errorMessage, isLoading: false });
+      useUIStore.getState().addToast('error', `Failed to create application: ${errorMessage}`);
+      throw error;
+    }
+  },
+
+  updateApplication: async (id, application) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.put(`/applications/${id}`, application);
+      set((state) => ({
+        applications: state.applications.map((a) => (a.id === id ? response.data : a)),
+        isLoading: false,
+      }));
+      useUIStore.getState().addToast('success', 'Application updated successfully');
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({ error: errorMessage, isLoading: false });
+      useUIStore.getState().addToast('error', `Failed to update application: ${errorMessage}`);
+      throw error;
+    }
+  },
+
+  deleteApplication: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await apiClient.delete(`/applications/${id}`);
+      set((state) => ({
+        applications: state.applications.filter((a) => a.id !== id),
+        isLoading: false,
+      }));
+      useUIStore.getState().addToast('success', 'Application deleted successfully');
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({ error: errorMessage, isLoading: false });
+      useUIStore.getState().addToast('error', `Failed to delete application: ${errorMessage}`);
+      throw error;
+    }
+  },
+
+  addModule: async (applicationId, moduleId, moduleVersionId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await apiClient.post(`/applications/${applicationId}/modules`, {
+        moduleId,
+        moduleVersionId,
+      });
+      // Refetch the application to get updated module list
+      await get().fetchApplication(applicationId);
+      useUIStore.getState().addToast('success', 'Module added to application successfully');
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({ error: errorMessage, isLoading: false });
+      useUIStore.getState().addToast('error', `Failed to add module: ${errorMessage}`);
+      throw error;
+    }
+  },
+
+  removeModule: async (applicationId, moduleId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await apiClient.delete(`/applications/${applicationId}/modules/${moduleId}`);
+      // Refetch the application to get updated module list
+      await get().fetchApplication(applicationId);
+      useUIStore.getState().addToast('success', 'Module removed from application successfully');
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({ error: errorMessage, isLoading: false });
+      useUIStore.getState().addToast('error', `Failed to remove module: ${errorMessage}`);
+      throw error;
+    }
+  },
+}));

@@ -6,7 +6,9 @@ public class Application
     public int OwnerUserId { get; set; }
     public string Name { get; set; } = string.Empty;
     public AppStack Stack { get; set; }
-    public string PrimusClientId { get; set; } = string.Empty; // Unique identifier for SDK usage
+    public string PrimusClientId { get; set; } = string.Empty; // Legacy field for SDK usage
+    public string ClientId { get; set; } = string.Empty; // Client ID for authentication
+    public string ClientSecret { get; set; } = string.Empty; // Client Secret for authentication
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

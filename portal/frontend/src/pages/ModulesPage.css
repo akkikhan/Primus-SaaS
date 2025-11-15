@@ -14,10 +14,11 @@
 .modules__table-head,
 .modules__row {
   display: grid;
-  grid-template-columns: 1.5fr 2fr 1fr 1fr;
+  grid-template-columns: 1.5fr 2fr 1fr 1fr 1fr;
   gap: 1rem;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid #f2f4f7;
+  align-items: center;
 }
 
 .modules__table-head {
@@ -28,4 +29,36 @@
 
 .modules__row:last-child {
   border-bottom: none;
+}
+
+.modules__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.modules__actions button {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background 0.2s;
+}
+
+.modules__actions button:first-child {
+  background: #d1fae5;
+  color: #027a48;
+}
+
+.modules__actions button:first-child:hover {
+  background: #a6f4c5;
+}
+
+.modules__actions button:last-child {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.modules__actions button:last-child:hover {
+  background: #fecaca;
 }

@@ -30,6 +30,14 @@ namespace PrimusSaaS.Portal.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ClientSecret")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -176,7 +184,7 @@ namespace PrimusSaaS.Portal.Api.Migrations
                             IsBreakingChange = false,
                             ModuleId = 1,
                             ReleaseNotes = "Initial release of IdentityValidator module",
-                            ReleasedAt = new DateTime(2025, 11, 15, 0, 26, 0, 290, DateTimeKind.Utc).AddTicks(8036),
+                            ReleasedAt = new DateTime(2025, 11, 15, 2, 29, 48, 486, DateTimeKind.Utc).AddTicks(6823),
                             SupportedStacksJson = "[\"DotNet\",\"NodeJS\"]",
                             Version = "1.0.0"
                         });
@@ -219,11 +227,11 @@ namespace PrimusSaaS.Portal.Api.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 11, 15, 0, 26, 0, 290, DateTimeKind.Utc).AddTicks(7519),
+                            CreatedAt = new DateTime(2025, 11, 15, 2, 29, 48, 486, DateTimeKind.Utc).AddTicks(6248),
                             Email = "admin@primussaas.com",
                             PasswordHash = "$2a$11$YourHashedPasswordHere",
                             Role = 1,
-                            UpdatedAt = new DateTime(2025, 11, 15, 0, 26, 0, 290, DateTimeKind.Utc).AddTicks(7520)
+                            UpdatedAt = new DateTime(2025, 11, 15, 2, 29, 48, 486, DateTimeKind.Utc).AddTicks(6249)
                         });
                 });
 
