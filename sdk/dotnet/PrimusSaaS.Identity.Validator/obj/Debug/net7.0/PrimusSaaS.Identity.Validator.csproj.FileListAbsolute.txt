@@ -1,0 +1,12 @@
+C:\Users\aakib\Primus SaaS\sdk\dotnet\PrimusSaaS.Identity.Validator\bin\Debug\net7.0\PrimusSaaS.Identity.Validator.deps.json
+C:\Users\aakib\Primus SaaS\sdk\dotnet\PrimusSaaS.Identity.Validator\bin\Debug\net7.0\PrimusSaaS.Identity.Validator.dll
+C:\Users\aakib\Primus SaaS\sdk\dotnet\PrimusSaaS.Identity.Validator\bin\Debug\net7.0\PrimusSaaS.Identity.Validator.pdb
+C:\Users\aakib\Primus SaaS\sdk\dotnet\PrimusSaaS.Identity.Validator\obj\Debug\net7.0\PrimusSaaS.Identity.Validator.csproj.AssemblyReference.cache
+C:\Users\aakib\Primus SaaS\sdk\dotnet\PrimusSaaS.Identity.Validator\obj\Debug\net7.0\PrimusSaaS.Identity.Validator.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\aakib\Primus SaaS\sdk\dotnet\PrimusSaaS.Identity.Validator\obj\Debug\net7.0\PrimusSaaS.Identity.Validator.AssemblyInfoInputs.cache
+C:\Users\aakib\Primus SaaS\sdk\dotnet\PrimusSaaS.Identity.Validator\obj\Debug\net7.0\PrimusSaaS.Identity.Validator.AssemblyInfo.cs
+C:\Users\aakib\Primus SaaS\sdk\dotnet\PrimusSaaS.Identity.Validator\obj\Debug\net7.0\PrimusSaaS.Identity.Validator.csproj.CoreCompileInputs.cache
+C:\Users\aakib\Primus SaaS\sdk\dotnet\PrimusSaaS.Identity.Validator\obj\Debug\net7.0\PrimusSaaS.Identity.Validator.dll
+C:\Users\aakib\Primus SaaS\sdk\dotnet\PrimusSaaS.Identity.Validator\obj\Debug\net7.0\refint\PrimusSaaS.Identity.Validator.dll
+C:\Users\aakib\Primus SaaS\sdk\dotnet\PrimusSaaS.Identity.Validator\obj\Debug\net7.0\PrimusSaaS.Identity.Validator.pdb
+C:\Users\aakib\Primus SaaS\sdk\dotnet\PrimusSaaS.Identity.Validator\obj\Debug\net7.0\ref\PrimusSaaS.Identity.Validator.dll
