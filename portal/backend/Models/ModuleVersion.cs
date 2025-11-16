@@ -7,6 +7,8 @@ public class ModuleVersion
     public string Version { get; set; } = string.Empty;
     public bool IsBreakingChange { get; set; }
     public string ReleaseNotes { get; set; } = string.Empty;
+    public string Changelog { get; set; } = string.Empty;
+    public string DemoCode { get; set; } = string.Empty;
     public string SupportedStacksJson { get; set; } = string.Empty; // JSON array of supported stacks
     public DateTime ReleasedAt { get; set; } = DateTime.UtcNow;
 

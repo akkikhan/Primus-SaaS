@@ -98,6 +98,8 @@ describe('Modules Store', () => {
     const versionData = {
       versionNumber: '2.0.0',
       releaseNotes: 'Major update',
+      changelog: '',
+      demoCode: '',
       isBreakingChange: true,
       releasedAt: new Date().toISOString(),
     };
@@ -108,7 +110,7 @@ describe('Modules Store', () => {
         name: 'Module 1',
         description: 'Desc 1',
         moduleVersions: [
-          { id: 1, moduleId: 1, versionNumber: '1.0.0', releaseNotes: 'Initial', isBreakingChange: false, releasedAt: new Date().toISOString() },
+          { id: 1, moduleId: 1, versionNumber: '1.0.0', releaseNotes: 'Initial', changelog: '', demoCode: '', isBreakingChange: false, releasedAt: new Date().toISOString() },
         ],
       },
     ];

@@ -6,6 +6,8 @@ export interface ModuleVersion {
   id: number;
   versionNumber: string;
   releaseNotes: string;
+  changelog: string;
+  demoCode: string;
   releasedAt: string;
   isBreakingChange: boolean;
   moduleId: number;

@@ -63,6 +63,8 @@ public class ModulesController : ControllerBase
                 Version = v.Version,
                 IsBreakingChange = v.IsBreakingChange,
                 ReleaseNotes = v.ReleaseNotes,
+                Changelog = v.Changelog,
+                DemoCode = v.DemoCode,
                 SupportedStacks = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.SupportedStacksJson) ?? Array.Empty<string>(),
                 ReleasedAt = v.ReleasedAt
             }).OrderByDescending(v => v.ReleasedAt).ToList()
@@ -102,6 +104,8 @@ public class ModulesController : ControllerBase
             Version = request.Version,
             IsBreakingChange = request.IsBreakingChange,
             ReleaseNotes = request.ReleaseNotes,
+            Changelog = request.Changelog,
+            DemoCode = request.DemoCode,
             SupportedStacksJson = System.Text.Json.JsonSerializer.Serialize(request.SupportedStacks)
         };
 
@@ -172,10 +176,12 @@ public record VersionDto
     public string Version { get; init; } = string.Empty;
     public bool IsBreakingChange { get; init; }
     public string ReleaseNotes { get; init; } = string.Empty;
+    public string Changelog { get; init; } = string.Empty;
+    public string DemoCode { get; init; } = string.Empty;
     public string[] SupportedStacks { get; init; } = Array.Empty<string>();
     public DateTime ReleasedAt { get; init; }
 }
 
 public record CreateModuleRequest(string Name, string ModuleKey, string Description);
 public record UpdateModuleRequest(string Name, string ModuleKey, string Description);
-public record CreateVersionRequest(string Version, bool IsBreakingChange, string ReleaseNotes, string[] SupportedStacks);
+public record CreateVersionRequest(string Version, bool IsBreakingChange, string ReleaseNotes, string Changelog, string DemoCode, string[] SupportedStacks);

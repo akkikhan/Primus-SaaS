@@ -679,7 +679,26 @@ public class MyController : ControllerBase
                   )}
                 </div>
                 <div className="changelog-body">
+                  <h4>Release Notes</h4>
                   <p>{changelogModule.releaseNotes || 'No release notes available for this version.'}</p>
+                  
+                  {changelogModule.changelog && (
+                    <div className="changelog-section">
+                      <h4>Detailed Changelog</h4>
+                      <pre className="changelog-text">
+                        {changelogModule.changelog}
+                      </pre>
+                    </div>
+                  )}
+                  
+                  {changelogModule.demoCode && (
+                    <div className="changelog-section">
+                      <h4>Demo Code</h4>
+                      <pre className="demo-code">
+                        <code>{changelogModule.demoCode}</code>
+                      </pre>
+                    </div>
+                  )}
                 </div>
               </div>
 

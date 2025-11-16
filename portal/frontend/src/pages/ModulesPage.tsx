@@ -11,6 +11,8 @@ export const ModulesPage = () => {
   const [versionForm, setVersionForm] = useState({ 
     versionNumber: '', 
     releaseNotes: '', 
+    changelog: '',
+    demoCode: '',
     isBreakingChange: false 
   });
 
@@ -39,7 +41,7 @@ export const ModulesPage = () => {
         };
         await addVersion(showVersionModal, versionPayload);
         setShowVersionModal(null);
-        setVersionForm({ versionNumber: '', releaseNotes: '', isBreakingChange: false });
+        setVersionForm({ versionNumber: '', releaseNotes: '', changelog: '', demoCode: '', isBreakingChange: false });
       } catch (error) {
         // Error handled by store
       }
@@ -168,6 +170,25 @@ export const ModulesPage = () => {
                   value={versionForm.releaseNotes}
                   onChange={(e) => setVersionForm({ ...versionForm, releaseNotes: e.target.value })}
                   required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="changelog">Changelog</label>
+                <textarea
+                  id="changelog"
+                  placeholder="Detailed changelog for this version..."
+                  value={versionForm.changelog}
+                  onChange={(e) => setVersionForm({ ...versionForm, changelog: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="demoCode">Demo Code</label>
+                <textarea
+                  id="demoCode"
+                  placeholder="Example code demonstrating new features..."
+                  value={versionForm.demoCode}
+                  onChange={(e) => setVersionForm({ ...versionForm, demoCode: e.target.value })}
+                  rows={8}
                 />
               </div>
               <div className="form-group">
