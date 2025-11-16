@@ -10,6 +10,8 @@ export interface IntegratedModule {
   versionStatus: string; // "UpToDate" or "UpdateAvailable"
   isBreakingChange: boolean;
   releaseNotes: string;
+  changelog?: string;
+  releasedAt?: string;
   configJson: string;
   integratedAt: string;
 }

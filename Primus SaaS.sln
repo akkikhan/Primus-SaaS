@@ -1,0 +1,72 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "portal", "portal", "{B1292CBF-CB5E-31CF-04F4-73CB58F131DA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sdk", "sdk", "{FF13A09E-0E72-1904-124B-A4E979EF28D3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test-apps", "test-apps", "{5ED88D9A-91D3-55EE-6D1F-913C6BD5074A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrimusSaaS.Portal.Api", "portal\backend\PrimusSaaS.Portal.Api.csproj", "{37994E99-EAEF-96E6-63E9-1E54FC23B472}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dotnet-api", "dotnet-api", "{AAE80C49-741C-3D31-F521-A005EEB3CE6B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrimusSaaS.Example.Api", "examples\dotnet-api\PrimusSaaS.Example.Api\PrimusSaaS.Example.Api.csproj", "{AE70A6D6-CBF6-BA64-F0B7-D01AC99512D1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dotnet", "dotnet", "{9D954F24-B3F1-FF05-00E7-71549D8DD0D6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrimusSaaS.Identity.Validator", "sdk\dotnet\PrimusSaaS.Identity.Validator\PrimusSaaS.Identity.Validator.csproj", "{32477CF4-5E50-2C7A-6CA5-DFD7E4F41CE8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrimusSaaS.Identity.Validator.Tests", "sdk\dotnet\PrimusSaaS.Identity.Validator.Tests\PrimusSaaS.Identity.Validator.Tests.csproj", "{5FF9620B-8001-16BA-9D29-E6CB225B3F8D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dotnet-test-app", "dotnet-test-app", "{08709891-6944-7A32-B27E-AC57876020CE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrimusTest.Api", "test-apps\dotnet-test-app\PrimusTest.Api\PrimusTest.Api.csproj", "{CD17C1FB-725C-81D5-B453-CB91948FB17B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{37994E99-EAEF-96E6-63E9-1E54FC23B472}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37994E99-EAEF-96E6-63E9-1E54FC23B472}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37994E99-EAEF-96E6-63E9-1E54FC23B472}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37994E99-EAEF-96E6-63E9-1E54FC23B472}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE70A6D6-CBF6-BA64-F0B7-D01AC99512D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE70A6D6-CBF6-BA64-F0B7-D01AC99512D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE70A6D6-CBF6-BA64-F0B7-D01AC99512D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE70A6D6-CBF6-BA64-F0B7-D01AC99512D1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{32477CF4-5E50-2C7A-6CA5-DFD7E4F41CE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32477CF4-5E50-2C7A-6CA5-DFD7E4F41CE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32477CF4-5E50-2C7A-6CA5-DFD7E4F41CE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32477CF4-5E50-2C7A-6CA5-DFD7E4F41CE8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FF9620B-8001-16BA-9D29-E6CB225B3F8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FF9620B-8001-16BA-9D29-E6CB225B3F8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FF9620B-8001-16BA-9D29-E6CB225B3F8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FF9620B-8001-16BA-9D29-E6CB225B3F8D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD17C1FB-725C-81D5-B453-CB91948FB17B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD17C1FB-725C-81D5-B453-CB91948FB17B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD17C1FB-725C-81D5-B453-CB91948FB17B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD17C1FB-725C-81D5-B453-CB91948FB17B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{37994E99-EAEF-96E6-63E9-1E54FC23B472} = {B1292CBF-CB5E-31CF-04F4-73CB58F131DA}
+		{AAE80C49-741C-3D31-F521-A005EEB3CE6B} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
+		{AE70A6D6-CBF6-BA64-F0B7-D01AC99512D1} = {AAE80C49-741C-3D31-F521-A005EEB3CE6B}
+		{9D954F24-B3F1-FF05-00E7-71549D8DD0D6} = {FF13A09E-0E72-1904-124B-A4E979EF28D3}
+		{32477CF4-5E50-2C7A-6CA5-DFD7E4F41CE8} = {9D954F24-B3F1-FF05-00E7-71549D8DD0D6}
+		{5FF9620B-8001-16BA-9D29-E6CB225B3F8D} = {9D954F24-B3F1-FF05-00E7-71549D8DD0D6}
+		{08709891-6944-7A32-B27E-AC57876020CE} = {5ED88D9A-91D3-55EE-6D1F-913C6BD5074A}
+		{CD17C1FB-725C-81D5-B453-CB91948FB17B} = {08709891-6944-7A32-B27E-AC57876020CE}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D546BE59-EA56-4D80-BF68-DDD250DB2309}
+	EndGlobalSection
+EndGlobal

@@ -9,7 +9,7 @@ export const ModulesPage = () => {
   const [showVersionModal, setShowVersionModal] = useState<number | null>(null);
   const [moduleForm, setModuleForm] = useState({ name: '', description: '', moduleKey: '' });
   const [versionForm, setVersionForm] = useState({ 
-    versionNumber: '', 
+    version: '', 
     releaseNotes: '', 
     changelog: '',
     demoCode: '',
@@ -41,7 +41,7 @@ export const ModulesPage = () => {
         };
         await addVersion(showVersionModal, versionPayload);
         setShowVersionModal(null);
-        setVersionForm({ versionNumber: '', releaseNotes: '', changelog: '', demoCode: '', isBreakingChange: false });
+        setVersionForm({ version: '', releaseNotes: '', changelog: '', demoCode: '', isBreakingChange: false });
       } catch (error) {
         // Error handled by store
       }
@@ -54,15 +54,9 @@ export const ModulesPage = () => {
     }
   };
 
-  const getLatestVersion = (module: any) => {
-    if (!module.moduleVersions?.length) return 'N/A';
-    return module.moduleVersions[module.moduleVersions.length - 1].versionNumber;
-  };
-
-  const getPublishedDate = (module: any) => {
-    if (!module.moduleVersions?.length) return 'N/A';
-    const date = new Date(module.moduleVersions[0].releasedAt);
-    return date.toLocaleDateString();
+  const formatDate = (value?: string) => {
+    if (!value) return 'N/A';
+    return new Date(value).toLocaleDateString();
   };
 
   return (
@@ -84,14 +78,18 @@ export const ModulesPage = () => {
           <span>Description</span>
           <span>Latest Version</span>
           <span>Published</span>
+          <span>Status</span>
+          <span>Apps Using</span>
           <span>Actions</span>
         </div>
         {modules.map(module => (
           <div key={module.id} className="modules__row">
             <span>{module.name}</span>
             <span>{module.description}</span>
-            <span>{getLatestVersion(module)}</span>
-            <span>{getPublishedDate(module)}</span>
+            <span>{module.latestVersion || 'N/A'}</span>
+            <span>{formatDate(module.latestReleasedAt)}</span>
+            <span>{module.status || 'Active'}</span>
+            <span>{module.usageCount ?? 0}</span>
             <span className="modules__actions">
               <button type="button" onClick={() => setShowVersionModal(module.id)}>+ Version</button>
               <button type="button" onClick={() => handleDelete(module.id, module.name)}>Delete</button>
@@ -158,8 +156,8 @@ export const ModulesPage = () => {
                   id="versionNumber"
                   type="text"
                   placeholder="e.g., 1.2.0"
-                  value={versionForm.versionNumber}
-                  onChange={(e) => setVersionForm({ ...versionForm, versionNumber: e.target.value })}
+                  value={versionForm.version}
+                  onChange={(e) => setVersionForm({ ...versionForm, version: e.target.value })}
                   required
                 />
               </div>

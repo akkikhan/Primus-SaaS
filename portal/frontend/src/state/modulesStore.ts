@@ -4,13 +4,14 @@ import { useUIStore } from './uiStore';
 
 export interface ModuleVersion {
   id: number;
-  versionNumber: string;
+  version: string;
   releaseNotes: string;
   changelog: string;
   demoCode: string;
   releasedAt: string;
   isBreakingChange: boolean;
   moduleId: number;
+  supportedStacks?: string[];
 }
 
 export interface Module {
@@ -19,6 +20,10 @@ export interface Module {
   description: string;
   moduleKey?: string;
   moduleVersions: ModuleVersion[];
+  latestVersion?: string;
+  latestReleasedAt?: string;
+  usageCount?: number;
+  status?: string;
 }
 
 interface ModulesState {

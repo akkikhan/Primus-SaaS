@@ -18,6 +18,14 @@ export const ApplicationsPage = () => {
     stack: '',
     description: '',
   });
+  const stackIcons: Record<string, string> = {
+    DotNet: '🟣 .NET',
+    NodeJS: '🟢 Node.js',
+    'NodeJS-Nest': '🟢 NestJS',
+    TypeScriptLib: '🔵 TS',
+    Python: '🟠 Python',
+    'Python-FastAPI': '🟠 FastAPI'
+  };
 
   useEffect(() => {
     void fetchApplications();
@@ -68,6 +76,7 @@ export const ApplicationsPage = () => {
             <Link to={`/applications/${app.id}`} className="apps__card-link">
               <div className="apps__card-header">
                 <h3>{app.name}</h3>
+                <span className="stack-pill">{stackIcons[app.stack] || app.stack}</span>
               </div>
               <div className="apps__card-meta">
                 <span>Modules: {app.moduleCount || 0}</span>

@@ -2,6 +2,7 @@ import { useParams, Link, Outlet, useNavigate } from 'react-router-dom';
 import { useApplicationsStore } from '../state/applicationsStore';
 import { useModulesStore } from '../state/modulesStore';
 import { useEffect, useState } from 'react';
+import apiClient from '../services/apiClient';
 import './ApplicationDetailsPage.css';
 
 export const ApplicationDetailsPage = () => {
@@ -20,6 +21,14 @@ export const ApplicationDetailsPage = () => {
   const [changelogModule, setChangelogModule] = useState<any>(null);
   const [showEditApp, setShowEditApp] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', stack: '', description: '' });
+  const stackIcons: Record<string, string> = {
+    DotNet: '🟣 .NET',
+    NodeJS: '🟢 Node.js',
+    'NodeJS-Nest': '🟢 NestJS',
+    TypeScriptLib: '🔵 TS',
+    Python: '🟠 Python',
+    'Python-FastAPI': '🟠 FastAPI'
+  };
 
   useEffect(() => {
     if (id) {
@@ -88,6 +97,12 @@ export const ApplicationDetailsPage = () => {
 ## Install Command
 ${getInstallCommand()}
 
+## Required Environment Variables
+PRIMUS_CLIENT_ID=${currentApplication.primusClientId}
+AZURE_TENANT_ID=<TENANT_ID>
+AZURE_CLIENT_ID=<CLIENT_ID>
+AZURE_AUDIENCE=api://<CLIENT_ID>
+
 ## Configuration
 ${getConfigTemplate()}
 
@@ -95,6 +110,25 @@ ${getConfigTemplate()}
 ${getCodeSnippet()}
     `.trim();
     handleCopy(allDocs, 'all-docs');
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!id) return;
+    try {
+      const response = await apiClient.get(`/documentation/${id}/pdf`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${currentApplication.name}-PrimusDocs.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      setCopiedText('pdf');
+      setTimeout(() => setCopiedText(''), 2000);
+    } catch (error) {
+      console.error('Failed to download PDF', error);
+    }
   };
 
   const selectedModule = modules.find(m => m.id === selectedModuleId);
@@ -369,7 +403,7 @@ async def get_user(user=Depends(auth.require_auth)):
           </div>
           <div className="header-field">
             <label>Technology Stack:</label>
-            <span className="badge">{currentApplication.stack}</span>
+            <span className="badge">{stackIcons[currentApplication.stack] || currentApplication.stack}</span>
           </div>
           {currentApplication.description && (
             <div className="header-field">
@@ -394,12 +428,12 @@ async def get_user(user=Depends(auth.require_auth)):
               <label>Application Name</label>
               <div className="info-value">{currentApplication.name}</div>
             </div>
-            <div className="info-item">
-              <label>Technology Stack</label>
-              <div className="info-value">
-                <span className="badge">{currentApplication.stack}</span>
-              </div>
+          <div className="info-item">
+            <label>Technology Stack</label>
+            <div className="info-value">
+              <span className="badge">{stackIcons[currentApplication.stack] || currentApplication.stack}</span>
             </div>
+          </div>
             <div className="info-item">
               <label>Primus Client ID</label>
               <div className="info-value copy-container">
@@ -576,6 +610,17 @@ async def get_user(user=Depends(auth.require_auth)):
           </div>
 
           <div className="docs-section">
+            <h3>🌱 Required Environment Variables</h3>
+            <ul className="env-list">
+              <li><code>PRIMUS_CLIENT_ID</code> = {currentApplication.primusClientId}</li>
+              <li><code>AZURE_TENANT_ID</code> = &lt;YOUR_TENANT_ID&gt;</li>
+              <li><code>AZURE_CLIENT_ID</code> = &lt;YOUR_AZURE_CLIENT_ID&gt;</li>
+              <li><code>AZURE_AUDIENCE</code> = api://&lt;YOUR_AZURE_CLIENT_ID&gt;</li>
+            </ul>
+            <p className="muted">Tip: store these in your deployment secrets manager and reference them in your config templates above.</p>
+          </div>
+
+          <div className="docs-section">
             <h3>🔧 Step 3: Initialize in Your Code</h3>
             <p>Add the Primus Identity Validator to your application startup:</p>
             <div className="code-block-container">
@@ -647,10 +692,10 @@ public class MyController : ControllerBase
             <button 
               type="button" 
               className="btn-secondary"
-              onClick={() => window.print()}
-              title="Use browser print to save as PDF"
+              onClick={handleDownloadPdf}
+              title="Download PDF with integration steps"
             >
-              📄 Export PDF
+              {copiedText === 'pdf' ? '✓ PDF Downloaded' : '📄 Export PDF'}
             </button>
           </div>
         </div>
@@ -688,7 +733,7 @@ public class MyController : ControllerBase
                   <option value="">Choose a version...</option>
                   {selectedModule.moduleVersions?.map(version => (
                     <option key={version.id} value={version.id}>
-                      {version.versionNumber} {version.isBreakingChange ? '⚠️ Breaking' : ''}
+                      {version.version} {version.isBreakingChange ? '⚠️ Breaking' : ''}
                     </option>
                   ))}
                 </select>
@@ -728,9 +773,9 @@ public class MyController : ControllerBase
                 {modules
                   .find(m => m.id === changingModule.moduleId)
                   ?.moduleVersions?.map((version) => (
-                    <option key={version.id} value={version.versionNumber}>
-                      v{version.versionNumber} {version.isBreakingChange ? '⚠️ Breaking Change' : ''}
-                      {version.versionNumber === changingModule.version ? ' (Current)' : ''}
+                    <option key={version.id} value={version.version}>
+                      v{version.version} {version.isBreakingChange ? '⚠️ Breaking Change' : ''}
+                      {version.version === changingModule.version ? ' (Current)' : ''}
                     </option>
                   ))}
               </select>
@@ -834,8 +879,7 @@ public class MyController : ControllerBase
                 <select
                   id="editStack"
                   value={editForm.stack}
-                  onChange={(e) => setEditForm({ ...editForm, stack: e.target.value })}
-                  required
+                  disabled
                 >
                   <option value="" disabled hidden>Select stack</option>
                   <option value="NodeJS">Node.js (Express)</option>

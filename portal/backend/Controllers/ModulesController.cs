@@ -24,6 +24,7 @@ public class ModulesController : ControllerBase
     {
         var modules = await _context.Modules
             .Include(m => m.Versions)
+            .Include(m => m.ApplicationModules)
             .Select(m => new ModuleDto
             {
                 Id = m.Id,
@@ -31,7 +32,23 @@ public class ModulesController : ControllerBase
                 ModuleKey = m.ModuleKey,
                 Description = m.Description,
                 LatestVersion = m.Versions.OrderByDescending(v => v.ReleasedAt).FirstOrDefault()!.Version,
-                TotalVersions = m.Versions.Count
+                LatestReleasedAt = m.Versions.OrderByDescending(v => v.ReleasedAt).FirstOrDefault()?.ReleasedAt ?? DateTime.UtcNow,
+                ModuleVersions = m.Versions
+                    .OrderByDescending(v => v.ReleasedAt)
+                    .Select(v => new VersionDto
+                    {
+                        Id = v.Id,
+                        Version = v.Version,
+                        IsBreakingChange = v.IsBreakingChange,
+                        ReleaseNotes = v.ReleaseNotes,
+                        Changelog = v.Changelog,
+                        DemoCode = v.DemoCode,
+                        SupportedStacks = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.SupportedStacksJson) ?? Array.Empty<string>(),
+                        ReleasedAt = v.ReleasedAt
+                    }).ToList(),
+                TotalVersions = m.Versions.Count,
+                UsageCount = m.ApplicationModules.Count,
+                Status = "Active"
             })
             .ToListAsync();
 
@@ -71,10 +88,47 @@ public class ModulesController : ControllerBase
         });
     }
 
+    // GET: api/modules/{id}/versions
+    [HttpGet("{id}/versions")]
+    public async Task<ActionResult<IEnumerable<VersionDto>>> GetModuleVersions(int id)
+    {
+        var exists = await _context.Modules.AnyAsync(m => m.Id == id);
+        if (!exists)
+        {
+            return NotFound();
+        }
+
+        var versions = await _context.ModuleVersions
+            .Where(v => v.ModuleId == id)
+            .OrderByDescending(v => v.ReleasedAt)
+            .Select(v => new VersionDto
+            {
+                Id = v.Id,
+                Version = v.Version,
+                IsBreakingChange = v.IsBreakingChange,
+                ReleaseNotes = v.ReleaseNotes,
+                Changelog = v.Changelog,
+                DemoCode = v.DemoCode,
+                SupportedStacks = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.SupportedStacksJson) ?? Array.Empty<string>(),
+                ReleasedAt = v.ReleasedAt
+            })
+            .ToListAsync();
+
+        return Ok(versions);
+    }
+
     // POST: api/modules
     [HttpPost]
     public async Task<ActionResult<Module>> CreateModule([FromBody] CreateModuleRequest request)
     {
+        // Validate uniqueness for name and key to give a clearer error than DB constraint
+        var duplicate = await _context.Modules
+            .AnyAsync(m => m.Name == request.Name || m.ModuleKey == request.ModuleKey);
+        if (duplicate)
+        {
+            return BadRequest(new { message = "Module name and module key must be unique." });
+        }
+
         var module = new Module
         {
             Name = request.Name,
@@ -98,6 +152,14 @@ public class ModulesController : ControllerBase
             return NotFound();
         }
 
+        // Prevent duplicate version identifiers per module
+        var versionExists = await _context.ModuleVersions
+            .AnyAsync(v => v.ModuleId == moduleId && v.Version == request.Version);
+        if (versionExists)
+        {
+            return BadRequest(new { message = $"Version {request.Version} already exists for this module." });
+        }
+
         var version = new ModuleVersion
         {
             ModuleId = moduleId,
@@ -106,13 +168,32 @@ public class ModulesController : ControllerBase
             ReleaseNotes = request.ReleaseNotes,
             Changelog = request.Changelog,
             DemoCode = request.DemoCode,
-            SupportedStacksJson = System.Text.Json.JsonSerializer.Serialize(request.SupportedStacks)
+            SupportedStacksJson = System.Text.Json.JsonSerializer.Serialize(request.SupportedStacks),
+            ReleasedAt = request.ReleasedAt ?? DateTime.UtcNow
         };
 
         _context.ModuleVersions.Add(version);
         await _context.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetModule), new { id = moduleId }, version);
+    }
+
+    // PATCH: api/modules/{moduleId}/versions/{version}/publish
+    [HttpPatch("{moduleId}/versions/{version}/publish")]
+    public async Task<IActionResult> PublishVersion(int moduleId, string version)
+    {
+        var moduleVersion = await _context.ModuleVersions
+            .FirstOrDefaultAsync(mv => mv.ModuleId == moduleId && mv.Version == version);
+
+        if (moduleVersion == null)
+        {
+            return NotFound();
+        }
+
+        moduleVersion.ReleasedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = $"Version {version} published", releasedAt = moduleVersion.ReleasedAt });
     }
 
     // PUT: api/modules/5
@@ -123,6 +204,14 @@ public class ModulesController : ControllerBase
         if (module == null)
         {
             return NotFound();
+        }
+
+        // Validate uniqueness before applying updates
+        var duplicate = await _context.Modules
+            .AnyAsync(m => m.Id != id && (m.Name == request.Name || m.ModuleKey == request.ModuleKey));
+        if (duplicate)
+        {
+            return BadRequest(new { message = "Module name and module key must be unique." });
         }
 
         module.Name = request.Name;
@@ -158,7 +247,11 @@ public record ModuleDto
     public string ModuleKey { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
     public string LatestVersion { get; init; } = string.Empty;
+    public DateTime LatestReleasedAt { get; init; }
+    public List<VersionDto> ModuleVersions { get; init; } = new();
     public int TotalVersions { get; init; }
+    public int UsageCount { get; init; }
+    public string Status { get; init; } = "Active";
 }
 
 public record ModuleDetailDto
@@ -184,4 +277,4 @@ public record VersionDto
 
 public record CreateModuleRequest(string Name, string ModuleKey, string Description);
 public record UpdateModuleRequest(string Name, string ModuleKey, string Description);
-public record CreateVersionRequest(string Version, bool IsBreakingChange, string ReleaseNotes, string Changelog, string DemoCode, string[] SupportedStacks);
+public record CreateVersionRequest(string Version, bool IsBreakingChange, string ReleaseNotes, string Changelog, string DemoCode, string[] SupportedStacks, DateTime? ReleasedAt = null);

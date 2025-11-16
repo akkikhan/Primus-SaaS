@@ -67,6 +67,8 @@ public class ApplicationsController : ControllerBase
                         : "UpdateAvailable",
                     IsBreakingChange = am.ModuleVersion.IsBreakingChange,
                     ReleaseNotes = am.ModuleVersion.ReleaseNotes,
+                    Changelog = am.ModuleVersion.Changelog,
+                    ReleasedAt = am.ModuleVersion.ReleasedAt,
                     ConfigJson = am.ConfigJson,
                     IntegratedAt = am.IntegratedAt
                 }).ToList()
@@ -87,8 +89,9 @@ public class ApplicationsController : ControllerBase
     {
         var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-        // Parse stack enum
-        if (!Enum.TryParse<AppStack>(request.Stack, out var stack))
+        // Parse stack enum (normalize frontend format)
+        var normalizedStack = NormalizeStackString(request.Stack);
+        if (!Enum.TryParse<AppStack>(normalizedStack, out var stack))
         {
             return BadRequest(new { message = "Invalid stack specified" });
         }
@@ -231,21 +234,17 @@ public class ApplicationsController : ControllerBase
             return NotFound();
         }
 
-        // Parse stack enum if provided
-        if (!string.IsNullOrEmpty(request.Stack) && !Enum.TryParse<AppStack>(request.Stack, out var stack))
-        {
-            return BadRequest(new { message = "Invalid stack specified" });
-        }
-
         // Update fields
         if (!string.IsNullOrEmpty(request.Name))
         {
             application.Name = request.Name;
         }
 
-        if (!string.IsNullOrEmpty(request.Stack))
+        // Stack is immutable after creation to avoid inconsistent integrations
+        if (!string.IsNullOrEmpty(request.Stack) &&
+            !string.Equals(application.Stack.ToString(), NormalizeStackString(request.Stack), StringComparison.OrdinalIgnoreCase))
         {
-            application.Stack = Enum.Parse<AppStack>(request.Stack);
+            return BadRequest(new { message = "Technology stack cannot be changed after the application is created." });
         }
 
         if (request.Description != null)
@@ -296,6 +295,19 @@ public class ApplicationsController : ControllerBase
         var number = random.Next(1, 999999);
         return $"PSP-CLI-{number:D6}";
     }
+
+    private string NormalizeStackString(string stack)
+    {
+        // Normalize frontend stack strings to match enum names
+        var trimmed = stack.Replace(" ", "").Replace("-", "");
+        return trimmed switch
+        {
+            "NodeJSNest" => "NodeJS",
+            "TypeScriptLib" => "NodeJS", // treat TS client as NodeJS docs for now
+            "PythonFastAPI" => "Python",
+            _ => trimmed
+        };
+    }
 }
 
 public record ApplicationDto
@@ -332,6 +344,8 @@ public record IntegratedModuleDto
     public string VersionStatus { get; init; } = string.Empty; // "UpToDate" or "UpdateAvailable"
     public bool IsBreakingChange { get; init; }
     public string ReleaseNotes { get; init; } = string.Empty;
+    public string Changelog { get; init; } = string.Empty;
+    public DateTime ReleasedAt { get; init; }
     public string ConfigJson { get; init; } = string.Empty;
     public DateTime IntegratedAt { get; init; }
 }

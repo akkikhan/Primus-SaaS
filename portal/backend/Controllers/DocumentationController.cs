@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PrimusSaaS.Portal.Api.Data;
 using System.Text;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 
 namespace PrimusSaaS.Portal.Api.Controllers;
 
@@ -52,6 +55,23 @@ public class DocumentationController : ControllerBase
         };
 
         return Ok(documentation);
+    }
+
+    // GET: api/documentation/{applicationId}/pdf
+    [HttpGet("{applicationId}/pdf")]
+    public async Task<IActionResult> DownloadDocumentationPdf(int applicationId)
+    {
+        var docResult = await GenerateDocumentation(applicationId);
+        if (docResult.Result is NotFoundResult)
+        {
+            return NotFound();
+        }
+
+        var documentation = (docResult.Value as DocumentationDto)!;
+
+        var pdfBytes = BuildPdf(documentation);
+        var fileName = $"{documentation.ApplicationName}-PrimusDocs.pdf";
+        return File(pdfBytes, "application/pdf", fileName);
     }
 
     private List<string> GenerateIntegrationSteps(string stack, string moduleName, string configJson)
@@ -170,6 +190,87 @@ app.Run();";
         sb.AppendLine($"app.use({moduleName.ToLower()}Middleware);");
 
         return sb.ToString();
+    }
+
+    private byte[] BuildPdf(DocumentationDto documentation)
+    {
+        // Lightweight PDF rendering using QuestPDF with a concise layout
+        QuestPDF.Settings.License = LicenseType.Community;
+
+        var envVars = new[]
+        {
+            "PRIMUS_CLIENT_ID",
+            "AZURE_TENANT_ID",
+            "AZURE_CLIENT_ID",
+            "AZURE_AUDIENCE"
+        };
+
+        return Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Margin(30);
+                page.Header().Row(row =>
+                {
+                    row.RelativeItem().Stack(stack =>
+                    {
+                        stack.Element().Text(documentation.ApplicationName).FontSize(20).SemiBold();
+                        stack.Element().Text($"Stack: {documentation.Stack}").FontSize(11).Light();
+                        stack.Element().Text($"Primus Client ID: {documentation.PrimusClientId}").FontSize(10);
+                        stack.Element().Text($"Generated: {documentation.GeneratedAt:yyyy-MM-dd HH:mm} UTC").FontSize(9).FontColor(Colors.Grey.Medium);
+                    });
+                });
+
+                page.Content().Stack(stack =>
+                {
+                    stack.Spacing(12);
+
+                    stack.Element().Text("Required Environment Variables").FontSize(13).SemiBold();
+                    stack.Element().List(list =>
+                    {
+                        foreach (var env in envVars)
+                        {
+                            list.Item().Text(env).FontSize(11);
+                        }
+                    });
+
+                    foreach (var module in documentation.Modules)
+                    {
+                        stack.Element().Section(section =>
+                        {
+                            section.Header().Text($"{module.ModuleName} (v{module.Version})").FontSize(15).SemiBold();
+                            section.Content().Stack(moduleStack =>
+                            {
+                                moduleStack.Spacing(6);
+                                moduleStack.Element().Text(module.IsBreakingChange ? "⚠️ Breaking Change" : "Stable").FontColor(module.IsBreakingChange ? Colors.Red.Medium : Colors.Green.Darken2);
+                                moduleStack.Element().Text($"Release Notes: {module.ReleaseNotes}").FontSize(11);
+
+                                moduleStack.Element().Text("Integration Steps").FontSize(12).SemiBold();
+                                moduleStack.Element().List(list =>
+                                {
+                                    foreach (var step in module.IntegrationSteps)
+                                    {
+                                        list.Item().Text(step).FontSize(11);
+                                    }
+                                });
+
+                                moduleStack.Element().Text("Code Snippets").FontSize(12).SemiBold();
+                                foreach (var snippet in module.CodeSnippets)
+                                {
+                                    moduleStack.Element().Text(snippet.Key).FontSize(11).SemiBold();
+                                    moduleStack.Element().Border(1).Padding(6).Background(Colors.Grey.Lighten4).Text(snippet.Value).FontSize(9).UseMonospace();
+                                }
+                            });
+                        });
+                    }
+                });
+
+                page.Footer().AlignCenter().Text(text =>
+                {
+                    text.Span("Primus SaaS • Integration Guide").FontSize(9);
+                });
+            });
+        }).GeneratePdf();
     }
 }
 

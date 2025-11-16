@@ -20,5 +20,7 @@ public enum AppStack
 {
     DotNet = 1,
     NodeJS = 2,
-    Python = 3
+    Python = 3,
+    NodeJSNest = 4,
+    TypeScriptLib = 5
 }

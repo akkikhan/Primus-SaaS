@@ -40,3 +40,116 @@
   max-width: 600px;
   margin: 0 auto;
 }
+
+.upgrade-summary .pill {
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.upgrade-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1rem;
+}
+
+.upgrade-card {
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-panel);
+  box-shadow: var(--shadow-sm);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.upgrade-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.upgrade-card__header .muted {
+  color: var(--color-text-secondary);
+  margin: 0.35rem 0 0;
+}
+
+.upgrade-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.upgrade-table__head,
+.upgrade-table__row {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 0.8fr 1fr 1.4fr;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.upgrade-table__head {
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.upgrade-table__row {
+  padding: 0.35rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-elevated);
+}
+
+.upgrade-actions {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.upgrade-actions button {
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background: var(--glass);
+  cursor: pointer;
+}
+
+.upgrade-actions .btn-primary {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #0b1220;
+  border: none;
+}
+
+.status-warning {
+  color: #c2410c;
+  font-weight: 700;
+}
+
+.status-ok {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.breaking-flag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.changelog-section {
+  margin-top: 1rem;
+}
+
+.changelog-text {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
