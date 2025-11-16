@@ -120,10 +120,21 @@ if [ ! -f "$version_file" ] || [ "$1" = "update" ]; then
 fi
 
 # Set the version to use
-if [ -n "$CODACY_CLI_V2_VERSION" ]; then
-    version="$CODACY_CLI_V2_VERSION"
+# Respect a forced version only if it looks like a release tag; Codacy VS Code can wrongly set it to the binary name.
+forced_version="$CODACY_CLI_V2_VERSION"
+if [ -n "$forced_version" ] && [ "$forced_version" != "$bin_name" ]; then
+    version="$forced_version"
+elif version=$(get_version_from_yaml); then
+    :
 else
-    version=$(get_version_from_yaml)
+    version=""
+fi
+
+# If no valid version yet, fall back to the latest release.
+if [ -z "$version" ]; then
+    version=$(get_latest_version)
+    mkdir -p "$CODACY_CLI_V2_TMP_FOLDER"
+    echo "version: \"$version\"" > "$version_file"
 fi
 
 
