@@ -7,7 +7,7 @@ import './ApplicationDetailsPage.css';
 export const ApplicationDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentApplication, fetchApplication, addModule, removeModule, changeModuleVersion, isLoading } = useApplicationsStore();
+  const { currentApplication, fetchApplication, addModule, removeModule, changeModuleVersion, updateApplication, isLoading } = useApplicationsStore();
   const { modules, fetchModules } = useModulesStore();
   const [showAddModule, setShowAddModule] = useState(false);
   const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);
@@ -18,6 +18,8 @@ export const ApplicationDetailsPage = () => {
   const [newVersion, setNewVersion] = useState<string>('');
   const [showChangelog, setShowChangelog] = useState(false);
   const [changelogModule, setChangelogModule] = useState<any>(null);
+  const [showEditApp, setShowEditApp] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', stack: '', description: '' });
 
   useEffect(() => {
     if (id) {
@@ -97,6 +99,27 @@ ${getCodeSnippet()}
 
   const selectedModule = modules.find(m => m.id === selectedModuleId);
   const changingModule = currentApplication?.integratedModules?.find(m => m.moduleId === changingModuleId);
+
+  const openEditModal = () => {
+    setEditForm({
+      name: currentApplication.name,
+      stack: currentApplication.stack,
+      description: currentApplication.description ?? '',
+    });
+    setShowEditApp(true);
+  };
+
+  const handleEditSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id) return;
+    await updateApplication(Number(id), {
+      name: editForm.name,
+      stack: editForm.stack,
+      description: editForm.description,
+    });
+    await fetchApplication(Number(id));
+    setShowEditApp(false);
+  };
 
   // Generate integration documentation based on stack
   const getInstallCommand = () => {
@@ -267,6 +290,11 @@ def get_user():
               <span>{currentApplication.description}</span>
             </div>
           )}
+          <div className="header-actions">
+            <button type="button" onClick={openEditModal}>
+              Edit Application
+            </button>
+          </div>
         </div>
       </header>
 
@@ -322,7 +350,12 @@ def get_user():
 
         {/* Section 2: Integrated Modules */}
         <div className="app-detail__panel">
-          <h2>Integrated Modules & Versions</h2>
+          <div className="panel-heading">
+            <h2>Integrated Modules & Versions</h2>
+            <button type="button" onClick={() => setShowAddModule(true)}>
+              + Assign Module
+            </button>
+          </div>
           {!currentApplication.integratedModules || currentApplication.integratedModules.length === 0 ? (
             <div className="empty-state">
               <p>No modules integrated yet.</p>
@@ -670,6 +703,56 @@ public class MyController : ControllerBase
             <div className="modal-actions">
               <button type="button" onClick={() => setShowChangelog(false)}>Close</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Application Modal */}
+      {showEditApp && (
+        <div className="modal-overlay" onClick={() => setShowEditApp(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Edit Application</h2>
+            <form onSubmit={handleEditSave}>
+              <div className="form-group">
+                <label htmlFor="editName">Application Name</label>
+                <input
+                  id="editName"
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="editStack">Technology Stack</label>
+                <select
+                  id="editStack"
+                  value={editForm.stack}
+                  onChange={(e) => setEditForm({ ...editForm, stack: e.target.value })}
+                  required
+                >
+                  <option value="" disabled hidden>Select stack</option>
+                  <option value="NodeJS">Node.js (Express)</option>
+                  <option value="NodeJS-Nest">Node.js (NestJS)</option>
+                  <option value="DotNet">.NET 8 Web API</option>
+                  <option value="TypeScriptLib">TypeScript Library</option>
+                  <option value="Python">Python FastAPI (preview)</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="editDescription">Description (Optional)</label>
+                <textarea
+                  id="editDescription"
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  rows={3}
+                />
+              </div>
+              <div className="modal-actions">
+                <button type="button" onClick={() => setShowEditApp(false)}>Cancel</button>
+                <button type="submit">Save</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

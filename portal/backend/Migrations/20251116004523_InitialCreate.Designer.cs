@@ -2,7 +2,6 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrimusSaaS.Portal.Api.Data;
@@ -12,48 +11,45 @@ using PrimusSaaS.Portal.Api.Data;
 namespace PrimusSaaS.Portal.Api.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    [Migration("20251115002600_InitialCreate")]
+    [Migration("20251116004523_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.20")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
-
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            modelBuilder.HasAnnotation("ProductVersion", "7.0.20");
 
             modelBuilder.Entity("PrimusSaaS.Portal.Api.Models.Application", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("OwnerUserId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("PrimusClientId")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Stack")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -69,25 +65,23 @@ namespace PrimusSaaS.Portal.Api.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("ApplicationId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("ConfigJson")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("IntegratedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("ModuleId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("ModuleVersionId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -105,21 +99,27 @@ namespace PrimusSaaS.Portal.Api.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModuleKey")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ModuleKey")
+                        .IsUnique();
 
                     b.HasIndex("Name")
                         .IsUnique();
@@ -131,6 +131,7 @@ namespace PrimusSaaS.Portal.Api.Migrations
                         {
                             Id = 1,
                             Description = "Authentication module supporting Local JWT and Azure AD OIDC validation",
+                            ModuleKey = "identity-validator",
                             Name = "IdentityValidator"
                         });
                 });
@@ -139,31 +140,29 @@ namespace PrimusSaaS.Portal.Api.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsBreakingChange")
-                        .HasColumnType("bit");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("ModuleId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("ReleaseNotes")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("ReleasedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("SupportedStacksJson")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Version")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -179,7 +178,7 @@ namespace PrimusSaaS.Portal.Api.Migrations
                             IsBreakingChange = false,
                             ModuleId = 1,
                             ReleaseNotes = "Initial release of IdentityValidator module",
-                            ReleasedAt = new DateTime(2025, 11, 15, 0, 26, 0, 290, DateTimeKind.Utc).AddTicks(8036),
+                            ReleasedAt = new DateTime(2025, 11, 16, 0, 45, 23, 125, DateTimeKind.Utc).AddTicks(7399),
                             SupportedStacksJson = "[\"DotNet\",\"NodeJS\"]",
                             Version = "1.0.0"
                         });
@@ -189,27 +188,25 @@ namespace PrimusSaaS.Portal.Api.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Role")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -222,11 +219,11 @@ namespace PrimusSaaS.Portal.Api.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 11, 15, 0, 26, 0, 290, DateTimeKind.Utc).AddTicks(7519),
+                            CreatedAt = new DateTime(2025, 11, 16, 0, 45, 23, 125, DateTimeKind.Utc).AddTicks(7061),
                             Email = "admin@primussaas.com",
                             PasswordHash = "$2a$11$YourHashedPasswordHere",
                             Role = 1,
-                            UpdatedAt = new DateTime(2025, 11, 15, 0, 26, 0, 290, DateTimeKind.Utc).AddTicks(7520)
+                            UpdatedAt = new DateTime(2025, 11, 16, 0, 45, 23, 125, DateTimeKind.Utc).AddTicks(7061)
                         });
                 });
 

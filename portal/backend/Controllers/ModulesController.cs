@@ -28,6 +28,7 @@ public class ModulesController : ControllerBase
             {
                 Id = m.Id,
                 Name = m.Name,
+                ModuleKey = m.ModuleKey,
                 Description = m.Description,
                 LatestVersion = m.Versions.OrderByDescending(v => v.ReleasedAt).FirstOrDefault()!.Version,
                 TotalVersions = m.Versions.Count
@@ -54,6 +55,7 @@ public class ModulesController : ControllerBase
         {
             Id = module.Id,
             Name = module.Name,
+            ModuleKey = module.ModuleKey,
             Description = module.Description,
             Versions = module.Versions.Select(v => new VersionDto
             {
@@ -74,6 +76,7 @@ public class ModulesController : ControllerBase
         var module = new Module
         {
             Name = request.Name,
+            ModuleKey = request.ModuleKey,
             Description = request.Description
         };
 
@@ -119,6 +122,7 @@ public class ModulesController : ControllerBase
         }
 
         module.Name = request.Name;
+        module.ModuleKey = request.ModuleKey;
         module.Description = request.Description;
 
         await _context.SaveChangesAsync();
@@ -147,6 +151,7 @@ public record ModuleDto
 {
     public int Id { get; init; }
     public string Name { get; init; } = string.Empty;
+    public string ModuleKey { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
     public string LatestVersion { get; init; } = string.Empty;
     public int TotalVersions { get; init; }
@@ -156,6 +161,7 @@ public record ModuleDetailDto
 {
     public int Id { get; init; }
     public string Name { get; init; } = string.Empty;
+    public string ModuleKey { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
     public List<VersionDto> Versions { get; init; } = new();
 }
@@ -170,6 +176,6 @@ public record VersionDto
     public DateTime ReleasedAt { get; init; }
 }
 
-public record CreateModuleRequest(string Name, string Description);
-public record UpdateModuleRequest(string Name, string Description);
+public record CreateModuleRequest(string Name, string ModuleKey, string Description);
+public record UpdateModuleRequest(string Name, string ModuleKey, string Description);
 public record CreateVersionRequest(string Version, bool IsBreakingChange, string ReleaseNotes, string[] SupportedStacks);

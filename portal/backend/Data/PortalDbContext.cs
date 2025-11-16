@@ -33,7 +33,9 @@ public class PortalDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Name).IsUnique();
+            entity.HasIndex(e => e.ModuleKey).IsUnique();
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.ModuleKey).IsRequired().HasMaxLength(120);
             entity.Property(e => e.Description).IsRequired().HasMaxLength(500);
         });
 
@@ -111,6 +113,7 @@ public class PortalDbContext : DbContext
         {
             Id = 1,
             Name = "IdentityValidator",
+            ModuleKey = "identity-validator",
             Description = "Authentication module supporting Local JWT and Azure AD OIDC validation"
         });
 

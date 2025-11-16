@@ -218,6 +218,61 @@ public class ApplicationsController : ControllerBase
         return Ok(new { message = $"Module version updated to {request.Version}" });
     }
 
+    // PUT: api/applications/5
+    [HttpPut("{id}")]
+    public async Task<ActionResult<ApplicationDto>> UpdateApplication(int id, [FromBody] UpdateApplicationRequest request)
+    {
+        var application = await _context.Applications
+            .Include(a => a.Owner)
+            .FirstOrDefaultAsync(a => a.Id == id);
+
+        if (application == null)
+        {
+            return NotFound();
+        }
+
+        // Parse stack enum if provided
+        if (!string.IsNullOrEmpty(request.Stack) && !Enum.TryParse<AppStack>(request.Stack, out var stack))
+        {
+            return BadRequest(new { message = "Invalid stack specified" });
+        }
+
+        // Update fields
+        if (!string.IsNullOrEmpty(request.Name))
+        {
+            application.Name = request.Name;
+        }
+
+        if (!string.IsNullOrEmpty(request.Stack))
+        {
+            application.Stack = Enum.Parse<AppStack>(request.Stack);
+        }
+
+        if (request.Description != null)
+        {
+            application.Description = request.Description;
+        }
+
+        application.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        // Return updated DTO
+        var dto = new ApplicationDto
+        {
+            Id = application.Id,
+            Name = application.Name,
+            Stack = application.Stack.ToString(),
+            PrimusClientId = application.PrimusClientId,
+            Description = application.Description,
+            OwnerEmail = application.Owner.Email,
+            ModuleCount = await _context.ApplicationModules.CountAsync(am => am.ApplicationId == id),
+            CreatedAt = application.CreatedAt
+        };
+
+        return Ok(dto);
+    }
+
     // DELETE: api/applications/5
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteApplication(int id)
@@ -282,5 +337,6 @@ public record IntegratedModuleDto
 }
 
 public record CreateApplicationRequest(string Name, string Stack, string? Description = null);
+public record UpdateApplicationRequest(string? Name = null, string? Stack = null, string? Description = null);
 public record IntegrateModuleRequest(int ModuleId, int ModuleVersionId, string ConfigJson);
 public record ChangeVersionRequest(string Version);

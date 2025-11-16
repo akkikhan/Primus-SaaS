@@ -7,7 +7,7 @@ export const ModulesPage = () => {
   const { modules, fetchModules, createModule, deleteModule, addVersion, isLoading } = useModulesStore();
   const [showModuleModal, setShowModuleModal] = useState(false);
   const [showVersionModal, setShowVersionModal] = useState<number | null>(null);
-  const [moduleForm, setModuleForm] = useState({ name: '', description: '' });
+  const [moduleForm, setModuleForm] = useState({ name: '', description: '', moduleKey: '' });
   const [versionForm, setVersionForm] = useState({ 
     versionNumber: '', 
     releaseNotes: '', 
@@ -23,7 +23,7 @@ export const ModulesPage = () => {
     try {
       await createModule(moduleForm);
       setShowModuleModal(false);
-      setModuleForm({ name: '', description: '' });
+      setModuleForm({ name: '', description: '', moduleKey: '' });
     } catch (error) {
       // Error handled by store
     }
@@ -111,6 +111,19 @@ export const ModulesPage = () => {
                   type="text"
                   value={moduleForm.name}
                   onChange={(e) => setModuleForm({ ...moduleForm, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="moduleKey">
+                  Module Key <span className="hint">(system readable)</span>
+                </label>
+                <input
+                  id="moduleKey"
+                  type="text"
+                  value={moduleForm.moduleKey}
+                  onChange={(e) => setModuleForm({ ...moduleForm, moduleKey: e.target.value })}
+                  placeholder="identity-validator"
                   required
                 />
               </div>

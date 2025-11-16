@@ -15,7 +15,7 @@ export const ApplicationsPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState<ApplicationFormData>({
     name: '',
-    stack: 'NodeJS',
+    stack: '',
     description: '',
   });
 
@@ -30,7 +30,7 @@ export const ApplicationsPage = () => {
       setShowModal(false);
       setFormData({
         name: '',
-        stack: 'NodeJS',
+        stack: '',
         description: '',
       });
     } catch (error) {
@@ -113,10 +113,12 @@ export const ApplicationsPage = () => {
                   onChange={(e) => setFormData({ ...formData, stack: e.target.value })}
                   required
                 >
+                  <option value="" disabled hidden>Select stack</option>
                   <option value="NodeJS">Node.js (Express)</option>
-                  <option value="DotNet">.NET</option>
                   <option value="NodeJS-Nest">Node.js (NestJS)</option>
-                  <option value="Python">Python</option>
+                  <option value="DotNet">.NET 8 Web API</option>
+                  <option value="TypeScriptLib">TypeScript Library</option>
+                  <option value="Python">Python FastAPI (preview)</option>
                 </select>
               </div>
               <div className="form-group">

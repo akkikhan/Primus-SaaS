@@ -64,11 +64,11 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Initialize database before running
+// Initialize database and apply migrations
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PortalDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 app.Run();

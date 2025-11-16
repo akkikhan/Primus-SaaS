@@ -15,10 +15,11 @@ namespace PrimusSaaS.Portal.Api.Migrations
                 name: "Modules",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    ModuleKey = table.Column<string>(type: "TEXT", maxLength: 120, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -29,13 +30,13 @@ namespace PrimusSaaS.Portal.Api.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Email = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Role = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Email = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
+                    PasswordHash = table.Column<string>(type: "TEXT", nullable: false),
+                    Role = table.Column<int>(type: "INTEGER", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -46,14 +47,14 @@ namespace PrimusSaaS.Portal.Api.Migrations
                 name: "ModuleVersions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ModuleId = table.Column<int>(type: "int", nullable: false),
-                    Version = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    IsBreakingChange = table.Column<bool>(type: "bit", nullable: false),
-                    ReleaseNotes = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    SupportedStacksJson = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ReleasedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    ModuleId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Version = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
+                    IsBreakingChange = table.Column<bool>(type: "INTEGER", nullable: false),
+                    ReleaseNotes = table.Column<string>(type: "TEXT", nullable: false),
+                    SupportedStacksJson = table.Column<string>(type: "TEXT", nullable: false),
+                    ReleasedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -70,14 +71,15 @@ namespace PrimusSaaS.Portal.Api.Migrations
                 name: "Applications",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    OwnerUserId = table.Column<int>(type: "int", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Stack = table.Column<int>(type: "int", nullable: false),
-                    PrimusClientId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    OwnerUserId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Stack = table.Column<int>(type: "INTEGER", nullable: false),
+                    PrimusClientId = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -94,13 +96,13 @@ namespace PrimusSaaS.Portal.Api.Migrations
                 name: "ApplicationModules",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ApplicationId = table.Column<int>(type: "int", nullable: false),
-                    ModuleId = table.Column<int>(type: "int", nullable: false),
-                    ModuleVersionId = table.Column<int>(type: "int", nullable: false),
-                    ConfigJson = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IntegratedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    ApplicationId = table.Column<int>(type: "INTEGER", nullable: false),
+                    ModuleId = table.Column<int>(type: "INTEGER", nullable: false),
+                    ModuleVersionId = table.Column<int>(type: "INTEGER", nullable: false),
+                    ConfigJson = table.Column<string>(type: "TEXT", nullable: false),
+                    IntegratedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -127,18 +129,18 @@ namespace PrimusSaaS.Portal.Api.Migrations
 
             migrationBuilder.InsertData(
                 table: "Modules",
-                columns: new[] { "Id", "Description", "Name" },
-                values: new object[] { 1, "Authentication module supporting Local JWT and Azure AD OIDC validation", "IdentityValidator" });
+                columns: new[] { "Id", "Description", "ModuleKey", "Name" },
+                values: new object[] { 1, "Authentication module supporting Local JWT and Azure AD OIDC validation", "identity-validator", "IdentityValidator" });
 
             migrationBuilder.InsertData(
                 table: "Users",
                 columns: new[] { "Id", "CreatedAt", "Email", "PasswordHash", "Role", "UpdatedAt" },
-                values: new object[] { 1, new DateTime(2025, 11, 15, 0, 26, 0, 290, DateTimeKind.Utc).AddTicks(7519), "admin@primussaas.com", "$2a$11$YourHashedPasswordHere", 1, new DateTime(2025, 11, 15, 0, 26, 0, 290, DateTimeKind.Utc).AddTicks(7520) });
+                values: new object[] { 1, new DateTime(2025, 11, 16, 0, 45, 23, 125, DateTimeKind.Utc).AddTicks(7061), "admin@primussaas.com", "$2a$11$YourHashedPasswordHere", 1, new DateTime(2025, 11, 16, 0, 45, 23, 125, DateTimeKind.Utc).AddTicks(7061) });
 
             migrationBuilder.InsertData(
                 table: "ModuleVersions",
                 columns: new[] { "Id", "IsBreakingChange", "ModuleId", "ReleaseNotes", "ReleasedAt", "SupportedStacksJson", "Version" },
-                values: new object[] { 1, false, 1, "Initial release of IdentityValidator module", new DateTime(2025, 11, 15, 0, 26, 0, 290, DateTimeKind.Utc).AddTicks(8036), "[\"DotNet\",\"NodeJS\"]", "1.0.0" });
+                values: new object[] { 1, false, 1, "Initial release of IdentityValidator module", new DateTime(2025, 11, 16, 0, 45, 23, 125, DateTimeKind.Utc).AddTicks(7399), "[\"DotNet\",\"NodeJS\"]", "1.0.0" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_ApplicationModules_ApplicationId_ModuleId",
@@ -165,6 +167,12 @@ namespace PrimusSaaS.Portal.Api.Migrations
                 name: "IX_Applications_PrimusClientId",
                 table: "Applications",
                 column: "PrimusClientId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Modules_ModuleKey",
+                table: "Modules",
+                column: "ModuleKey",
                 unique: true);
 
             migrationBuilder.CreateIndex(

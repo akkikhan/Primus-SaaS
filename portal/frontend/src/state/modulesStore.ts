@@ -15,6 +15,7 @@ export interface Module {
   id: number;
   name: string;
   description: string;
+  moduleKey?: string;
   moduleVersions: ModuleVersion[];
 }
 
