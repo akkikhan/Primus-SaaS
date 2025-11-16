@@ -51,9 +51,7 @@ public class AuthController : ControllerBase
 
     private bool VerifyPassword(string password, string passwordHash)
     {
-        // TODO: Implement BCrypt verification
-        // For now, simple comparison (INSECURE - FOR DEVELOPMENT ONLY)
-        return password == "Admin123!";
+        return BCrypt.Net.BCrypt.Verify(password, passwordHash);
     }
 
     private string GenerateJwtToken(int userId, string email, string role)

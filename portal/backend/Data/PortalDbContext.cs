@@ -102,7 +102,7 @@ public class PortalDbContext : DbContext
         {
             Id = 1,
             Email = "admin@primussaas.com",
-            PasswordHash = "$2a$11$YourHashedPasswordHere", // TODO: Replace with actual bcrypt hash
+            PasswordHash = "$2a$11$1cpBqvDSeWEpe8eDpouWDude7DsvSAJ6wtI9Ja4guFVMFPvzZmAuO", // BCrypt hash of Admin123!
             Role = UserRole.Admin,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow

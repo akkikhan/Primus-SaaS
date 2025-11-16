@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrimusSaaS.Portal.Api.Data;
 
@@ -10,9 +11,11 @@ using PrimusSaaS.Portal.Api.Data;
 namespace PrimusSaaS.Portal.Api.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251116010405_UpdateAdminPasswordHash")]
+    partial class UpdateAdminPasswordHash
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.20");
@@ -175,7 +178,7 @@ namespace PrimusSaaS.Portal.Api.Migrations
                             IsBreakingChange = false,
                             ModuleId = 1,
                             ReleaseNotes = "Initial release of IdentityValidator module",
-                            ReleasedAt = new DateTime(2025, 11, 16, 1, 9, 47, 455, DateTimeKind.Utc).AddTicks(2423),
+                            ReleasedAt = new DateTime(2025, 11, 16, 1, 4, 5, 303, DateTimeKind.Utc).AddTicks(2026),
                             SupportedStacksJson = "[\"DotNet\",\"NodeJS\"]",
                             Version = "1.0.0"
                         });
@@ -216,11 +219,11 @@ namespace PrimusSaaS.Portal.Api.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 11, 16, 1, 9, 47, 455, DateTimeKind.Utc).AddTicks(2207),
+                            CreatedAt = new DateTime(2025, 11, 16, 1, 4, 5, 303, DateTimeKind.Utc).AddTicks(1573),
                             Email = "admin@primussaas.com",
-                            PasswordHash = "$2a$11$1cpBqvDSeWEpe8eDpouWDude7DsvSAJ6wtI9Ja4guFVMFPvzZmAuO",
+                            PasswordHash = "$2a$11$LQ3h8VzqFpRnPzHvP.qMzO5YJ5gKqW5K1YJ5gKqW5K1YJ5gKqW5K1u",
                             Role = 1,
-                            UpdatedAt = new DateTime(2025, 11, 16, 1, 9, 47, 455, DateTimeKind.Utc).AddTicks(2207)
+                            UpdatedAt = new DateTime(2025, 11, 16, 1, 4, 5, 303, DateTimeKind.Utc).AddTicks(1574)
                         });
                 });
 
