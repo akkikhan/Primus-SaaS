@@ -128,7 +128,13 @@ ${getCodeSnippet()}
         return 'dotnet add package PrimusSaaS.Identity.Validator';
       case 'NodeJS':
         return 'npm install @primus-saas/identity-validator';
+      case 'NodeJS-Nest':
+        return 'npm install @primus-saas/identity-validator';
+      case 'TypeScriptLib':
+        return 'npm install @primus-saas/identity-validator';
       case 'Python':
+        return 'pip install primus-identity-validator';
+      case 'Python-FastAPI':
         return 'pip install primus-identity-validator';
       default:
         return '';
@@ -155,6 +161,8 @@ ${getCodeSnippet()}
   }
 }`;
       case 'NodeJS':
+      case 'NodeJS-Nest':
+      case 'TypeScriptLib':
         return `{
   "Primus": {
     "ClientId": "${primusClientId}"
@@ -170,6 +178,7 @@ ${getCodeSnippet()}
   }
 }`;
       case 'Python':
+      case 'Python-FastAPI':
         return `{
   "Primus": {
     "ClientId": "${primusClientId}"
@@ -228,6 +237,64 @@ const auth = createIdentityValidator({
 app.get("/api/me", auth.requireAuth, (req, res) => {
   res.json({ user: req.user });
 });`;
+      case 'NodeJS-Nest':
+        return `// auth.module.ts
+import { Module } from "@nestjs/common";
+import { createIdentityValidator } from "@primus-saas/identity-validator";
+
+const auth = createIdentityValidator({
+  primusClientId: "${primusClientId}",
+  mode: "AzureAd",
+  azureAd: {
+    tenantId: process.env.AZURE_TENANT!,
+    clientId: process.env.AZURE_CLIENT!,
+    audience: process.env.AZURE_AUD!
+  }
+});
+
+@Module({
+  providers: [
+    {
+      provide: 'AUTH_GUARD',
+      useValue: auth.requireAuth
+    }
+  ],
+  exports: ['AUTH_GUARD']
+})
+export class AuthModule {}
+
+// user.controller.ts
+@Controller('api/me')
+export class UserController {
+  @Get()
+  @UseGuards('AUTH_GUARD')
+  getUser(@Request() req) {
+    return { user: req.user };
+  }
+}`;
+      case 'TypeScriptLib':
+        return `// validator.ts
+import { createIdentityValidator } from "@primus-saas/identity-validator";
+
+export const auth = createIdentityValidator({
+  primusClientId: "${primusClientId}",
+  mode: "AzureAd",
+  azureAd: {
+    tenantId: process.env.AZURE_TENANT!,
+    clientId: process.env.AZURE_CLIENT!,
+    audience: process.env.AZURE_AUD!
+  }
+});
+
+// Usage in your code
+const token = "Bearer eyJ...";
+const result = await auth.validateToken(token);
+
+if (result.isValid) {
+  console.log("User:", result.user);
+} else {
+  console.error("Validation failed:", result.error);
+}`;
       case 'Python':
         return `# app.py
 from primus_identity_validator import createIdentityValidator
@@ -246,6 +313,26 @@ auth = createIdentityValidator(
 @auth.require_auth
 def get_user():
     return {"user": request.user}`;
+      case 'Python-FastAPI':
+        return `# main.py
+from fastapi import FastAPI, Depends
+from primus_identity_validator import createIdentityValidator
+
+app = FastAPI()
+
+auth = createIdentityValidator(
+    primus_client_id="${primusClientId}",
+    mode="AzureAd",
+    azure_ad={
+        "tenant_id": os.getenv("AZURE_TENANT"),
+        "client_id": os.getenv("AZURE_CLIENT"),
+        "audience": os.getenv("AZURE_AUD")
+    }
+)
+
+@app.get("/api/me")
+async def get_user(user=Depends(auth.require_auth)):
+    return {"user": user}`;
       default:
         return '';
     }
