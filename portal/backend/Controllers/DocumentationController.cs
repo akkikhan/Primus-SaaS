@@ -212,53 +212,53 @@ app.Run();";
                 page.Margin(30);
                 page.Header().Row(row =>
                 {
-                    row.RelativeItem().Stack(stack =>
+                    row.RelativeItem().Column(column =>
                     {
-                        stack.Element().Text(documentation.ApplicationName).FontSize(20).SemiBold();
-                        stack.Element().Text($"Stack: {documentation.Stack}").FontSize(11).Light();
-                        stack.Element().Text($"Primus Client ID: {documentation.PrimusClientId}").FontSize(10);
-                        stack.Element().Text($"Generated: {documentation.GeneratedAt:yyyy-MM-dd HH:mm} UTC").FontSize(9).FontColor(Colors.Grey.Medium);
+                        column.Item().Text(documentation.ApplicationName).FontSize(20).SemiBold();
+                        column.Item().Text($"Stack: {documentation.Stack}").FontSize(11).Light();
+                        column.Item().Text($"Primus Client ID: {documentation.PrimusClientId}").FontSize(10);
+                        column.Item().Text($"Generated: {documentation.GeneratedAt:yyyy-MM-dd HH:mm} UTC").FontSize(9).FontColor(Colors.Grey.Medium);
                     });
                 });
 
-                page.Content().Stack(stack =>
+                page.Content().Column(column =>
                 {
-                    stack.Spacing(12);
+                    column.Spacing(12);
 
-                    stack.Element().Text("Required Environment Variables").FontSize(13).SemiBold();
-                    stack.Element().List(list =>
+                    column.Item().Text("Required Environment Variables").FontSize(13).SemiBold();
+                    column.Item().Column(envColumn =>
                     {
                         foreach (var env in envVars)
                         {
-                            list.Item().Text(env).FontSize(11);
+                            envColumn.Item().Text(env).FontSize(11);
                         }
                     });
 
                     foreach (var module in documentation.Modules)
                     {
-                        stack.Element().Section(section =>
+                        column.Item().Column(moduleColumn =>
                         {
-                            section.Header().Text($"{module.ModuleName} (v{module.Version})").FontSize(15).SemiBold();
-                            section.Content().Stack(moduleStack =>
+                            moduleColumn.Item().Text($"{module.ModuleName} (v{module.Version})").FontSize(15).SemiBold();
+                            moduleColumn.Item().Column(contentColumn =>
                             {
-                                moduleStack.Spacing(6);
-                                moduleStack.Element().Text(module.IsBreakingChange ? "⚠️ Breaking Change" : "Stable").FontColor(module.IsBreakingChange ? Colors.Red.Medium : Colors.Green.Darken2);
-                                moduleStack.Element().Text($"Release Notes: {module.ReleaseNotes}").FontSize(11);
+                                contentColumn.Spacing(6);
+                                contentColumn.Item().Text(module.IsBreakingChange ? "⚠️ Breaking Change" : "Stable").FontColor(module.IsBreakingChange ? Colors.Red.Medium : Colors.Green.Darken2);
+                                contentColumn.Item().Text($"Release Notes: {module.ReleaseNotes}").FontSize(11);
 
-                                moduleStack.Element().Text("Integration Steps").FontSize(12).SemiBold();
-                                moduleStack.Element().List(list =>
+                                contentColumn.Item().Text("Integration Steps").FontSize(12).SemiBold();
+                                contentColumn.Item().Column(stepsColumn =>
                                 {
                                     foreach (var step in module.IntegrationSteps)
                                     {
-                                        list.Item().Text(step).FontSize(11);
+                                        stepsColumn.Item().Text($"• {step}").FontSize(11);
                                     }
                                 });
 
-                                moduleStack.Element().Text("Code Snippets").FontSize(12).SemiBold();
+                                contentColumn.Item().Text("Code Snippets").FontSize(12).SemiBold();
                                 foreach (var snippet in module.CodeSnippets)
                                 {
-                                    moduleStack.Element().Text(snippet.Key).FontSize(11).SemiBold();
-                                    moduleStack.Element().Border(1).Padding(6).Background(Colors.Grey.Lighten4).Text(snippet.Value).FontSize(9).UseMonospace();
+                                    contentColumn.Item().Text(snippet.Key).FontSize(11).SemiBold();
+                                    contentColumn.Item().Border(1).Padding(6).Background(Colors.Grey.Lighten4).Text(snippet.Value).FontSize(9);
                                 }
                             });
                         });

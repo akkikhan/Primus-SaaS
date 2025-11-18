@@ -22,35 +22,36 @@ public class ModulesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ModuleDto>>> GetModules()
     {
-        var modules = await _context.Modules
+        var modulesData = await _context.Modules
             .Include(m => m.Versions)
             .Include(m => m.ApplicationModules)
-            .Select(m => new ModuleDto
-            {
-                Id = m.Id,
-                Name = m.Name,
-                ModuleKey = m.ModuleKey,
-                Description = m.Description,
-                LatestVersion = m.Versions.OrderByDescending(v => v.ReleasedAt).FirstOrDefault()!.Version,
-                LatestReleasedAt = m.Versions.OrderByDescending(v => v.ReleasedAt).FirstOrDefault()?.ReleasedAt ?? DateTime.UtcNow,
-                ModuleVersions = m.Versions
-                    .OrderByDescending(v => v.ReleasedAt)
-                    .Select(v => new VersionDto
-                    {
-                        Id = v.Id,
-                        Version = v.Version,
-                        IsBreakingChange = v.IsBreakingChange,
-                        ReleaseNotes = v.ReleaseNotes,
-                        Changelog = v.Changelog,
-                        DemoCode = v.DemoCode,
-                        SupportedStacks = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.SupportedStacksJson) ?? Array.Empty<string>(),
-                        ReleasedAt = v.ReleasedAt
-                    }).ToList(),
-                TotalVersions = m.Versions.Count,
-                UsageCount = m.ApplicationModules.Count,
-                Status = "Active"
-            })
             .ToListAsync();
+
+        var modules = modulesData.Select(m => new ModuleDto
+        {
+            Id = m.Id,
+            Name = m.Name,
+            ModuleKey = m.ModuleKey,
+            Description = m.Description,
+            LatestVersion = m.Versions.OrderByDescending(v => v.ReleasedAt).FirstOrDefault()?.Version ?? "1.0.0",
+            LatestReleasedAt = m.Versions.OrderByDescending(v => v.ReleasedAt).FirstOrDefault()?.ReleasedAt ?? DateTime.UtcNow,
+            ModuleVersions = m.Versions
+                .OrderByDescending(v => v.ReleasedAt)
+                .Select(v => new VersionDto
+                {
+                    Id = v.Id,
+                    Version = v.Version,
+                    IsBreakingChange = v.IsBreakingChange,
+                    ReleaseNotes = v.ReleaseNotes,
+                    Changelog = v.Changelog,
+                    DemoCode = v.DemoCode,
+                    SupportedStacks = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.SupportedStacksJson) ?? Array.Empty<string>(),
+                    ReleasedAt = v.ReleasedAt
+                }).ToList(),
+            TotalVersions = m.Versions.Count,
+            UsageCount = m.ApplicationModules.Count,
+            Status = "Active"
+        }).ToList();
 
         return Ok(modules);
     }
@@ -98,21 +99,22 @@ public class ModulesController : ControllerBase
             return NotFound();
         }
 
-        var versions = await _context.ModuleVersions
+        var versionsData = await _context.ModuleVersions
             .Where(v => v.ModuleId == id)
             .OrderByDescending(v => v.ReleasedAt)
-            .Select(v => new VersionDto
-            {
-                Id = v.Id,
-                Version = v.Version,
-                IsBreakingChange = v.IsBreakingChange,
-                ReleaseNotes = v.ReleaseNotes,
-                Changelog = v.Changelog,
-                DemoCode = v.DemoCode,
-                SupportedStacks = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.SupportedStacksJson) ?? Array.Empty<string>(),
-                ReleasedAt = v.ReleasedAt
-            })
             .ToListAsync();
+
+        var versions = versionsData.Select(v => new VersionDto
+        {
+            Id = v.Id,
+            Version = v.Version,
+            IsBreakingChange = v.IsBreakingChange,
+            ReleaseNotes = v.ReleaseNotes,
+            Changelog = v.Changelog,
+            DemoCode = v.DemoCode,
+            SupportedStacks = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.SupportedStacksJson) ?? Array.Empty<string>(),
+            ReleasedAt = v.ReleasedAt
+        }).ToList();
 
         return Ok(versions);
     }

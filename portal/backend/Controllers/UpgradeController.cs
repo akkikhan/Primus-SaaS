@@ -21,12 +21,15 @@ public class UpgradeController : ControllerBase
     [HttpGet("overview")]
     public async Task<ActionResult<IEnumerable<ApplicationUpgradeDto>>> GetUpgradeOverview()
     {
-        var apps = await _context.Applications
+        var appsData = await _context.Applications
             .Include(a => a.ApplicationModules)
                 .ThenInclude(am => am.Module)
+                    .ThenInclude(m => m.Versions)
             .Include(a => a.ApplicationModules)
                 .ThenInclude(am => am.ModuleVersion)
-            .Select(a => new ApplicationUpgradeDto
+            .ToListAsync();
+
+        var apps = appsData.Select(a => new ApplicationUpgradeDto
             {
                 ApplicationId = a.Id,
                 ApplicationName = a.Name,
@@ -51,8 +54,7 @@ public class UpgradeController : ControllerBase
                         IsBreakingChange = latestVersion?.IsBreakingChange ?? am.ModuleVersion.IsBreakingChange
                     };
                 }).ToList()
-            })
-            .ToListAsync();
+            }).ToList();
 
         return Ok(apps);
     }
