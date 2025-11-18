@@ -17,7 +17,7 @@ Official Node.js SDK for validating JWT tokens issued by Primus SaaS Portal. Thi
 ## Installation
 
 ```bash
-npm install @primus-saas/identity-validator
+npm install primus-identity-validator
 ```
 
 ## Quick Start
@@ -26,7 +26,7 @@ npm install @primus-saas/identity-validator
 
 ```typescript
 import express from 'express';
-import { primusIdentityMiddleware, requireRoles } from '@primus-saas/identity-validator';
+import { primusIdentityMiddleware, requireRoles } from 'primus-identity-validator';
 
 const app = express();
 
@@ -89,7 +89,7 @@ The SDK accepts the following configuration options:
 For production applications using Azure AD authentication:
 
 ```typescript
-import { primusIdentityMiddleware, ValidationMode } from '@primus-saas/identity-validator';
+import { primusIdentityMiddleware, ValidationMode } from 'primus-identity-validator';
 
 const primusAuth = primusIdentityMiddleware({
   portalUrl: 'https://portal.primus-saas.com',

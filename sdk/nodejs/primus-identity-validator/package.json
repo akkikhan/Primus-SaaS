@@ -1,5 +1,5 @@
 {
-  "name": "@primus-saas/identity-validator",
+  "name": "primus-identity-validator",
   "version": "1.0.0",
   "description": "Official Node.js SDK for validating JWT tokens issued by Primus SaaS Portal. Supports Express and NestJS.",
   "main": "dist/index.js",

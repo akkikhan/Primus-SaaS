@@ -68,10 +68,10 @@ JWT authentication packages for securing your APIs with Primus Portal integratio
 - Package Size: ~11 KB
 - [Documentation](sdk/dotnet/PrimusSaaS.Identity.Validator/README.md) | [Example](examples/dotnet-api/README.md)
 
-**Node.js SDK**: `@primus-saas/identity-validator` ![npm](https://img.shields.io/badge/v1.0.0-ready-green)
+**Node.js SDK**: `primus-identity-validator` ![npm](https://img.shields.io/badge/v1.0.0-published-blue)
 - Runtime: Node.js 16+
-- Package Size: ~10 KB
-- [Documentation](sdk/nodejs/primus-identity-validator/README.md) | [Example](examples/nodejs-express/README.md)
+- Package Size: 18.9 KB
+- [NPM Package](https://www.npmjs.com/package/primus-identity-validator) | [Documentation](sdk/nodejs/primus-identity-validator/README.md) | [Example](examples/nodejs-express/README.md)
 
 #### ✨ Features
 
@@ -89,7 +89,7 @@ JWT authentication packages for securing your APIs with Primus Portal integratio
 dotnet add package PrimusSaaS.Identity.Validator
 
 # Node.js
-npm install @primus-saas/identity-validator
+npm install primus-identity-validator
 ```
 
 For detailed integration guides, see the [SDK documentation](sdk/) and [example projects](examples/).
