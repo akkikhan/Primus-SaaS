@@ -310,9 +310,14 @@ Primus SaaS/
 - [x] .NET SDK: NuGet package build (10,999 + 13,837 bytes)
 - [x] .NET SDK: Complete README with API reference, testing guide, troubleshooting
 - [x] Node.js SDK: Middleware (Express), RBAC helpers, TypeScript declarations
-- [x] Node.js SDK: 25 comprehensive unit tests (Jest, ts-jest)
+- [x] Node.js SDK: Azure AD token validation with RS256 signature verification
+- [x] Node.js SDK: OpenID Connect configuration service with 24-hour caching
+- [x] Node.js SDK: JWKS service with JWK-to-PEM conversion and caching
+- [x] Node.js SDK: ValidationMode enum (Local/AzureAd/Hybrid) with fallback logic
+- [x] Node.js SDK: Multi-issuer support (v1.0, v2.0, sts.windows.net)
+- [x] Node.js SDK: 83 comprehensive unit tests (Jest, ts-jest) with 99.18% code coverage
 - [x] Node.js SDK: npm package build (~10KB with CommonJS + .d.ts files)
-- [x] Node.js SDK: Complete README with API reference, testing guide, examples
+- [x] Node.js SDK: Complete README with API reference, Azure AD integration guide, testing guide, examples
 - [x] .NET API Example: ASP.NET Core Web API with 5 endpoints demonstrating SDK usage
 - [x] Node.js Express Example: TypeScript Express app with 6 endpoints demonstrating SDK usage
 - [x] Documentation: CHANGELOG.md documenting v1.0.0 release
@@ -340,10 +345,12 @@ Primus SaaS/
 
 **Node.js SDK (@primus-saas/identity-validator)**:
 - Core Features: primusIdentityMiddleware for Express, requireRoles for RBAC, validateToken utility, TypeScript support with full declarations, comprehensive error handling
-- Configuration: Simple object with validation, default values, HTTPS validation for PortalUrl, environment variable support
-- Testing: 25 tests covering middleware, RBAC, validation, edge cases (100% passing in ~2.5s)
-- Package: npm package ~10KB, CommonJS module with .d.ts declarations, source maps included, README included
+- **Azure AD Support**: Full Azure AD token validation with RS256 signature verification, OpenID Connect discovery, JWKS caching, ValidationMode enum (Local/AzureAd/Hybrid), multi-issuer support (v1.0/v2.0/sts.windows.net), tenant validation
+- Configuration: Simple object with validation, default values, HTTPS validation for PortalUrl, environment variable support, Azure AD options (tenantId, jwksCacheTtl, mode)
+- Testing: 83 tests covering middleware, RBAC, validation, Azure AD scenarios, edge cases (100% passing in ~11.2s, 99.18% code coverage)
+- Package: npm package ~10KB, CommonJS module with .d.ts declarations, source maps included, comprehensive README with Azure AD documentation
 - Dependencies: jsonwebtoken ^9.0.2, axios ^1.7.9
+- Azure AD Components: AzureAdValidator, OpenIdConfigurationService, JwksService, JwksCache with TTL-based expiry
 
 **Example Projects**:
 - .NET API Example (examples/dotnet-api/): ASP.NET Core Web API .NET 7.0, 5 endpoints (3 minimal API + 2 controller), demonstrates protected routes, role-based access, user extraction, comprehensive README (260+ lines), builds successfully (5.73s)
@@ -358,10 +365,10 @@ Primus SaaS/
 
 **Build & Test Summary**:
 - .NET SDK Tests: 18/18 passing ✅ (1.6s execution time)
-- Node.js SDK Tests: 25/25 passing ✅ (2.5s execution time)
+- Node.js SDK Tests: 83/83 passing ✅ (11.2s execution time, 99.18% code coverage)
 - .NET Example Build: ✅ SUCCESS (5.73s, 3 non-critical warnings)
 - Node.js Example Build: ✅ SUCCESS (149 packages installed, TypeScript compilation successful)
-- Total Test Coverage: 43/43 tests passing (100%)
+- Total Test Coverage: 101/101 tests passing (100%) - 18 .NET + 83 Node.js
 
 **Next Step**: Publication to NuGet.org and npm (Milestone 3 Task 14)
 
@@ -408,28 +415,29 @@ https://localhost:7001/swagger
 
 ## 📊 Project Statistics
 
-- **Total Files Created**: 50+
-- **Lines of Code**: ~8,000+ (excluding docs)
-- **Documentation Lines**: ~3,600+ (PRD + Architecture + FAQ + READMEs + CHANGELOG)
+- **Total Files Created**: 55+
+- **Lines of Code**: ~10,000+ (excluding docs)
+- **Documentation Lines**: ~4,200+ (PRD + Architecture + FAQ + READMEs + CHANGELOG + Azure AD docs)
 - **Portal API Endpoints**: 13
 - **Example API Endpoints**: 11 (5 .NET + 6 Node.js)
 - **Database Tables**: 5
-- **Test Suites**: 43 tests (18 .NET + 25 Node.js, 100% passing)
-- **SDK Packages**: 2 (NuGet + npm)
+- **Test Suites**: 101 tests (18 .NET + 83 Node.js, 100% passing, 99.18% coverage for Node.js)
+- **SDK Packages**: 2 (NuGet + npm) with Azure AD support
 - **Example Projects**: 2 (ASP.NET Core + Express.js)
 
 ## ✨ Highlights
 
 1. **Complete Portal**: Fully functional backend API and React frontend with authentication, CRUD operations, and documentation generation.
-2. **Production-Ready SDKs**: Two complete SDK packages (.NET and Node.js) with comprehensive testing (43/43 tests passing).
-3. **Example Projects**: Working reference implementations for both .NET (ASP.NET Core) and Node.js (Express.js).
-4. **Comprehensive Testing**: 100% test pass rate across all components (18 .NET tests + 25 Node.js tests + 17 React tests).
-5. **Extensive Documentation**: 3,600+ lines of documentation including READMEs, API references, CHANGELOG, and troubleshooting guides.
-6. **Clean Architecture**: Proper separation of concerns with Controllers, Models, Data layer, middleware, and configuration.
-7. **Security**: JWT authentication with bearer token validation, role-based access control, options validation.
-8. **TypeScript Support**: Full type safety for Node.js SDK with TypeScript declarations and source maps.
-9. **Build Success**: All projects build successfully - production-ready code quality.
-10. **Developer Experience**: Quick start guides, example code, curl commands, and troubleshooting sections for easy integration.
+2. **Production-Ready SDKs**: Two complete SDK packages (.NET and Node.js) with comprehensive testing (101/101 tests passing).
+3. **Azure AD Support**: Full Azure AD integration in Node.js SDK with RS256 signature verification, JWKS caching, OpenID Connect discovery, and multi-issuer support.
+4. **Example Projects**: Working reference implementations for both .NET (ASP.NET Core) and Node.js (Express.js).
+5. **Comprehensive Testing**: 100% test pass rate across all components (18 .NET tests + 83 Node.js tests + 17 React tests = 118 total tests), 99.18% code coverage for Node.js SDK.
+6. **Extensive Documentation**: 4,200+ lines of documentation including READMEs, API references, CHANGELOG, Azure AD integration guides, and troubleshooting sections.
+7. **Clean Architecture**: Proper separation of concerns with Controllers, Models, Data layer, middleware, and configuration.
+8. **Security**: JWT authentication with bearer token validation, Azure AD RS256 signature verification, role-based access control, options validation, multi-mode validation (Local/AzureAd/Hybrid).
+9. **TypeScript Support**: Full type safety for Node.js SDK with TypeScript declarations and source maps.
+10. **Build Success**: All projects build successfully - production-ready code quality.
+11. **Developer Experience**: Quick start guides, example code, Azure AD integration examples, curl commands, and comprehensive troubleshooting sections for easy integration.
 
 ## 🎓 Key Questions Answered in Architecture
 
