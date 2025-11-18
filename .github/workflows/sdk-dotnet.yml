@@ -1,0 +1,75 @@
+name: SDK - .NET Package
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'sdk/dotnet/**'
+      - '.github/workflows/sdk-dotnet.yml'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'sdk/dotnet/**'
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '7.0.x'
+  SDK_PATH: './sdk/dotnet/PrimusSaaS.Identity.Validator'
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore ${{ env.SDK_PATH }}
+
+    - name: Build
+      run: dotnet build ${{ env.SDK_PATH }} --configuration Release --no-restore
+
+    - name: Run tests
+      run: dotnet test sdk/dotnet/PrimusSaaS.Identity.Validator.Tests --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --logger "trx;LogFileName=test-results.trx"
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: '**/test-results.trx'
+
+    - name: Pack NuGet package
+      run: dotnet pack ${{ env.SDK_PATH }} --configuration Release --no-build --output ./artifacts
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    - name: Upload NuGet package
+      uses: actions/upload-artifact@v4
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      with:
+        name: nuget-package
+        path: ./artifacts/*.nupkg
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build_and_test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Download NuGet package
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget-package
+        path: ./artifacts
+
+    - name: Publish to NuGet.org
+      run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'

@@ -20,6 +20,7 @@ portal/frontend/dist/
 
 # Secrets / tokens (do not commit real tokens)
 test-apps/azure-ad-token.txt
+.azure/credentials.txt
 
 # IDE/editor
 .vscode/

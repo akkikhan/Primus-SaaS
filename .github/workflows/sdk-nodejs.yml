@@ -1,0 +1,93 @@
+name: SDK - Node.js Package
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'sdk/nodejs/**'
+      - '.github/workflows/sdk-nodejs.yml'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'sdk/nodejs/**'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18.x'
+  SDK_PATH: './sdk/nodejs/primus-identity-validator'
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        registry-url: 'https://registry.npmjs.org'
+        cache: 'npm'
+        cache-dependency-path: ${{ env.SDK_PATH }}/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+      working-directory: ${{ env.SDK_PATH }}
+
+    - name: Run linter
+      run: npm run lint
+      working-directory: ${{ env.SDK_PATH }}
+
+    - name: Build
+      run: npm run build
+      working-directory: ${{ env.SDK_PATH }}
+
+    - name: Run tests with coverage
+      run: npm run test:coverage
+      working-directory: ${{ env.SDK_PATH }}
+
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports
+        path: ${{ env.SDK_PATH }}/coverage
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      with:
+        name: npm-package
+        path: ${{ env.SDK_PATH }}
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build_and_test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: Install dependencies
+      run: npm ci
+      working-directory: ${{ env.SDK_PATH }}
+
+    - name: Build
+      run: npm run build
+      working-directory: ${{ env.SDK_PATH }}
+
+    - name: Publish to NPM
+      run: npm publish --access public
+      working-directory: ${{ env.SDK_PATH }}
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
