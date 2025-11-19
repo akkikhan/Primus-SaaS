@@ -8,13 +8,17 @@ interface StatsCardProps {
   icon?: ReactNode;
 }
 
-export const StatsCard = ({ title, value, subtitle, icon }: StatsCardProps) => (
-  <div className="stats-card">
-    <div className="stats-card__icon">{icon}</div>
-    <div className="stats-card__body">
-      <span className="stats-card__title">{title}</span>
-      <span className="stats-card__value">{value}</span>
-      {subtitle && <span className="stats-card__subtitle">{subtitle}</span>}
+export const StatsCard = ({ title, value, subtitle, icon }: StatsCardProps) => {
+  const cardClass = icon ? 'stats-card stats-card--with-icon' : 'stats-card';
+
+  return (
+    <div className={cardClass}>
+      {icon && <div className="stats-card__icon">{icon}</div>}
+      <div className="stats-card__body">
+        <span className="stats-card__title">{title}</span>
+        <span className="stats-card__value">{value}</span>
+        {subtitle && <span className="stats-card__subtitle">{subtitle}</span>}
+      </div>
     </div>
-  </div>
-);
+  );
+};

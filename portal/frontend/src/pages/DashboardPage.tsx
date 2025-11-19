@@ -5,6 +5,13 @@ import { useApplicationsStore } from '../state/applicationsStore';
 import { SkeletonStats } from '../components/Skeleton';
 import './DashboardPage.css';
 
+type LatestRelease = {
+  moduleName: string;
+  version: string;
+  releasedAt?: string;
+  isBreakingChange: boolean;
+};
+
 export const DashboardPage = () => {
   const { modules, fetchModules, isLoading: modulesLoading } = useModulesStore();
   const { applications, fetchApplications, isLoading: appsLoading } = useApplicationsStore();
@@ -26,11 +33,99 @@ export const DashboardPage = () => {
     0
   );
 
+  const modulesPerApp =
+    totalApplications > 0 ? (totalIntegrations / totalApplications).toFixed(1) : '0.0';
+  const versionsPerModule = totalModules > 0 ? (totalVersions / totalModules).toFixed(1) : '0.0';
+  const coverage =
+    totalModules > 0 && totalApplications > 0
+      ? Math.min(
+          100,
+          Math.round((totalIntegrations / (totalModules * totalApplications)) * 100)
+        )
+      : null;
+  const adoptionCopy = `Tracking ${totalIntegrations} live integrations across ${totalApplications} applications.`;
+
+  const topModules = [...modules]
+    .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
+    .slice(0, 5);
+
+  const keyApplications = [...applications]
+    .sort((a, b) => (b.moduleCount || 0) - (a.moduleCount || 0))
+    .slice(0, 5);
+
+  const stackBreakdown = applications.reduce<Record<string, number>>((acc, app) => {
+    if (!app.stack) {
+      return acc;
+    }
+    acc[app.stack] = (acc[app.stack] || 0) + 1;
+    return acc;
+  }, {});
+  const stackEntries = Object.entries(stackBreakdown).sort((a, b) => b[1] - a[1]);
+
+  const latestReleases: LatestRelease[] = modules
+    .map((module) => {
+      const versions = module.moduleVersions || [];
+      if (!versions.length) {
+        return null;
+      }
+      const latest = [...versions]
+        .filter((version) => version.releasedAt)
+        .sort(
+          (a, b) =>
+            new Date(b.releasedAt || 0).getTime() - new Date(a.releasedAt || 0).getTime()
+        )[0];
+      if (!latest) {
+        return null;
+      }
+      return {
+        moduleName: module.name,
+        version: latest.version,
+        releasedAt: latest.releasedAt,
+        isBreakingChange: latest.isBreakingChange,
+      };
+    })
+    .filter((release): release is LatestRelease => Boolean(release))
+    .sort(
+      (a, b) =>
+        new Date(b.releasedAt || 0).getTime() - new Date(a.releasedAt || 0).getTime()
+    )
+    .slice(0, 4);
+
   const isLoading = modulesLoading || appsLoading;
 
   return (
     <div className="dashboard">
-      <h1>Platform Overview</h1>
+      <div className="dashboard__header">
+        <div className="dashboard__title">
+          <span className="dashboard__eyebrow">Executive summary</span>
+          <h1>Platform Overview</h1>
+          <p className="dashboard__lead">
+            Unified visibility into modules, client applications, and release cadence for the Primus
+            platform.
+          </p>
+        </div>
+        {!isLoading && (
+          <div className="dashboard__quick-stats" aria-label="Key platform ratios">
+            <div className="dashboard__quick-stat">
+              <span className="dashboard__quick-label">Modules per app</span>
+              <strong>{modulesPerApp}</strong>
+              <p>Average integrations across applications</p>
+            </div>
+            <div className="dashboard__quick-stat">
+              <span className="dashboard__quick-label">Versions per module</span>
+              <strong>{versionsPerModule}</strong>
+              <p>Release depth per maintained module</p>
+            </div>
+            {typeof coverage === 'number' && (
+              <div className="dashboard__quick-stat">
+                <span className="dashboard__quick-label">Coverage</span>
+                <strong>{coverage}%</strong>
+                <p>Of all module/app combinations</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       {isLoading ? (
         <div className="dashboard__grid">
           <SkeletonStats />
@@ -39,12 +134,240 @@ export const DashboardPage = () => {
           <SkeletonStats />
         </div>
       ) : (
-      <div className="dashboard__grid">
-        <StatsCard title="Active Modules" value={totalModules} subtitle="Published to catalog" />
-        <StatsCard title="Client Apps" value={totalApplications} subtitle="Registered" />
-        <StatsCard title="Module Versions" value={totalVersions} subtitle="Total available" />
-        <StatsCard title="Total Integrations" value={totalIntegrations} subtitle="Across apps" />
-      </div>
+        <>
+          <div className="dashboard__grid">
+            <StatsCard title="Active Modules" value={totalModules} subtitle="Published to catalog" />
+            <StatsCard title="Client Apps" value={totalApplications} subtitle="Registered" />
+            <StatsCard title="Module Versions" value={totalVersions} subtitle="Total available" />
+            <StatsCard
+              title="Total Integrations"
+              value={totalIntegrations}
+              subtitle="Across applications"
+            />
+          </div>
+          <div className="dashboard__panels">
+            <section className="dashboard__panel">
+              <div className="dashboard__panel-heading">
+                <div>
+                  <span className="dashboard__panel-label">Adoption</span>
+                  <h2>Integrations Snapshot</h2>
+                </div>
+                <span className="dashboard__panel-meta">Live</span>
+              </div>
+              <p className="dashboard__panel-description">
+                Supporting {totalApplications} client applications with {totalModules} published modules.
+              </p>
+              <ul className="dashboard__list">
+                <li>
+                  <div>
+                    <p className="dashboard__list-label">Active integrations</p>
+                    <p className="dashboard__list-description">
+                      Total module connections across applications.
+                    </p>
+                  </div>
+                  <span className="dashboard__list-value">{totalIntegrations}</span>
+                </li>
+                <li>
+                  <div>
+                    <p className="dashboard__list-label">Modules per application</p>
+                    <p className="dashboard__list-description">Average integration depth.</p>
+                  </div>
+                  <span className="dashboard__list-value">{modulesPerApp}</span>
+                </li>
+                <li>
+                  <div>
+                    <p className="dashboard__list-label">Versions per module</p>
+                    <p className="dashboard__list-description">Release cadence readiness.</p>
+                  </div>
+                  <span className="dashboard__list-value">{versionsPerModule}</span>
+                </li>
+              </ul>
+            </section>
+            <section className="dashboard__panel">
+              <div className="dashboard__panel-heading">
+                <div>
+                  <span className="dashboard__panel-label">Releases</span>
+                  <h2>Pipeline Readiness</h2>
+                </div>
+                <span className="dashboard__panel-meta">Nightly sync</span>
+              </div>
+              <p className="dashboard__panel-description">{adoptionCopy}</p>
+              {typeof coverage === 'number' ? (
+                <div
+                  className="dashboard__indicator"
+                  role="img"
+                  aria-label={`Module coverage at ${coverage} percent`}
+                >
+                  <div className="dashboard__indicator-bar">
+                    <span style={{ width: `${coverage}%` }} />
+                  </div>
+                  <div className="dashboard__indicator-meta">
+                    <span>{coverage}% coverage of available module/application combinations</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="dashboard__indicator-meta">
+                  Coverage insights will appear once data is available.
+                </div>
+              )}
+              <ul className="dashboard__list dashboard__list--compact">
+                <li>
+                  <div>
+                    <p className="dashboard__list-label">Module versions published</p>
+                    <p className="dashboard__list-description">
+                      Total number of deployable versions.
+                    </p>
+                  </div>
+                  <span className="dashboard__list-value">{totalVersions}</span>
+                </li>
+                <li>
+                  <div>
+                    <p className="dashboard__list-label">Applications monitored</p>
+                    <p className="dashboard__list-description">
+                      Ensuring upgrade alignment per release.
+                    </p>
+                  </div>
+                  <span className="dashboard__list-value">{totalApplications}</span>
+                </li>
+              </ul>
+            </section>
+          </div>
+          <div className="dashboard__insights">
+            <section className="dashboard__panel dashboard__panel--table">
+              <div className="dashboard__panel-heading">
+                <div>
+                  <span className="dashboard__panel-label">Usage</span>
+                  <h2>Top Modules</h2>
+                </div>
+                <span className="dashboard__panel-meta">
+                  {topModules.length} / {totalModules} tracked
+                </span>
+              </div>
+              {topModules.length ? (
+                <table className="dashboard__table">
+                  <thead>
+                    <tr>
+                      <th>Module</th>
+                      <th>Usage</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topModules.map((module) => (
+                      <tr key={module.id}>
+                        <td>
+                          <p className="dashboard__table-title">{module.name}</p>
+                          <p className="dashboard__table-subtitle">{module.description}</p>
+                        </td>
+                        <td>{module.usageCount ?? '—'}</td>
+                        <td>
+                          <span className="dashboard__badge">
+                            {module.status?.replace(/([A-Z])/g, ' $1')?.trim() || 'Active'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="dashboard__panel-description">
+                  Module usage analytics will populate once telemetry is available.
+                </p>
+              )}
+            </section>
+            <section className="dashboard__panel dashboard__panel--table">
+              <div className="dashboard__panel-heading">
+                <div>
+                  <span className="dashboard__panel-label">Applications</span>
+                  <h2>Portfolio Overview</h2>
+                </div>
+                <span className="dashboard__panel-meta">{totalApplications} total</span>
+              </div>
+              <div className="dashboard__stack-grid">
+                {stackEntries.slice(0, 4).map(([stack, count]) => (
+                  <div key={stack} className="dashboard__stack-pill">
+                    <strong>{stack}</strong>
+                    <span>{count} apps</span>
+                  </div>
+                ))}
+              </div>
+              {keyApplications.length ? (
+                <table className="dashboard__table">
+                  <thead>
+                    <tr>
+                      <th>Application</th>
+                      <th>Stack</th>
+                      <th>Modules</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {keyApplications.map((app) => (
+                      <tr key={app.id}>
+                        <td>
+                          <p className="dashboard__table-title">{app.name}</p>
+                          <p className="dashboard__table-subtitle">{app.ownerEmail}</p>
+                        </td>
+                        <td>{app.stack || '—'}</td>
+                        <td>{app.moduleCount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="dashboard__panel-description">
+                  Register applications to view adoption metrics.
+                </p>
+              )}
+            </section>
+          </div>
+          <div className="dashboard__insights">
+            <section className="dashboard__panel dashboard__panel--table">
+              <div className="dashboard__panel-heading">
+                <div>
+                  <span className="dashboard__panel-label">Releases</span>
+                  <h2>Recent Versions</h2>
+                </div>
+                <span className="dashboard__panel-meta">Chronological</span>
+              </div>
+              {latestReleases.length ? (
+                <table className="dashboard__table">
+                  <thead>
+                    <tr>
+                      <th>Module</th>
+                      <th>Version</th>
+                      <th>Released</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {latestReleases.map((release) => (
+                      <tr key={`${release.moduleName}-${release.version}`}>
+                        <td>{release.moduleName}</td>
+                        <td>
+                          <span
+                            className={`dashboard__badge ${
+                              release.isBreakingChange ? 'dashboard__badge--warning' : ''
+                            }`}
+                          >
+                            {release.version}
+                          </span>
+                        </td>
+                        <td>
+                          {release.releasedAt
+                            ? new Date(release.releasedAt).toLocaleDateString()
+                            : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="dashboard__panel-description">
+                  Publish module versions to visualize release activity.
+                </p>
+              )}
+            </section>
+          </div>
+        </>
       )}
     </div>
   );
