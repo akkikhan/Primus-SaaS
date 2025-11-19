@@ -127,6 +127,17 @@ public class PortalDbContext : DbContext
             ReleaseNotes = "Initial release of IdentityValidator module",
             SupportedStacksJson = "[\"DotNet\",\"NodeJS\"]",
             ReleasedAt = DateTime.UtcNow
+        },
+        new ModuleVersion
+        {
+            Id = 2,
+            ModuleId = 1,
+            Version = "1.1.0",
+            IsBreakingChange = false,
+            ReleaseNotes = "Added JWKS caching and improved Azure AD validation defaults",
+            Changelog = "Added: in-memory JWKS cache with configurable TTL\nChanged: default audience parsing now trims api:// prefix\nFixed: null reference when openid config is temporarily unavailable",
+            SupportedStacksJson = "[\"DotNet\",\"NodeJS\"]",
+            ReleasedAt = DateTime.UtcNow.AddDays(7)
         });
     }
 }

@@ -150,11 +150,13 @@ public class ApplicationsController : ControllerBase
         var existing = await _context.ApplicationModules
             .FirstOrDefaultAsync(am => am.ApplicationId == applicationId && am.ModuleId == request.ModuleId);
 
+        var configJson = string.IsNullOrWhiteSpace(request.ConfigJson) ? "{}" : request.ConfigJson;
+
         if (existing != null)
         {
             // Update to new version
             existing.ModuleVersionId = request.ModuleVersionId;
-            existing.ConfigJson = request.ConfigJson;
+            existing.ConfigJson = configJson;
         }
         else
         {
@@ -164,7 +166,7 @@ public class ApplicationsController : ControllerBase
                 ApplicationId = applicationId,
                 ModuleId = request.ModuleId,
                 ModuleVersionId = request.ModuleVersionId,
-                ConfigJson = request.ConfigJson
+                ConfigJson = configJson
             };
             _context.ApplicationModules.Add(appModule);
         }
@@ -352,5 +354,5 @@ public record IntegratedModuleDto
 
 public record CreateApplicationRequest(string Name, string Stack, string? Description = null);
 public record UpdateApplicationRequest(string? Name = null, string? Stack = null, string? Description = null);
-public record IntegrateModuleRequest(int ModuleId, int ModuleVersionId, string ConfigJson);
+    public record IntegrateModuleRequest(int ModuleId, int ModuleVersionId, string ConfigJson = "{}");
 public record ChangeVersionRequest(string Version);
