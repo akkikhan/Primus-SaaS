@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using PrimusSaaS.Portal.Api.Data;
 using PrimusSaaS.Portal.Api.Services;
 using System.Text;
+using AspNetCoreRateLimit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,13 @@ builder.Services.AddDbContext<PortalDbContext>(options =>
 
 // Register services
 builder.Services.AddScoped<IWebhookSignatureValidator, WebhookSignatureValidator>();
+
+// Add rate limiting
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.Configure<IpRateLimitPolicies>(builder.Configuration.GetSection("IpRateLimitPolicies"));
+builder.Services.AddInMemoryRateLimiting();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
 // Add JWT authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -60,6 +68,8 @@ if (app.Environment.IsDevelopment())
 }
 
 // app.UseHttpsRedirection(); // Commented out for HTTP testing
+
+app.UseIpRateLimiting();
 
 app.UseCors("AllowAll");
 

@@ -1,6 +1,9 @@
 # Trunked Primus Frontend Sample
 
-This React + Vite app drives the sample backend (`examples/trunked-npm-backend`) that already integrates the published [`primus-identity-validator`](https://www.npmjs.com/package/primus-identity-validator) middleware. Use the UI to paste JWT tokens and test each protected route without writing curl commands.
+This React + Vite app drives the sample backend (`examples/trunked-npm-backend`) that already integrates the published [`primus-identity-validator`](https://www.npmjs.com/package/primus-identity-validator) middleware. The UI mimics a production dashboard so you can demonstrate:
+
+1. How the application looked before authentication (set `PRIMUS_ENFORCE_AUTH=false` on the backend).
+2. How the exact same code paths require Primus / Azure AD tokens as soon as the middleware is enabled.
 
 ## Setup
 
@@ -16,7 +19,7 @@ This React + Vite app drives the sample backend (`examples/trunked-npm-backend`)
    cp .env.example .env
    ```
 
-3. In a separate terminal, start the backend sample and ensure it has valid Primus credentials configured.
+3. In a separate terminal, start the backend sample and ensure it has valid Primus credentials configured. Flip `PRIMUS_ENFORCE_AUTH` to show the “before” (open) vs “after” (secured) experience.
 
 4. Start the frontend dev server:
 
@@ -28,10 +31,10 @@ This React + Vite app drives the sample backend (`examples/trunked-npm-backend`)
 
 ## Using the UI
 
+- The hero cards explain the “Before Integration” (public) vs “After Integration” (Primus-enforced) states, mirroring what your backend is currently doing.
 - Paste a Primus Portal or Azure AD access token into the **Access Token** box. Tokens are obtained exactly the way the npm README describes (Primus login flow or `az account get-access-token` for Azure AD).
-- Click any of the buttons to call the backend routes:
-  - `Health` and `Public` require no token and confirm connectivity.
-  - `Profile`, `Admin`, and `Management` require Bearer tokens and map to the middleware-protected routes you configured on the backend.
-- Responses (including HTTP status codes) are rendered verbatim so you can copy them into docs or bug reports if behaviour diverges from the npm instructions.
+- Use **Test Public Endpoint** to show that basic health checks remain unauthenticated even after integration.
+- Use **Load Dashboard Data** to fetch the protected `/api/dashboard` + `/api/notifications` endpoints. Without valid tokens (or when `PRIMUS_ENFORCE_AUTH=false`) the cards will either load or stay locked, demonstrating the immediate impact of wiring the npm middleware.
+- When Primus authentication succeeds, the banner at the bottom displays the signed-in user to confirm which identity was validated.
 
 This keeps both halves of the sample focused on verifying the documented integration path without introducing additional auth helpers that could hide SDK issues.

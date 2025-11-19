@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrimusSaaS.Portal.Api.Data;
 
@@ -10,9 +11,11 @@ using PrimusSaaS.Portal.Api.Data;
 namespace PrimusSaaS.Portal.Api.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251119122345_AddNuGetPackageMapping")]
+    partial class AddNuGetPackageMapping
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.20");
@@ -185,7 +188,7 @@ namespace PrimusSaaS.Portal.Api.Migrations
                             IsBreakingChange = false,
                             ModuleId = 1,
                             ReleaseNotes = "Initial release of IdentityValidator module",
-                            ReleasedAt = new DateTime(2025, 11, 19, 12, 52, 41, 252, DateTimeKind.Utc).AddTicks(7270),
+                            ReleasedAt = new DateTime(2025, 11, 19, 12, 23, 44, 966, DateTimeKind.Utc).AddTicks(2294),
                             SupportedStacksJson = "[\"DotNet\",\"NodeJS\"]",
                             Version = "1.0.0"
                         },
@@ -197,7 +200,7 @@ namespace PrimusSaaS.Portal.Api.Migrations
                             IsBreakingChange = false,
                             ModuleId = 1,
                             ReleaseNotes = "Added JWKS caching and improved Azure AD validation defaults",
-                            ReleasedAt = new DateTime(2025, 11, 26, 12, 52, 41, 252, DateTimeKind.Utc).AddTicks(7276),
+                            ReleasedAt = new DateTime(2025, 11, 26, 12, 23, 44, 966, DateTimeKind.Utc).AddTicks(2298),
                             SupportedStacksJson = "[\"DotNet\",\"NodeJS\"]",
                             Version = "1.1.0"
                         });
@@ -233,7 +236,7 @@ namespace PrimusSaaS.Portal.Api.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 11, 19, 12, 52, 41, 252, DateTimeKind.Utc).AddTicks(7334),
+                            CreatedAt = new DateTime(2025, 11, 19, 12, 23, 44, 966, DateTimeKind.Utc).AddTicks(2346),
                             ModuleId = 1,
                             PackageName = "primus-identity-validator",
                             RegistryType = "npm"
@@ -241,7 +244,7 @@ namespace PrimusSaaS.Portal.Api.Migrations
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2025, 11, 19, 12, 52, 41, 252, DateTimeKind.Utc).AddTicks(7337),
+                            CreatedAt = new DateTime(2025, 11, 19, 12, 23, 44, 966, DateTimeKind.Utc).AddTicks(2348),
                             ModuleId = 1,
                             PackageName = "PrimusSaaS.Identity.Validator",
                             RegistryType = "nuget"
@@ -283,76 +286,12 @@ namespace PrimusSaaS.Portal.Api.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 11, 19, 12, 52, 41, 252, DateTimeKind.Utc).AddTicks(6874),
+                            CreatedAt = new DateTime(2025, 11, 19, 12, 23, 44, 966, DateTimeKind.Utc).AddTicks(2044),
                             Email = "admin@primussaas.com",
                             PasswordHash = "$2a$11$1cpBqvDSeWEpe8eDpouWDude7DsvSAJ6wtI9Ja4guFVMFPvzZmAuO",
                             Role = 1,
-                            UpdatedAt = new DateTime(2025, 11, 19, 12, 52, 41, 252, DateTimeKind.Utc).AddTicks(6875)
+                            UpdatedAt = new DateTime(2025, 11, 19, 12, 23, 44, 966, DateTimeKind.Utc).AddTicks(2045)
                         });
-                });
-
-            modelBuilder.Entity("PrimusSaaS.Portal.Api.Models.WebhookRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Endpoint")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("EventType")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("IpAddress")
-                        .IsRequired()
-                        .HasMaxLength(45)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PackageName")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PackageVersion")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Payload")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("ProcessingTimeMs")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("RegistryType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ResponseBody")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Signature")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("SignatureValid")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("StatusCode")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("RegistryType", "PackageName");
-
-                    b.ToTable("WebhookRequests");
                 });
 
             modelBuilder.Entity("PrimusSaaS.Portal.Api.Models.Application", b =>

@@ -15,6 +15,7 @@ public class PortalDbContext : DbContext
     public DbSet<Application> Applications { get; set; } = null!;
     public DbSet<ApplicationModule> ApplicationModules { get; set; } = null!;
     public DbSet<PackageRegistryMapping> PackageRegistryMappings { get; set; } = null!;
+    public DbSet<WebhookRequest> WebhookRequests { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -92,6 +93,20 @@ public class PortalDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // WebhookRequest entity
+        modelBuilder.Entity<WebhookRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => new { e.RegistryType, e.PackageName });
+            entity.Property(e => e.Endpoint).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.RegistryType).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Payload).IsRequired();
+            entity.Property(e => e.Signature).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.IpAddress).IsRequired().HasMaxLength(45);
+            entity.Property(e => e.ResponseBody).IsRequired();
+        });
+
         // Seed initial data
         SeedData(modelBuilder);
     }
@@ -142,13 +157,22 @@ public class PortalDbContext : DbContext
         });
 
         // Seed package registry mapping for npm
-        modelBuilder.Entity<PackageRegistryMapping>().HasData(new PackageRegistryMapping
-        {
-            Id = 1,
-            ModuleId = 1,
-            RegistryType = "npm",
-            PackageName = "primus-identity-validator",
-            CreatedAt = DateTime.UtcNow
-        });
+        modelBuilder.Entity<PackageRegistryMapping>().HasData(
+            new PackageRegistryMapping
+            {
+                Id = 1,
+                ModuleId = 1,
+                RegistryType = "npm",
+                PackageName = "primus-identity-validator",
+                CreatedAt = DateTime.UtcNow
+            },
+            new PackageRegistryMapping
+            {
+                Id = 2,
+                ModuleId = 1,
+                RegistryType = "nuget",
+                PackageName = "PrimusSaaS.Identity.Validator",
+                CreatedAt = DateTime.UtcNow
+            });
     }
 }

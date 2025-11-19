@@ -9,6 +9,7 @@ namespace PrimusSaaS.Portal.Api.Services;
 public interface IWebhookSignatureValidator
 {
     bool ValidateNpmSignature(string payload, string signature, string secret);
+    bool ValidateNuGetSignature(string payload, string signature, string secret);
 }
 
 public class WebhookSignatureValidator : IWebhookSignatureValidator
@@ -18,6 +19,33 @@ public class WebhookSignatureValidator : IWebhookSignatureValidator
     /// npm sends signature in format: "sha256=<hash>"
     /// </summary>
     public bool ValidateNpmSignature(string payload, string signature, string secret)
+    {
+        if (string.IsNullOrWhiteSpace(payload) || string.IsNullOrWhiteSpace(signature) || string.IsNullOrWhiteSpace(secret))
+        {
+            return false;
+        }
+
+        // Extract hash from "sha256=<hash>" format
+        if (!signature.StartsWith("sha256=", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var receivedHash = signature.Substring(7); // Remove "sha256=" prefix
+
+        // Compute expected hash
+        var expectedHash = ComputeHmacSha256(payload, secret);
+
+        // Constant-time comparison to prevent timing attacks
+        return SecureCompare(receivedHash, expectedHash);
+    }
+
+    /// <summary>
+    /// Validates NuGet webhook signature using HMAC-SHA256
+    /// NuGet.org sends signature in X-NuGet-Signature header
+    /// Format: "sha256=<base64-encoded-hash>"
+    /// </summary>
+    public bool ValidateNuGetSignature(string payload, string signature, string secret)
     {
         if (string.IsNullOrWhiteSpace(payload) || string.IsNullOrWhiteSpace(signature) || string.IsNullOrWhiteSpace(secret))
         {

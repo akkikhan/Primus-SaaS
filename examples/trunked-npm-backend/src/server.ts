@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction, RequestHandler } from 'express';
 import dotenv from 'dotenv';
 import {
   primusIdentityMiddleware,
@@ -16,6 +16,7 @@ const needsLocalSecret =
   validationMode === ValidationMode.Local || validationMode === ValidationMode.Hybrid;
 const needsAzureTenant =
   validationMode === ValidationMode.AzureAd || validationMode === ValidationMode.Hybrid;
+const authEnforced = process.env.PRIMUS_ENFORCE_AUTH !== 'false';
 
 const primusAuth = primusIdentityMiddleware({
   portalUrl: requireEnv('PRIMUS_PORTAL_URL'),
@@ -31,12 +32,68 @@ const primusAuth = primusIdentityMiddleware({
   audience: process.env.PRIMUS_AUDIENCE
 });
 
+const enforceAuth: RequestHandler = (req, res, next) => {
+  if (!authEnforced) {
+    return next();
+  }
+  return primusAuth(req, res, next);
+};
+
+const requireRolesIfEnabled = (...roles: string[]): RequestHandler => {
+  if (!authEnforced) {
+    return (_req, _res, next) => next();
+  }
+
+  return requireRoles(...roles);
+};
+
+const dashboardMetrics = {
+  activeUsers: 1284,
+  deploymentsToday: 4,
+  serviceHealth: 'Operational',
+  latencyMs: 182
+};
+
+const applications = [
+  { id: 'folio', name: 'Folio Manager', status: 'Running', lastDeployment: '2025-02-28T13:05:00Z' },
+  { id: 'quotas', name: 'Quota Service', status: 'Running', lastDeployment: '2025-02-28T08:22:00Z' },
+  { id: 'ledger', name: 'Ledger API', status: 'Warning', lastDeployment: '2025-02-27T18:10:00Z' }
+];
+
+const releaseTimeline = [
+  { module: 'Portal Frontend', version: '2.6.0', status: 'In QA' },
+  { module: 'Identity Validator', version: '1.0.0', status: 'Released' },
+  { module: 'Reporting Engine', version: '0.9.5', status: 'Building' }
+];
+
+const notifications = [
+  {
+    id: 'notify-1',
+    message: 'Ledger API latency exceeded 200ms threshold',
+    severity: 'warning',
+    createdAt: '2025-02-28T11:45:00Z'
+  },
+  {
+    id: 'notify-2',
+    message: 'Portal Frontend deployment scheduled for 18:00 UTC',
+    severity: 'info',
+    createdAt: '2025-02-28T09:00:00Z'
+  },
+  {
+    id: 'notify-3',
+    message: 'Quota Service patch requires admin approval',
+    severity: 'info',
+    createdAt: '2025-02-27T21:12:00Z'
+  }
+];
+
 app.get('/health', (_req, res) => {
   res.json({
     status: 'ok',
     mode: validationMode,
     needsLocalSecret,
-    needsAzureTenant
+    needsAzureTenant,
+    authEnforced
   });
 });
 
@@ -47,21 +104,37 @@ app.get('/api/public', (_req, res) => {
   });
 });
 
-app.get('/api/profile', primusAuth, (req, res) => {
+app.get('/api/dashboard', enforceAuth, (req, res) => {
+  res.json({
+    metrics: dashboardMetrics,
+    applications,
+    releases: releaseTimeline,
+    authenticated: authEnforced,
+    primusUser: req.primusUser ?? null
+  });
+});
+
+app.get('/api/notifications', enforceAuth, (_req, res) => {
+  res.json({
+    notifications
+  });
+});
+
+app.get('/api/profile', enforceAuth, (req, res) => {
   res.json({
     user: req.primusUser,
     message: `Hello ${req.primusUser?.name ?? 'anonymous user'}`
   });
 });
 
-app.get('/api/admin', primusAuth, requireRoles('Admin'), (req, res) => {
+app.get('/api/admin', enforceAuth, requireRolesIfEnabled('Admin'), (req, res) => {
   res.json({
     message: 'Admin route hit successfully',
     user: req.primusUser
   });
 });
 
-app.get('/api/management', primusAuth, requireRoles('Manager', 'Admin'), (req, res) => {
+app.get('/api/management', enforceAuth, requireRolesIfEnabled('Manager', 'Admin'), (req, res) => {
   res.json({
     message: 'Managers and Admins may view this content',
     roles: req.primusUser?.roles ?? []

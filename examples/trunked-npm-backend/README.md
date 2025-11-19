@@ -1,6 +1,6 @@
 # Trunked Primus Backend Sample
 
-This folder contains a minimal Express backend that consumes the published [`primus-identity-validator`](https://www.npmjs.com/package/primus-identity-validator) package exactly the way it is documented on npm. Use it as a quick start template for wiring the validator into any trunked npm service.
+This folder contains a minimal Express backend that consumes the published [`primus-identity-validator`](https://www.npmjs.com/package/primus-identity-validator) package exactly the way it is documented on npm. Use it as a quick start template for wiring the validator into any trunked npm service and to demo how an existing “open” application gains authentication the moment the middleware is introduced.
 
 ## Prerequisites
 
@@ -31,9 +31,14 @@ This folder contains a minimal Express backend that consumes the published [`pri
 
    All modes require `PRIMUS_PORTAL_URL`, `PRIMUS_CLIENT_ID`, and `PRIMUS_CLIENT_SECRET`.
 
-3. (Optional) Launch the paired React frontend located at `examples/trunked-npm-frontend` after you start this backend. The UI simply drives the sample endpoints so you can try each validation scenario without crafting curl commands.
+3. Decide how you want to demonstrate the migration:
 
-4. Start the API:
+   - Set `PRIMUS_ENFORCE_AUTH=false` to mimic the legacy state (no authentication—every dashboard route is public).
+   - Set `PRIMUS_ENFORCE_AUTH=true` (default) to show the “after integration” experience where `primus-identity-validator` protects the same routes without any other code changes.
+
+4. (Optional) Launch the paired React frontend located at `examples/trunked-npm-frontend` after you start this backend. The UI simply drives the sample endpoints so you can try each validation scenario without crafting curl commands.
+
+5. Start the API:
 
    ```bash
    npm run dev          # hot reload with tsx
@@ -44,14 +49,20 @@ This folder contains a minimal Express backend that consumes the published [`pri
 
 - Registers `primusIdentityMiddleware` using the exact configuration object from the npm docs.
 - Demonstrates Local / Azure AD / Hybrid flows by switching `PRIMUS_VALIDATION_MODE`.
-- Exposes routes that align with the usage snippets from the package README:
-  - `GET /health` – Shows which validation mode is active and whether Local/Azure requirements are enabled.
+- Simulates a realistic dashboard service with seeded data (`/api/dashboard`, `/api/notifications`) that originally shipped without authentication.
+- Shows the deltas introduced when the middleware is added:
+  - `PRIMUS_ENFORCE_AUTH=false` → routes remain public, no roles or token checks run.
+  - `PRIMUS_ENFORCE_AUTH=true` → the same routes now require valid Primus / Azure AD tokens and respect `requireRoles`.
+- Exposes routes that align with the SDK usage snippets:
+  - `GET /health` – Shows which validation mode is active and whether auth is enforced.
   - `GET /api/public` – Open endpoint for smoke testing the server.
-  - `GET /api/profile` – Protected endpoint that returns `req.primusUser`.
+  - `GET /api/dashboard` – Realistic dashboard payload guarded by Primus middleware.
+  - `GET /api/notifications` – Notification center feed guarded by Primus middleware.
+  - `GET /api/profile` – Shows the attached `req.primusUser`.
   - `GET /api/admin` – Requires the `Admin` role via `requireRoles`.
   - `GET /api/management` – Accepts either `Manager` or `Admin` roles.
 
-The route handlers intentionally avoid any additional business logic so you can copy/paste them into your own module.
+Because the only variable is whether the middleware runs, this project doubles as a concrete migration playbook for existing services.
 
 ## Obtaining tokens for testing
 
