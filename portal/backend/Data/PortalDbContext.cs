@@ -14,6 +14,7 @@ public class PortalDbContext : DbContext
     public DbSet<ModuleVersion> ModuleVersions { get; set; } = null!;
     public DbSet<Application> Applications { get; set; } = null!;
     public DbSet<ApplicationModule> ApplicationModules { get; set; } = null!;
+    public DbSet<PackageRegistryMapping> PackageRegistryMappings { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -138,6 +139,16 @@ public class PortalDbContext : DbContext
             Changelog = "Added: in-memory JWKS cache with configurable TTL\nChanged: default audience parsing now trims api:// prefix\nFixed: null reference when openid config is temporarily unavailable",
             SupportedStacksJson = "[\"DotNet\",\"NodeJS\"]",
             ReleasedAt = DateTime.UtcNow.AddDays(7)
+        });
+
+        // Seed package registry mapping for npm
+        modelBuilder.Entity<PackageRegistryMapping>().HasData(new PackageRegistryMapping
+        {
+            Id = 1,
+            ModuleId = 1,
+            RegistryType = "npm",
+            PackageName = "primus-identity-validator",
+            CreatedAt = DateTime.UtcNow
         });
     }
 }

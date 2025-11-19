@@ -1,0 +1,118 @@
+.app-shell {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+header h1 {
+  margin-bottom: 0.25rem;
+}
+
+header p {
+  color: #cbd5f5;
+}
+
+.config-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.config-panel label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.config-panel input,
+.config-panel textarea {
+  background: #030712;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: #f1f5f9;
+  font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
+}
+
+.config-panel textarea {
+  resize: vertical;
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: #a5b4fc;
+}
+
+.endpoint-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.endpoint-card {
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 1rem;
+  background: #020617;
+}
+
+.endpoint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.endpoint-header h2 {
+  margin: 0;
+}
+
+.endpoint-header button {
+  background: #2563eb;
+  border: none;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.endpoint-header button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.path {
+  margin: 0.25rem 0 0;
+  font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
+  font-size: 0.875rem;
+  color: #a5b4fc;
+}
+
+.badge {
+  background: #fbbf24;
+  color: #111827;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
+
+pre {
+  margin: 0;
+  padding: 1rem;
+  background: #0f172a;
+  border-radius: 8px;
+  min-height: 120px;
+  font-size: 0.85rem;
+  overflow: auto;
+}
+
+.error {
+  color: #f87171;
+  text-align: center;
+}

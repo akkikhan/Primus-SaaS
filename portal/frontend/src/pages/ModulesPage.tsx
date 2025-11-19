@@ -189,7 +189,7 @@ export const ModulesPage = () => {
                   rows={8}
                 />
               </div>
-              <div className="form-group">
+              <div className="form-group form-group--checkbox">
                 <label>
                   <input
                     type="checkbox"

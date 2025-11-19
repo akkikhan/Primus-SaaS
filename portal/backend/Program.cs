@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PrimusSaaS.Portal.Api.Data;
+using PrimusSaaS.Portal.Api.Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add database context - Use SQLite for easy testing
 builder.Services.AddDbContext<PortalDbContext>(options =>
     options.UseSqlite("Data Source=portal.db"));
+
+// Register services
+builder.Services.AddScoped<IWebhookSignatureValidator, WebhookSignatureValidator>();
 
 // Add JWT authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

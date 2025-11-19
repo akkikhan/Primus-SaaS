@@ -31,7 +31,9 @@ This folder contains a minimal Express backend that consumes the published [`pri
 
    All modes require `PRIMUS_PORTAL_URL`, `PRIMUS_CLIENT_ID`, and `PRIMUS_CLIENT_SECRET`.
 
-3. Start the API:
+3. (Optional) Launch the paired React frontend located at `examples/trunked-npm-frontend` after you start this backend. The UI simply drives the sample endpoints so you can try each validation scenario without crafting curl commands.
+
+4. Start the API:
 
    ```bash
    npm run dev          # hot reload with tsx
