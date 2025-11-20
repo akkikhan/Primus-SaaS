@@ -66,44 +66,9 @@ export const LoginPage = () => {
   return (
     <div className="login">
       <div className="login__wrapper">
-        <form className="login__card" onSubmit={handleSubmit}>
+        <div className="login__card">
           <h1>Primus SaaS Portal</h1>
-          <p className="login__subtitle">Sign in with your admin credentials.</p>
-
-          <label>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={event => setEmail(event.target.value)}
-              required
-            />
-          </label>
-
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={event => setPassword(event.target.value)}
-              required
-            />
-          </label>
-
-          {error && <p className="login__error">{error}</p>}
-
-          <button type="submit" disabled={isLoading}>
-            {isLoading ? 'Signing in…' : 'Sign in'}
-          </button>
-
-          <p className="login__hint">
-            Default admin account: admin@primussaas.com / Admin123!
-          </p>
-        </form>
-
-        <div className="login__card login__card--secondary">
-          <h2>Enterprise SSO</h2>
-          <p className="login__subtitle">Connect with your Azure Active Directory account.</p>
+          <p className="login__subtitle">Sign in with Microsoft Azure ID or your admin credentials.</p>
 
           {azureError && <p className="login__error">{azureError}</p>}
 
@@ -113,7 +78,7 @@ export const LoginPage = () => {
             onClick={handleAzureLogin}
             disabled={!azureConfigured || isAzureLoading}
           >
-            {isAzureLoading ? 'Connecting…' : 'Sign in with Azure AD'}
+            {isAzureLoading ? 'Connecting…' : 'Sign in with Microsoft Azure ID'}
           </button>
 
           {!azureConfigured && (
@@ -122,6 +87,42 @@ export const LoginPage = () => {
               enable Azure AD login.
             </p>
           )}
+
+          <div className="login__divider" aria-hidden="true">
+            <span>OR</span>
+          </div>
+
+          <form className="login__form" onSubmit={handleSubmit}>
+            <label>
+              Email
+              <input
+                type="email"
+                value={email}
+                onChange={event => setEmail(event.target.value)}
+                required
+              />
+            </label>
+
+            <label>
+              Password
+              <input
+                type="password"
+                value={password}
+                onChange={event => setPassword(event.target.value)}
+                required
+              />
+            </label>
+
+            {error && <p className="login__error">{error}</p>}
+
+            <button type="submit" disabled={isLoading}>
+              {isLoading ? 'Signing in…' : 'Sign in'}
+            </button>
+
+            <p className="login__hint">
+              Default admin account: admin@primussaas.com / Admin123!
+            </p>
+          </form>
         </div>
       </div>
     </div>
