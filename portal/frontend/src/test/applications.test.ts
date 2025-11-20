@@ -102,7 +102,7 @@ describe('Applications Store', () => {
     await act(async () => {
       try {
         await result.current.fetchApplications();
-      } catch (error) {
+      } catch {
         // Error expected
       }
     });

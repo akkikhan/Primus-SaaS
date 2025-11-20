@@ -9,9 +9,16 @@
   padding: 2rem;
 }
 
+.login__wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: min(960px, 100%);
+}
+
 .login__card {
+  flex: 1;
   width: 100%;
-  max-width: 440px;
   background: var(--color-panel);
   padding: 2.5rem;
   border-radius: 1.25rem;
@@ -20,6 +27,11 @@
   flex-direction: column;
   gap: 1.25rem;
   border: 1px solid var(--color-border);
+}
+
+.login__card--secondary {
+  background: linear-gradient(145deg, rgba(37, 99, 235, 0.1), rgba(14, 165, 233, 0.05)),
+    var(--color-panel);
 }
 
 .login__subtitle {
@@ -44,10 +56,10 @@ input {
   color: var(--color-text);
 }
 
-button[type='submit'] {
+button[type='submit'],
+.login__azure-button {
   margin-top: 0.5rem;
   border: none;
-  background: linear-gradient(135deg, #22c55e, #16a34a);
   color: #0b1220;
   padding: 0.85rem 1.5rem;
   border-radius: 0.75rem;
@@ -57,6 +69,15 @@ button[type='submit'] {
   box-shadow: var(--shadow-sm);
 }
 
+button[type='submit'] {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.login__azure-button {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #f8fafc;
+}
+
 button[disabled] {
   opacity: 0.7;
   cursor: not-allowed;
@@ -64,4 +85,23 @@ button[disabled] {
 
 .login__error {
   color: #fca5a5;
+  margin: 0;
+}
+
+.login__hint {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.login__hint code {
+  background: rgba(15, 23, 42, 0.4);
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.35rem;
+}
+
+@media (min-width: 900px) {
+  .login__wrapper {
+    flex-direction: row;
+  }
 }

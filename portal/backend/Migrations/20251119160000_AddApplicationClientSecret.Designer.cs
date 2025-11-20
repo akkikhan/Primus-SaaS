@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrimusSaaS.Portal.Api.Data;
 
@@ -10,9 +11,11 @@ using PrimusSaaS.Portal.Api.Data;
 namespace PrimusSaaS.Portal.Api.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251119160000_AddApplicationClientSecret")]
+    partial class AddApplicationClientSecret
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.20");
@@ -305,15 +308,9 @@ namespace PrimusSaaS.Portal.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Endpoint")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("EventType")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("IpAddress")
@@ -331,9 +328,6 @@ namespace PrimusSaaS.Portal.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("ProcessingTimeMs")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("RegistryType")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -343,6 +337,9 @@ namespace PrimusSaaS.Portal.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Signature")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -351,7 +348,13 @@ namespace PrimusSaaS.Portal.Api.Migrations
                     b.Property<bool>("SignatureValid")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("StatusCode")
+                    b.Property<string>("EventType")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProcessingTimeMs")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
@@ -399,33 +402,6 @@ namespace PrimusSaaS.Portal.Api.Migrations
                     b.Navigation("Module");
 
                     b.Navigation("ModuleVersion");
-                });
-
-            modelBuilder.Entity("PrimusSaaS.Portal.Api.Models.ModuleVersion", b =>
-                {
-                    b.HasOne("PrimusSaaS.Portal.Api.Models.Module", "Module")
-                        .WithMany("Versions")
-                        .HasForeignKey("ModuleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Module");
-                });
-
-            modelBuilder.Entity("PrimusSaaS.Portal.Api.Models.PackageRegistryMapping", b =>
-                {
-                    b.HasOne("PrimusSaaS.Portal.Api.Models.Module", "Module")
-                        .WithMany()
-                        .HasForeignKey("ModuleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Module");
-                });
-
-            modelBuilder.Entity("PrimusSaaS.Portal.Api.Models.Application", b =>
-                {
-                    b.Navigation("ApplicationModules");
                 });
 
             modelBuilder.Entity("PrimusSaaS.Portal.Api.Models.Module", b =>

@@ -1,5 +1,8 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using PrimusSaaS.Portal.Api.Data;
 using System.IdentityModel.Tokens.Jwt;
@@ -14,11 +17,29 @@ public class AuthController : ControllerBase
 {
     private readonly PortalDbContext _context;
     private readonly IConfiguration _configuration;
+    private readonly IConfigurationManager<OpenIdConnectConfiguration>? _azureConfigManager;
+    private readonly string? _azureTenantId;
+    private readonly string? _azureClientId;
+    private readonly string? _azureAudience;
 
     public AuthController(PortalDbContext context, IConfiguration configuration)
     {
         _context = context;
         _configuration = configuration;
+
+        _azureTenantId = _configuration["AzureAd:TenantId"];
+        _azureClientId = _configuration["AzureAd:ClientId"];
+        var configuredAudience = _configuration["AzureAd:Audience"];
+        _azureAudience = string.IsNullOrWhiteSpace(configuredAudience) ? _azureClientId : configuredAudience;
+
+        if (!string.IsNullOrWhiteSpace(_azureTenantId) && !string.IsNullOrWhiteSpace(_azureClientId))
+        {
+            var authority = $"https://login.microsoftonline.com/{_azureTenantId}/v2.0";
+            var metadataAddress = $"{authority}/.well-known/openid-configuration";
+            _azureConfigManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+                metadataAddress,
+                new OpenIdConnectConfigurationRetriever());
+        }
     }
 
     [HttpPost("login")]
@@ -47,6 +68,89 @@ public class AuthController : ControllerBase
             Email = user.Email,
             Role = user.Role.ToString()
         });
+    }
+
+    [HttpPost("azure")]
+    public async Task<ActionResult<LoginResponse>> AzureLogin([FromBody] AzureLoginRequest request, CancellationToken cancellationToken)
+    {
+        if (_azureConfigManager == null || string.IsNullOrWhiteSpace(_azureTenantId) || string.IsNullOrWhiteSpace(_azureClientId))
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Azure AD login is not configured." });
+        }
+
+        if (string.IsNullOrWhiteSpace(request.IdToken))
+        {
+            return BadRequest(new { message = "Azure AD ID token is required." });
+        }
+
+        try
+        {
+            var configuration = await _azureConfigManager.GetConfigurationAsync(cancellationToken);
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var validationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuers = new[]
+                {
+                    $"https://login.microsoftonline.com/{_azureTenantId}/v2.0",
+                    $"https://sts.windows.net/{_azureTenantId}/"
+                },
+                ValidateAudience = true,
+                ValidAudience = _azureAudience ?? _azureClientId,
+                ValidateIssuerSigningKey = true,
+                RequireSignedTokens = true,
+                RequireExpirationTime = true,
+                IssuerSigningKeys = configuration.SigningKeys,
+                ClockSkew = TimeSpan.FromMinutes(5)
+            };
+
+            var principal = tokenHandler.ValidateToken(request.IdToken, validationParameters, out var validatedToken);
+
+            if (validatedToken is not JwtSecurityToken jwtToken ||
+                !jwtToken.Header.Alg.Equals(SecurityAlgorithms.RsaSha256, StringComparison.OrdinalIgnoreCase))
+            {
+                return Unauthorized(new { message = "Invalid Azure AD token algorithm." });
+            }
+
+            var tokenTenant = principal.FindFirst("tid")?.Value;
+            if (!string.Equals(tokenTenant, _azureTenantId, StringComparison.OrdinalIgnoreCase))
+            {
+                return Unauthorized(new { message = "Token tenant does not match configured tenant." });
+            }
+
+            var email = principal.FindFirst(ClaimTypes.Email)?.Value
+                        ?? principal.FindFirst("preferred_username")?.Value
+                        ?? principal.FindFirst(ClaimTypes.Upn)?.Value;
+
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return Unauthorized(new { message = "Azure AD token is missing an email claim." });
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+            if (user == null)
+            {
+                return Unauthorized(new { message = "No matching portal user found for Azure AD account." });
+            }
+
+            var token = GenerateJwtToken(user.Id, user.Email, user.Role.ToString());
+
+            return Ok(new LoginResponse
+            {
+                Token = token,
+                Email = user.Email,
+                Role = user.Role.ToString()
+            });
+        }
+        catch (SecurityTokenException ex)
+        {
+            return Unauthorized(new { message = $"Invalid Azure AD token: {ex.Message}" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = $"Azure AD login failed: {ex.Message}" });
+        }
     }
 
     private bool VerifyPassword(string password, string passwordHash)
@@ -86,3 +190,5 @@ public record LoginResponse
     public string Email { get; init; } = string.Empty;
     public string Role { get; init; } = string.Empty;
 }
+
+public record AzureLoginRequest(string IdToken);

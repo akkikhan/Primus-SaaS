@@ -63,6 +63,8 @@ public class PortalDbContext : DbContext
             entity.HasIndex(e => e.PrimusClientId).IsUnique();
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.Property(e => e.PrimusClientId).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ClientSecretHash).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ClientSecretLastRotatedAt);
 
             entity.HasOne(e => e.Owner)
                 .WithMany(u => u.Applications)

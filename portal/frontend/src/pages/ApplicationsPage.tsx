@@ -13,6 +13,7 @@ interface ApplicationFormData {
 export const ApplicationsPage = () => {
   const { applications, fetchApplications, createApplication, deleteApplication, isLoading } = useApplicationsStore();
   const [showModal, setShowModal] = useState(false);
+  const [newCredentials, setNewCredentials] = useState<{ clientId: string; clientSecret: string } | null>(null);
   const [formData, setFormData] = useState<ApplicationFormData>({
     name: '',
     stack: '',
@@ -34,14 +35,20 @@ export const ApplicationsPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createApplication(formData);
+      const created = await createApplication(formData);
+      if (created?.primusClientId && created?.clientSecret) {
+        setNewCredentials({
+          clientId: created.primusClientId,
+          clientSecret: created.clientSecret,
+        });
+      }
       setShowModal(false);
       setFormData({
         name: '',
         stack: '',
         description: '',
       });
-    } catch (error) {
+    } catch {
       // Error handled by store
     }
   };
@@ -145,6 +152,46 @@ export const ApplicationsPage = () => {
                 <button type="submit">Create</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {newCredentials && (
+        <div className="modal-overlay" onClick={() => setNewCredentials(null)}>
+          <div className="modal credentials-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Client Credentials</h2>
+            <p className="credentials-hint">
+              Copy these values now. The client secret will not be displayed again after you close this dialog.
+            </p>
+            <div className="credentials-field">
+              <label>Primus Client ID</label>
+              <div className="credentials-value">
+                <code>{newCredentials.clientId}</code>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(newCredentials.clientId)}
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+            <div className="credentials-field">
+              <label>Client Secret</label>
+              <div className="credentials-value">
+                <code>{newCredentials.clientSecret}</code>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(newCredentials.clientSecret)}
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button type="button" onClick={() => setNewCredentials(null)}>
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}

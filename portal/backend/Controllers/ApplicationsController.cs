@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PrimusSaaS.Portal.Api.Data;
 using PrimusSaaS.Portal.Api.Models;
 using System.Security.Claims;
+using System.Security.Cryptography;
 
 namespace PrimusSaaS.Portal.Api.Controllers;
 
@@ -33,7 +34,9 @@ public class ApplicationsController : ControllerBase
                 Description = a.Description,
                 OwnerEmail = a.Owner.Email,
                 ModuleCount = a.ApplicationModules.Count,
-                CreatedAt = a.CreatedAt
+                CreatedAt = a.CreatedAt,
+                ClientSecretLastRotatedAt = a.ClientSecretLastRotatedAt,
+                HasClientSecret = a.ClientSecretHash != string.Empty
             })
             .ToListAsync();
 
@@ -56,6 +59,8 @@ public class ApplicationsController : ControllerBase
                 OwnerEmail = a.Owner.Email,
                 CreatedAt = a.CreatedAt,
                 UpdatedAt = a.UpdatedAt,
+                ClientSecretLastRotatedAt = a.ClientSecretLastRotatedAt,
+                HasClientSecret = a.ClientSecretHash != string.Empty,
                 IntegratedModules = a.ApplicationModules.Select(am => new IntegratedModuleDto
                 {
                     ModuleId = am.ModuleId,
@@ -96,8 +101,10 @@ public class ApplicationsController : ControllerBase
             return BadRequest(new { message = "Invalid stack specified" });
         }
 
-        // Auto-generate Primus Client ID for tracking
+        // Auto-generate Primus Client ID + secret for tracking
         var primusClientId = GeneratePrimusClientId();
+        var clientSecret = GenerateClientSecret();
+        var secretHash = BCrypt.Net.BCrypt.HashPassword(clientSecret);
 
         var application = new Application
         {
@@ -105,7 +112,9 @@ public class ApplicationsController : ControllerBase
             Name = request.Name,
             Stack = stack,
             Description = request.Description,
-            PrimusClientId = primusClientId
+            PrimusClientId = primusClientId,
+            ClientSecretHash = secretHash,
+            ClientSecretLastRotatedAt = DateTime.UtcNow
         };
 
         _context.Applications.Add(application);
@@ -121,7 +130,10 @@ public class ApplicationsController : ControllerBase
             Description = application.Description,
             OwnerEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "",
             ModuleCount = 0,
-            CreatedAt = application.CreatedAt
+            CreatedAt = application.CreatedAt,
+            ClientSecret = clientSecret,
+            ClientSecretLastRotatedAt = application.ClientSecretLastRotatedAt,
+            HasClientSecret = true
         };
 
         return CreatedAtAction(nameof(GetApplication), new { id = application.Id }, dto);
@@ -268,7 +280,9 @@ public class ApplicationsController : ControllerBase
             Description = application.Description,
             OwnerEmail = application.Owner.Email,
             ModuleCount = await _context.ApplicationModules.CountAsync(am => am.ApplicationId == id),
-            CreatedAt = application.CreatedAt
+            CreatedAt = application.CreatedAt,
+            ClientSecretLastRotatedAt = application.ClientSecretLastRotatedAt,
+            HasClientSecret = !string.IsNullOrEmpty(application.ClientSecretHash)
         };
 
         return Ok(dto);
@@ -290,12 +304,47 @@ public class ApplicationsController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id}/credentials/rotate")]
+    public async Task<ActionResult<ApplicationCredentialResponse>> RotateClientSecret(int id)
+    {
+        var application = await _context.Applications.FirstOrDefaultAsync(a => a.Id == id);
+        if (application == null)
+        {
+            return NotFound();
+        }
+
+        var newSecret = GenerateClientSecret();
+        application.ClientSecretHash = BCrypt.Net.BCrypt.HashPassword(newSecret);
+        application.ClientSecretLastRotatedAt = DateTime.UtcNow;
+        application.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new ApplicationCredentialResponse
+        {
+            PrimusClientId = application.PrimusClientId,
+            ClientSecret = newSecret,
+            RotatedAt = application.ClientSecretLastRotatedAt ?? DateTime.UtcNow
+        });
+    }
+
     private string GeneratePrimusClientId()
     {
         // Format: PSP-CLI-000123
         var random = new Random();
         var number = random.Next(1, 999999);
         return $"PSP-CLI-{number:D6}";
+    }
+
+    private string GenerateClientSecret()
+    {
+        Span<byte> buffer = stackalloc byte[32];
+        RandomNumberGenerator.Fill(buffer);
+        var encoded = Convert.ToBase64String(buffer)
+            .TrimEnd('=')
+            .Replace('+', 'A')
+            .Replace('/', 'B');
+        return $"psp_{encoded}";
     }
 
     private string NormalizeStackString(string stack)
@@ -322,6 +371,9 @@ public record ApplicationDto
     public string OwnerEmail { get; init; } = string.Empty;
     public int ModuleCount { get; init; }
     public DateTime CreatedAt { get; init; }
+    public string? ClientSecret { get; init; }
+    public DateTime? ClientSecretLastRotatedAt { get; init; }
+    public bool HasClientSecret { get; init; }
 }
 
 public record ApplicationDetailDto
@@ -334,6 +386,8 @@ public record ApplicationDetailDto
     public string OwnerEmail { get; init; } = string.Empty;
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; init; }
+    public DateTime? ClientSecretLastRotatedAt { get; init; }
+    public bool HasClientSecret { get; init; }
     public List<IntegratedModuleDto> IntegratedModules { get; init; } = new();
 }
 
@@ -356,3 +410,9 @@ public record CreateApplicationRequest(string Name, string Stack, string? Descri
 public record UpdateApplicationRequest(string? Name = null, string? Stack = null, string? Description = null);
     public record IntegrateModuleRequest(int ModuleId, int ModuleVersionId, string ConfigJson = "{}");
 public record ChangeVersionRequest(string Version);
+public record ApplicationCredentialResponse
+{
+    public string PrimusClientId { get; init; } = string.Empty;
+    public string ClientSecret { get; init; } = string.Empty;
+    public DateTime RotatedAt { get; init; }
+}

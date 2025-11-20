@@ -7,6 +7,8 @@ public class Application
     public string Name { get; set; } = string.Empty;
     public AppStack Stack { get; set; }
     public string PrimusClientId { get; set; } = string.Empty; // Auto-generated tracking ID (e.g., PSP-CLI-000123)
+    public string ClientSecretHash { get; set; } = string.Empty;
+    public DateTime? ClientSecretLastRotatedAt { get; set; }
     public string? Description { get; set; } // Optional description
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

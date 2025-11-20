@@ -26,7 +26,7 @@ export const ModulesPage = () => {
       await createModule(moduleForm);
       setShowModuleModal(false);
       setModuleForm({ name: '', description: '', moduleKey: '' });
-    } catch (error) {
+    } catch {
       // Error handled by store
     }
   };
@@ -42,7 +42,7 @@ export const ModulesPage = () => {
         await addVersion(showVersionModal, versionPayload);
         setShowVersionModal(null);
         setVersionForm({ version: '', releaseNotes: '', changelog: '', demoCode: '', isBreakingChange: false });
-      } catch (error) {
+      } catch {
         // Error handled by store
       }
     }

@@ -63,32 +63,29 @@ export const DashboardPage = () => {
   const stackEntries = Object.entries(stackBreakdown).sort((a, b) => b[1] - a[1]);
 
   const latestReleases: LatestRelease[] = modules
-    .map((module) => {
-      const versions = module.moduleVersions || [];
+    .reduce<LatestRelease[]>((acc, module) => {
+      const versions = module.moduleVersions?.filter((version) => Boolean(version.releasedAt)) ?? [];
       if (!versions.length) {
-        return null;
+        return acc;
       }
-      const latest = [...versions]
-        .filter((version) => version.releasedAt)
-        .sort(
-          (a, b) =>
-            new Date(b.releasedAt || 0).getTime() - new Date(a.releasedAt || 0).getTime()
-        )[0];
+
+      const latest = [...versions].sort(
+        (a, b) => new Date(b.releasedAt).getTime() - new Date(a.releasedAt).getTime()
+      )[0];
+
       if (!latest) {
-        return null;
+        return acc;
       }
-      return {
+
+      acc.push({
         moduleName: module.name,
         version: latest.version,
         releasedAt: latest.releasedAt,
         isBreakingChange: latest.isBreakingChange,
-      };
-    })
-    .filter((release): release is LatestRelease => Boolean(release))
-    .sort(
-      (a, b) =>
-        new Date(b.releasedAt || 0).getTime() - new Date(a.releasedAt || 0).getTime()
-    )
+      });
+      return acc;
+    }, [])
+    .sort((a, b) => new Date(b.releasedAt || 0).getTime() - new Date(a.releasedAt || 0).getTime())
     .slice(0, 4);
 
   const isLoading = modulesLoading || appsLoading;

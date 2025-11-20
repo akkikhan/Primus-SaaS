@@ -1,5 +1,5 @@
 import { useParams, Link, Outlet, useNavigate } from 'react-router-dom';
-import { useApplicationsStore } from '../state/applicationsStore';
+import { useApplicationsStore, type IntegratedModule } from '../state/applicationsStore';
 import { useModulesStore } from '../state/modulesStore';
 import { useEffect, useState } from 'react';
 import apiClient from '../services/apiClient';
@@ -8,7 +8,7 @@ import './ApplicationDetailsPage.css';
 export const ApplicationDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentApplication, fetchApplication, addModule, removeModule, changeModuleVersion, updateApplication, isLoading } = useApplicationsStore();
+  const { currentApplication, fetchApplication, addModule, removeModule, changeModuleVersion, updateApplication, rotateClientSecret, isLoading } = useApplicationsStore();
   const { modules, fetchModules } = useModulesStore();
   const [showAddModule, setShowAddModule] = useState(false);
   const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);
@@ -18,9 +18,11 @@ export const ApplicationDetailsPage = () => {
   const [changingModuleId, setChangingModuleId] = useState<number | null>(null);
   const [newVersion, setNewVersion] = useState<string>('');
   const [showChangelog, setShowChangelog] = useState(false);
-  const [changelogModule, setChangelogModule] = useState<any>(null);
+  const [changelogModule, setChangelogModule] = useState<IntegratedModule | null>(null);
   const [showEditApp, setShowEditApp] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', stack: '', description: '' });
+  const [latestSecret, setLatestSecret] = useState<{ clientSecret: string; rotatedAt: string } | null>(null);
+  const [rotatingSecret, setRotatingSecret] = useState(false);
   const stackIcons: Record<string, string> = {
     DotNet: '🟣 .NET',
     NodeJS: '🟢 Node.js',
@@ -37,6 +39,15 @@ export const ApplicationDetailsPage = () => {
     }
   }, [id, fetchApplication, fetchModules]);
 
+  useEffect(() => {
+    if (currentApplication?.clientSecret) {
+      setLatestSecret({
+        clientSecret: currentApplication.clientSecret,
+        rotatedAt: currentApplication.clientSecretLastRotatedAt ?? new Date().toISOString(),
+      });
+    }
+  }, [currentApplication?.clientSecret, currentApplication?.clientSecretLastRotatedAt]);
+
   if (isLoading || !currentApplication) {
     return <p>Loading application…</p>;
   }
@@ -48,7 +59,7 @@ export const ApplicationDetailsPage = () => {
         setShowAddModule(false);
         setSelectedModuleId(null);
         setSelectedVersionId(null);
-      } catch (error) {
+      } catch {
         // Error handled by store
       }
     }
@@ -73,13 +84,13 @@ export const ApplicationDetailsPage = () => {
         setShowChangeVersion(false);
         setChangingModuleId(null);
         setNewVersion('');
-      } catch (error) {
+      } catch {
         // Error handled by store
       }
     }
   };
 
-  const handleViewChangelog = (module: any) => {
+  const handleViewChangelog = (module: IntegratedModule) => {
     setChangelogModule(module);
     setShowChangelog(true);
   };
@@ -153,6 +164,20 @@ ${getCodeSnippet()}
     });
     await fetchApplication(Number(id));
     setShowEditApp(false);
+  };
+
+  const handleRotateSecret = async () => {
+    if (!id) return;
+    setRotatingSecret(true);
+    try {
+      const credentials = await rotateClientSecret(Number(id));
+      setLatestSecret({
+        clientSecret: credentials.clientSecret,
+        rotatedAt: credentials.rotatedAt,
+      });
+    } finally {
+      setRotatingSecret(false);
+    }
   };
 
   // Generate integration documentation based on stack
@@ -466,6 +491,42 @@ async def get_user(user=Depends(auth.require_auth)):
               <label>Integrated Modules</label>
               <div className="info-value">{currentApplication.integratedModules?.length || 0}</div>
             </div>
+          </div>
+          <div className="secret-panel">
+            <div>
+              <label>Client Secret</label>
+              {latestSecret ? (
+                <div className="info-value copy-container">
+                  <code className="code-inline">{latestSecret.clientSecret}</code>
+                  <button
+                    type="button"
+                    className="copy-btn"
+                    onClick={() => handleCopy(latestSecret.clientSecret, 'client-secret')}
+                    title="Copy to clipboard"
+                  >
+                    {copiedText === 'client-secret' ? '✓' : '📋'}
+                  </button>
+                </div>
+              ) : (
+                <p className="secret-placeholder">
+                  Generate a client secret to hand off to engineering teams. It will only be shown immediately after generation.
+                </p>
+              )}
+              <small>
+                Last rotated:{' '}
+                {currentApplication.clientSecretLastRotatedAt
+                  ? new Date(currentApplication.clientSecretLastRotatedAt).toLocaleString()
+                  : 'Never generated'}
+              </small>
+            </div>
+            <button
+              type="button"
+              className="rotate-secret-btn"
+              onClick={handleRotateSecret}
+              disabled={rotatingSecret}
+            >
+              {rotatingSecret ? 'Generating…' : latestSecret ? 'Rotate Secret' : 'Generate Secret'}
+            </button>
           </div>
         </div>
 

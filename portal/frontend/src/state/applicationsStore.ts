@@ -11,6 +11,7 @@ export interface IntegratedModule {
   isBreakingChange: boolean;
   releaseNotes: string;
   changelog?: string;
+  demoCode?: string;
   releasedAt?: string;
   configJson: string;
   integratedAt: string;
@@ -26,7 +27,16 @@ export interface Application {
   moduleCount: number;
   createdAt: string;
   updatedAt?: string; // Only in detail view
+  clientSecret?: string | null;
+  clientSecretLastRotatedAt?: string | null;
+  hasClientSecret?: boolean;
   integratedModules?: IntegratedModule[]; // Only in detail view
+}
+
+export interface ApplicationCredential {
+  primusClientId: string;
+  clientSecret: string;
+  rotatedAt: string;
 }
 
 interface ApplicationsState {
@@ -42,6 +52,7 @@ interface ApplicationsState {
   addModule: (applicationId: number, moduleId: number, moduleVersionId: number) => Promise<void>;
   changeModuleVersion: (applicationId: number, moduleId: number, version: string) => Promise<void>;
   removeModule: (applicationId: number, moduleId: number) => Promise<void>;
+  rotateClientSecret: (applicationId: number) => Promise<ApplicationCredential>;
 }
 
 export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
@@ -170,6 +181,19 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
       const errorMessage = getErrorMessage(error);
       set({ error: errorMessage, isLoading: false });
       useUIStore.getState().addToast('error', `Failed to remove module: ${errorMessage}`);
+      throw error;
+    }
+  },
+
+  rotateClientSecret: async (applicationId) => {
+    try {
+      const response = await apiClient.post(`/applications/${applicationId}/credentials/rotate`);
+      await get().fetchApplication(applicationId);
+      useUIStore.getState().addToast('success', 'Client secret regenerated. Copy it immediately.');
+      return response.data as ApplicationCredential;
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      useUIStore.getState().addToast('error', `Failed to rotate client secret: ${errorMessage}`);
       throw error;
     }
   },

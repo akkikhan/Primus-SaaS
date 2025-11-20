@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import apiClient, { getErrorMessage } from '../services/apiClient';
 import { useUIStore } from '../state/uiStore';
 import './UpgradeManagerPage.css';
@@ -31,7 +31,7 @@ export const UpgradeManagerPage = () => {
   const [selectedApp, setSelectedApp] = useState<AppUpgrade | null>(null);
   const addToast = useUIStore((state) => state.addToast);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const response = await apiClient.get('/upgrade/overview');
@@ -41,11 +41,11 @@ export const UpgradeManagerPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast]);
 
   useEffect(() => {
     void loadData();
-  }, []);
+  }, [loadData]);
 
   const handleUpgrade = async (app: AppUpgrade, module: ModuleUpgrade) => {
     try {

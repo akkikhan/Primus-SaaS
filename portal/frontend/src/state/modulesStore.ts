@@ -37,7 +37,7 @@ interface ModulesState {
   addVersion: (moduleId: number, version: Omit<ModuleVersion, 'id' | 'moduleId'>) => Promise<void>;
 }
 
-export const useModulesStore = create<ModulesState>((set, get) => ({
+export const useModulesStore = create<ModulesState>((set) => ({
   modules: [],
   isLoading: false,
   error: null,

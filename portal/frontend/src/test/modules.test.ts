@@ -96,7 +96,7 @@ describe('Modules Store', () => {
 
   it('should add version to module', async () => {
     const versionData = {
-      versionNumber: '2.0.0',
+      version: '2.0.0',
       releaseNotes: 'Major update',
       changelog: '',
       demoCode: '',
@@ -110,7 +110,16 @@ describe('Modules Store', () => {
         name: 'Module 1',
         description: 'Desc 1',
         moduleVersions: [
-          { id: 1, moduleId: 1, versionNumber: '1.0.0', releaseNotes: 'Initial', changelog: '', demoCode: '', isBreakingChange: false, releasedAt: new Date().toISOString() },
+          {
+            id: 1,
+            moduleId: 1,
+            version: '1.0.0',
+            releaseNotes: 'Initial',
+            changelog: '',
+            demoCode: '',
+            isBreakingChange: false,
+            releasedAt: new Date().toISOString(),
+          },
         ],
       },
     ];
@@ -135,7 +144,7 @@ describe('Modules Store', () => {
     await act(async () => {
       try {
         await result.current.fetchModules();
-      } catch (error) {
+      } catch {
         // Error expected
       }
     });
@@ -145,12 +154,12 @@ describe('Modules Store', () => {
   });
 
   it('should set loading state during fetch', async () => {
-    let resolvePromise: (value: any) => void;
-    const delayedPromise = new Promise((resolve) => {
+    let resolvePromise: (value: unknown) => void;
+    const delayedPromise = new Promise<unknown>((resolve) => {
       resolvePromise = resolve;
     });
 
-    vi.mocked(apiClient.get).mockReturnValue(delayedPromise as any);
+    vi.mocked(apiClient.get).mockReturnValue(delayedPromise as unknown as Promise<unknown>);
 
     const { result } = renderHook(() => useModulesStore());
 

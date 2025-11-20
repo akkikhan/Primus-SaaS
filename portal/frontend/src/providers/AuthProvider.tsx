@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import apiClient from '../services/apiClient';
 
@@ -13,6 +14,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithAzure: (idToken: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -47,28 +49,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(false);
   }, []);
 
+  const persistSession = (newToken: string, userEmail: string, role?: string) => {
+    const newUser = {
+      id: 0,
+      email: userEmail,
+      role,
+    };
+
+    setToken(newToken);
+    setUser(newUser);
+    localStorage.setItem('authToken', newToken);
+    localStorage.setItem('authUser', JSON.stringify(newUser));
+  };
+
   const login = async (email: string, password: string): Promise<void> => {
     try {
       const response = await apiClient.post('/auth/login', { email, password });
-      
       const { token: newToken, email: userEmail, role } = response.data;
-
-      // Create user object from response
-      const newUser = { 
-        id: 0, // We'll need to decode this from the token if needed
-        email: userEmail,
-        role 
-      };
-
-      // Store in state
-      setToken(newToken);
-      setUser(newUser);
-
-      // Persist to localStorage
-      localStorage.setItem('authToken', newToken);
-      localStorage.setItem('authUser', JSON.stringify(newUser));
+      persistSession(newToken, userEmail, role);
     } catch (error) {
       console.error('Login failed:', error);
+      throw error;
+    }
+  };
+
+  const loginWithAzure = async (idToken: string): Promise<void> => {
+    try {
+      const response = await apiClient.post('/auth/azure', { idToken });
+      const { token: newToken, email: userEmail, role } = response.data;
+      persistSession(newToken, userEmail, role);
+    } catch (error) {
+      console.error('Azure AD login failed:', error);
       throw error;
     }
   };
@@ -89,6 +100,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated: !!token && !!user,
     isLoading,
     login,
+    loginWithAzure,
     logout,
   };
 
