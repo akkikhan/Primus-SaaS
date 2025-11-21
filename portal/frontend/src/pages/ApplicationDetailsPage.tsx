@@ -109,10 +109,11 @@ export const ApplicationDetailsPage = () => {
 ${getInstallCommand()}
 
 ## Required Environment Variables
+PRIMUS_PORTAL_URL=https://portal.primus-saas.com
 PRIMUS_CLIENT_ID=${currentApplication.primusClientId}
+PRIMUS_CLIENT_SECRET=<YOUR_PRIMUS_CLIENT_SECRET>
+PRIMUS_JWT_SECRET=<YOUR_JWT_SECRET_FOR_LOCAL_OR_HYBRID>
 AZURE_TENANT_ID=<TENANT_ID>
-AZURE_CLIENT_ID=<CLIENT_ID>
-AZURE_AUDIENCE=api://<CLIENT_ID>
 
 ## Configuration
 ${getConfigTemplate()}
@@ -186,11 +187,11 @@ ${getCodeSnippet()}
       case 'DotNet':
         return 'dotnet add package PrimusSaaS.Identity.Validator';
       case 'NodeJS':
-        return 'npm install @primus-saas/identity-validator';
+        return 'npm install primus-identity-validator';
       case 'NodeJS-Nest':
-        return 'npm install @primus-saas/identity-validator';
+        return 'npm install primus-identity-validator';
       case 'TypeScriptLib':
-        return 'npm install @primus-saas/identity-validator';
+        return 'npm install primus-identity-validator';
       case 'Python':
         return 'pip install primus-identity-validator';
       case 'Python-FastAPI':
@@ -206,35 +207,24 @@ ${getCodeSnippet()}
     switch (currentApplication.stack) {
       case 'DotNet':
         return `{
-  "Primus": {
-    "ClientId": "${primusClientId}"
-  },
-  "Auth": {
+  "PrimusIdentity": {
+    "PortalUrl": "https://portal.primus-saas.com",
+    "ClientId": "${primusClientId}",
+    "ClientSecret": "<YOUR_PRIMUS_CLIENT_SECRET>",
     "Mode": "AzureAd",
-    "AzureAd": {
-      "TenantId": "<YOUR_TENANT_ID>",
-      "ClientId": "<YOUR_AZURE_CLIENT_ID>",
-      "Audience": "api://<YOUR_AZURE_CLIENT_ID>",
-      "Authority": "https://login.microsoftonline.com/<TENANT_ID>/v2.0"
-    }
+    "TenantId": "<YOUR_TENANT_ID>",
+    "RequireHttpsMetadata": true
   }
 }`;
       case 'NodeJS':
       case 'NodeJS-Nest':
       case 'TypeScriptLib':
         return `{
-  "Primus": {
-    "ClientId": "${primusClientId}"
-  },
-  "Auth": {
-    "Mode": "AzureAd",
-    "AzureAd": {
-      "TenantId": "<YOUR_TENANT_ID>",
-      "ClientId": "<YOUR_AZURE_CLIENT_ID>",
-      "Audience": "api://<YOUR_AZURE_CLIENT_ID>",
-      "Authority": "https://login.microsoftonline.com/<TENANT_ID>/v2.0"
-    }
-  }
+  "portalUrl": "https://portal.primus-saas.com",
+  "clientId": "${primusClientId}",
+  "clientSecret": "<YOUR_PRIMUS_CLIENT_SECRET>",
+  "mode": "AzureAd",
+  "tenantId": "<YOUR_TENANT_ID>"
 }`;
       case 'Python':
       case 'Python-FastAPI':
@@ -263,14 +253,17 @@ ${getCodeSnippet()}
     switch (currentApplication.stack) {
       case 'DotNet':
         return `// Program.cs
-using PrimusSaaS.Identity.Validator;
+using PrimusSaaS.Identity.Validator; // Provides AddPrimusIdentity and ValidationMode
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddPrimusIdentityValidator(options =>
+builder.Services.AddPrimusIdentity(options =>
 {
-    options.PrimusClientId = "${primusClientId}";
-    options.AuthMode = "AzureAd";
+    options.PortalUrl = builder.Configuration["PrimusIdentity:PortalUrl"] ?? "https://portal.primus-saas.com";
+    options.ClientId = builder.Configuration["PrimusIdentity:ClientId"] ?? "${primusClientId}";
+    options.ClientSecret = builder.Configuration["PrimusIdentity:ClientSecret"] ?? "<YOUR_PRIMUS_CLIENT_SECRET>";
+    options.Mode = ValidationMode.AzureAd;
+    options.TenantId = builder.Configuration["PrimusIdentity:TenantId"] ?? "<YOUR_TENANT_ID>";
 });
 
 var app = builder.Build();
@@ -280,74 +273,59 @@ app.MapControllers();
 app.Run();`;
       case 'NodeJS':
         return `// server.ts
-import { createIdentityValidator } from "@primus-saas/identity-validator";
+import express from "express";
+import { primusIdentityMiddleware, ValidationMode } from "primus-identity-validator";
 
-const auth = createIdentityValidator({
-  primusClientId: "${primusClientId}",
-  mode: "AzureAd",
-  azureAd: {
-    tenantId: process.env.AZURE_TENANT!,
-    clientId: process.env.AZURE_CLIENT!,
-    audience: process.env.AZURE_AUD!
-  }
+const app = express();
+
+const primusAuth = primusIdentityMiddleware({
+  portalUrl: process.env.PRIMUS_PORTAL_URL ?? "https://portal.primus-saas.com",
+  clientId: process.env.PRIMUS_CLIENT_ID ?? "${primusClientId}",
+  clientSecret: process.env.PRIMUS_CLIENT_SECRET ?? "<YOUR_PRIMUS_CLIENT_SECRET>",
+  mode: ValidationMode.AzureAd,
+  tenantId: process.env.AZURE_TENANT_ID ?? "<YOUR_TENANT_ID>"
 });
 
-// Use with Express
-app.get("/api/me", auth.requireAuth, (req, res) => {
-  res.json({ user: req.user });
+app.get("/api/me", primusAuth, (req, res) => {
+  res.json({ user: req.primusUser });
 });`;
       case 'NodeJS-Nest':
         return `// auth.module.ts
-import { Module } from "@nestjs/common";
-import { createIdentityValidator } from "@primus-saas/identity-validator";
+import { Module, MiddlewareConsumer, NestModule } from "@nestjs/common";
+import { primusIdentityMiddleware, ValidationMode } from "primus-identity-validator";
 
-const auth = createIdentityValidator({
-  primusClientId: "${primusClientId}",
-  mode: "AzureAd",
-  azureAd: {
-    tenantId: process.env.AZURE_TENANT!,
-    clientId: process.env.AZURE_CLIENT!,
-    audience: process.env.AZURE_AUD!
-  }
+const primusAuth = primusIdentityMiddleware({
+  portalUrl: process.env.PRIMUS_PORTAL_URL ?? "https://portal.primus-saas.com",
+  clientId: process.env.PRIMUS_CLIENT_ID ?? "${primusClientId}",
+  clientSecret: process.env.PRIMUS_CLIENT_SECRET ?? "<YOUR_PRIMUS_CLIENT_SECRET>",
+  mode: ValidationMode.AzureAd,
+  tenantId: process.env.AZURE_TENANT_ID ?? "<YOUR_TENANT_ID>"
 });
 
 @Module({
-  providers: [
-    {
-      provide: 'AUTH_GUARD',
-      useValue: auth.requireAuth
-    }
-  ],
-  exports: ['AUTH_GUARD']
+  providers: [],
+  exports: []
 })
-export class AuthModule {}
-
-// user.controller.ts
-@Controller('api/me')
-export class UserController {
-  @Get()
-  @UseGuards('AUTH_GUARD')
-  getUser(@Request() req) {
-    return { user: req.user };
+export class AuthModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(primusAuth).forRoutes("*");
   }
 }`;
       case 'TypeScriptLib':
         return `// validator.ts
-import { createIdentityValidator } from "@primus-saas/identity-validator";
+import { PrimusIdentityValidator, ValidationMode } from "primus-identity-validator";
 
-export const auth = createIdentityValidator({
-  primusClientId: "${primusClientId}",
-  mode: "AzureAd",
-  azureAd: {
-    tenantId: process.env.AZURE_TENANT!,
-    clientId: process.env.AZURE_CLIENT!,
-    audience: process.env.AZURE_AUD!
-  }
+export const validator = new PrimusIdentityValidator({
+  portalUrl: process.env.PRIMUS_PORTAL_URL ?? "https://portal.primus-saas.com",
+  clientId: process.env.PRIMUS_CLIENT_ID ?? "${primusClientId}",
+  clientSecret: process.env.PRIMUS_CLIENT_SECRET ?? "<YOUR_PRIMUS_CLIENT_SECRET>",
+  jwtSecret: process.env.PRIMUS_JWT_SECRET, // required for Local/Hybrid modes
+  mode: ValidationMode.AzureAd,
+  tenantId: process.env.AZURE_TENANT_ID ?? "<YOUR_TENANT_ID>"
 });
 
-// Usage in your code
 const token = "Bearer eyJ...";
-const result = await auth.validateToken(token);
+const result = await validator.validateToken(token);
 
 if (result.isValid) {
   console.log("User:", result.user);
@@ -634,10 +612,10 @@ async def get_user(user=Depends(auth.require_auth)):
 
           <div className="docs-section">
             <h3>Step 2: Configure Your Application</h3>
-            <p>Add your Primus Client ID and Azure AD credentials to your configuration:</p>
+            <p>Add your Primus portal credentials and Azure AD tenant settings (for AzureAd/Hybrid):</p>
             <div className="alert alert-info">
               <strong>Note:</strong> The <code>PrimusClientId</code> is pre-filled with your application's ID. 
-              Replace the Azure AD placeholders with YOUR tenant's credentials from your Azure AD App Registration.
+              Replace the placeholders with your portal secret and Azure AD tenant details.
             </div>
             <div className="code-block-container">
               <pre className="code-block">
@@ -656,16 +634,19 @@ async def get_user(user=Depends(auth.require_auth)):
               <h4>Configuration Guide:</h4>
               <ul>
                 <li>
-                  <strong>&lt;YOUR_TENANT_ID&gt;</strong>: Your Azure AD tenant ID (found in Azure Portal &gt; Azure Active Directory &gt; Overview)
+                  <strong>PortalUrl</strong>: Base URL of your Primus portal (e.g., <code>https://portal.primus-saas.com</code>)
                 </li>
                 <li>
-                  <strong>&lt;YOUR_AZURE_CLIENT_ID&gt;</strong>: Your application's client ID from Azure AD App Registration
+                  <strong>ClientSecret</strong>: Generated secret from the Primus portal for this app
                 </li>
                 <li>
-                  <strong>&lt;TENANT_ID&gt;</strong>: Same as YOUR_TENANT_ID (used in the authority URL)
+                  <strong>Mode</strong>: Use <code>AzureAd</code> to validate Azure AD tokens (or <code>Hybrid</code>/<code>Local</code> if you also use Primus-issued tokens)
                 </li>
                 <li>
-                  <strong>Audience</strong>: Format is <code>api://&lt;YOUR_AZURE_CLIENT_ID&gt;</code> - this identifies your API
+                  <strong>&lt;YOUR_TENANT_ID&gt;</strong>: Azure AD tenant ID (required for AzureAd/Hybrid). Found in Azure Portal &gt; Azure Active Directory &gt; Overview.
+                </li>
+                <li>
+                  <strong>JwtSecret</strong>: Required only for Local or Hybrid modes to validate Primus-issued tokens.
                 </li>
               </ul>
               <p className="help-link">
@@ -679,10 +660,11 @@ async def get_user(user=Depends(auth.require_auth)):
           <div className="docs-section">
             <h3>Required Environment Variables</h3>
             <ul className="env-list">
+              <li><code>PRIMUS_PORTAL_URL</code> = https://portal.primus-saas.com</li>
               <li><code>PRIMUS_CLIENT_ID</code> = {currentApplication.primusClientId}</li>
-              <li><code>AZURE_TENANT_ID</code> = &lt;YOUR_TENANT_ID&gt;</li>
-              <li><code>AZURE_CLIENT_ID</code> = &lt;YOUR_AZURE_CLIENT_ID&gt;</li>
-              <li><code>AZURE_AUDIENCE</code> = api://&lt;YOUR_AZURE_CLIENT_ID&gt;</li>
+              <li><code>PRIMUS_CLIENT_SECRET</code> = &lt;YOUR_PRIMUS_CLIENT_SECRET&gt;</li>
+              <li><code>PRIMUS_JWT_SECRET</code> = &lt;YOUR_JWT_SECRET_FOR_LOCAL_OR_HYBRID&gt;</li>
+              <li><code>AZURE_TENANT_ID</code> = &lt;YOUR_TENANT_ID&gt; (AzureAd/Hybrid only)</li>
             </ul>
             <p className="muted">Tip: store these in your deployment secrets manager and reference them in your config templates above.</p>
           </div>
@@ -710,7 +692,7 @@ async def get_user(user=Depends(auth.require_auth)):
             {currentApplication.stack === 'NodeJS' && (
               <div className="code-block-container">
                 <pre className="code-block">
-                  <code>{`app.get("/api/me", auth.requireAuth, handler);`}</code>
+                  <code>{`app.get("/api/me", primusAuth, handler);`}</code>
                 </pre>
               </div>
             )}
