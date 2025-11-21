@@ -7,7 +7,6 @@ export const generatePDF = (documentation: DocumentationDto): void => {
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 20;
     const maxWidth = pageWidth - 2 * margin;
-    const lineHeight = 7;
 
     // Helper to check page break
     const checkPageBreak = (heightNeeded: number) => {
