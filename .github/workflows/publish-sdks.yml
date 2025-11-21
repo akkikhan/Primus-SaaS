@@ -1,0 +1,55 @@
+name: Publish SDKs
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  publish-npm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+      
+      - name: Install dependencies
+        working-directory: ./sdk/nodejs/primus-identity-validator
+        run: npm ci
+
+      - name: Build
+        working-directory: ./sdk/nodejs/primus-identity-validator
+        run: npm run build
+
+      - name: Publish to NPM
+        working-directory: ./sdk/nodejs/primus-identity-validator
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-nuget:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7.0.x'
+
+      - name: Restore dependencies
+        working-directory: ./sdk/dotnet/PrimusSaaS.Identity.Validator
+        run: dotnet restore
+
+      - name: Build
+        working-directory: ./sdk/dotnet/PrimusSaaS.Identity.Validator
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Pack
+        working-directory: ./sdk/dotnet/PrimusSaaS.Identity.Validator
+        run: dotnet pack --configuration Release --no-build --output .
+
+      - name: Push to NuGet
+        working-directory: ./sdk/dotnet/PrimusSaaS.Identity.Validator
+        run: dotnet nuget push *.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json

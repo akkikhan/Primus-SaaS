@@ -7,72 +7,150 @@
 
 .apps__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
 }
 
 .apps__card {
-  background: var(--color-panel);
-  border: 1px solid var(--color-border);
+  background: linear-gradient(145deg, #111a2b, #0d1423);
+  border: 1px solid var(--color-border-strong);
   border-radius: 1rem;
-  padding: 1.25rem;
+  padding: 1.35rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
   position: relative;
-  box-shadow: var(--shadow-sm);
-  transition: border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.3);
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease,
+    background 0.2s ease;
+  min-height: 220px;
 }
 
 .apps__card:hover {
-  border-color: var(--color-primary);
-  transform: translateY(-2px);
+  border-color: rgba(34, 197, 94, 0.4);
+  transform: translateY(-4px);
   box-shadow: var(--shadow-md);
+  background: linear-gradient(150deg, #131d2f, #0f172a);
 }
 
 .apps__card-link {
   text-decoration: none;
   color: inherit;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
 }
 
 .apps__card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
 }
 
-.stack-pill {
-  background: #eef2ff;
-  color: #4338ca;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 700;
+.apps__eyebrow {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.05rem;
+}
+
+.apps__card-header h3 {
+  margin: 0;
+}
+
+.stack-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.stack-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.18);
+}
+
+.tone-dotnet .stack-dot { background: #818cf8; box-shadow: 0 0 0 5px rgba(129, 140, 248, 0.18); }
+.tone-node .stack-dot { background: #34d399; box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.18); }
+.tone-ts .stack-dot { background: #38bdf8; box-shadow: 0 0 0 5px rgba(56, 189, 248, 0.18); }
+.tone-python .stack-dot { background: #f59e0b; box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.18); }
+.tone-neutral .stack-dot { background: #a5b4fc; box-shadow: 0 0 0 5px rgba(165, 180, 252, 0.18); }
+
+.apps__card-desc {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
 }
 
 .apps__card-meta {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.875rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.meta-block {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.8rem;
+}
+
+.meta-label {
+  display: block;
+  font-size: 0.8rem;
   color: var(--color-text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.meta-value {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.meta-value.code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  letter-spacing: 0.01em;
+  color: var(--color-text);
 }
 
 .apps__delete {
-  background: rgba(239, 68, 68, 0.14);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: background 0.2s ease, border-color 0.2s ease;
-  align-self: flex-start;
+  background: rgba(248, 113, 113, 0.14);
+  color: #fecdd3;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  padding: 0.55rem 1.1rem;
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  box-shadow: none;
 }
 
 .apps__delete:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(248, 113, 113, 0.22);
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+.apps__card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.25rem;
+}
+
+.apps__secondary-action {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
 }
 
 /* Modal Styles */

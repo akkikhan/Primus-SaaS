@@ -73,7 +73,7 @@ export const UpgradeManagerPage = () => {
       </header>
 
       {loading ? (
-        <div className="empty-state"><p>Loading upgrade data…</p></div>
+        <div className="empty-state"><p>Loading upgrade data...</p></div>
       ) : (
         <div className="upgrade-grid">
           {upgrades.map(app => (
@@ -81,7 +81,7 @@ export const UpgradeManagerPage = () => {
               <div className="upgrade-card__header">
                 <div>
                   <h3>{app.applicationName}</h3>
-                  <p className="muted">{app.stack} • {app.primusClientId}</p>
+                  <p className="muted">{app.stack} | {app.primusClientId}</p>
                 </div>
               </div>
               <div className="upgrade-table">
@@ -99,7 +99,7 @@ export const UpgradeManagerPage = () => {
                     <span>v{module.latestVersion}</span>
                     <span className={module.status === 'UpdateAvailable' ? 'status-warning' : 'status-ok'}>
                       {module.status === 'UpdateAvailable' ? 'Update Available' : 'Up-to-date'}
-                      {module.isBreakingChange && <small className="breaking-flag">⚠ Breaking</small>}
+                      {module.isBreakingChange && <small className="breaking-flag">Breaking</small>}
                     </span>
                     <span className="upgrade-actions">
                       <button
@@ -145,7 +145,7 @@ export const UpgradeManagerPage = () => {
               {selected.latestChangelog && (
                 <pre className="changelog-text">{selected.latestChangelog}</pre>
               )}
-              {selected.isBreakingChange && <p className="breaking-flag">⚠ Breaking change</p>}
+              {selected.isBreakingChange && <p className="breaking-flag">Breaking change</p>}
             </div>
 
             <div className="modal-actions">

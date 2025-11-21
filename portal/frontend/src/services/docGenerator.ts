@@ -43,7 +43,7 @@ export const generatePDF = (documentation: DocumentationDto): void => {
         if (module.isBreakingChange) {
             doc.setTextColor(255, 0, 0);
             doc.setFontSize(10);
-            doc.text('⚠️ Breaking Change', margin, yPos);
+            doc.text('Breaking Change', margin, yPos);
             doc.setTextColor(0, 0, 0);
             yPos += 8;
         }
@@ -120,7 +120,7 @@ export const generateMarkdown = (documentation: DocumentationDto): void => {
         markdown += `## ${module.moduleName} v${module.version}\n\n`;
 
         if (module.isBreakingChange) {
-            markdown += `⚠️ **Breaking Change**\n\n`;
+            markdown += `**Breaking Change**\n\n`;
         }
 
         if (module.releaseNotes) {

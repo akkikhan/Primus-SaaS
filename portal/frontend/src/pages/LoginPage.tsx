@@ -78,7 +78,7 @@ export const LoginPage = () => {
             onClick={handleAzureLogin}
             disabled={!azureConfigured || isAzureLoading}
           >
-            {isAzureLoading ? 'Connecting…' : 'Sign in with Microsoft Azure ID'}
+            {isAzureLoading ? 'Connecting...' : 'Sign in with Microsoft Azure ID'}
           </button>
 
           {!azureConfigured && (
@@ -116,7 +116,7 @@ export const LoginPage = () => {
             {error && <p className="login__error">{error}</p>}
 
             <button type="submit" disabled={isLoading}>
-              {isLoading ? 'Signing in…' : 'Sign in'}
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
 
             <p className="login__hint">

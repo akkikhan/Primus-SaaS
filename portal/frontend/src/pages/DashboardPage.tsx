@@ -256,7 +256,7 @@ export const DashboardPage = () => {
                           <p className="dashboard__table-title">{module.name}</p>
                           <p className="dashboard__table-subtitle">{module.description}</p>
                         </td>
-                        <td>{module.usageCount ?? '—'}</td>
+                        <td>{module.usageCount ?? 'N/A'}</td>
                         <td>
                           <span className="dashboard__badge">
                             {module.status?.replace(/([A-Z])/g, ' $1')?.trim() || 'Active'}
@@ -304,7 +304,7 @@ export const DashboardPage = () => {
                           <p className="dashboard__table-title">{app.name}</p>
                           <p className="dashboard__table-subtitle">{app.ownerEmail}</p>
                         </td>
-                        <td>{app.stack || '—'}</td>
+                        <td>{app.stack || 'N/A'}</td>
                         <td>{app.moduleCount}</td>
                       </tr>
                     ))}
@@ -351,7 +351,7 @@ export const DashboardPage = () => {
                         <td>
                           {release.releasedAt
                             ? new Date(release.releasedAt).toLocaleDateString()
-                            : '—'}
+                            : 'N/A'}
                         </td>
                       </tr>
                     ))}

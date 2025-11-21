@@ -23,13 +23,13 @@ export const ApplicationDetailsPage = () => {
   const [editForm, setEditForm] = useState({ name: '', stack: '', description: '' });
   const [latestSecret, setLatestSecret] = useState<{ clientSecret: string; rotatedAt: string } | null>(null);
   const [rotatingSecret, setRotatingSecret] = useState(false);
-  const stackIcons: Record<string, string> = {
-    DotNet: '🟣 .NET',
-    NodeJS: '🟢 Node.js',
-    'NodeJS-Nest': '🟢 NestJS',
-    TypeScriptLib: '🔵 TS',
-    Python: '🟠 Python',
-    'Python-FastAPI': '🟠 FastAPI'
+  const stackInfo: Record<string, { label: string; tone: string }> = {
+    DotNet: { label: '.NET', tone: 'tone-dotnet' },
+    NodeJS: { label: 'Node.js', tone: 'tone-node' },
+    'NodeJS-Nest': { label: 'NestJS', tone: 'tone-node' },
+    TypeScriptLib: { label: 'TypeScript Library', tone: 'tone-ts' },
+    Python: { label: 'Python', tone: 'tone-python' },
+    'Python-FastAPI': { label: 'FastAPI', tone: 'tone-python' }
   };
 
   useEffect(() => {
@@ -49,7 +49,7 @@ export const ApplicationDetailsPage = () => {
   }, [currentApplication?.clientSecret, currentApplication?.clientSecretLastRotatedAt]);
 
   if (isLoading || !currentApplication) {
-    return <p>Loading application…</p>;
+    return <p>Loading application...</p>;
   }
 
   const handleAddModule = async () => {
@@ -402,7 +402,7 @@ async def get_user(user=Depends(auth.require_auth)):
       {/* Breadcrumb Navigation */}
       <nav className="breadcrumb">
         <Link to="/applications">Applications</Link>
-        <span className="separator">›</span>
+        <span className="separator">&gt;</span>
         <span className="current">{currentApplication.name}</span>
       </nav>
 
@@ -422,13 +422,16 @@ async def get_user(user=Depends(auth.require_auth)):
                 onClick={() => handleCopy(currentApplication.primusClientId, 'header-clientId')}
                 title="Copy to clipboard"
               >
-                {copiedText === 'header-clientId' ? '✓' : '📋'}
+                {copiedText === 'header-clientId' ? 'Copied' : 'Copy'}
               </button>
             </div>
           </div>
           <div className="header-field">
             <label>Technology Stack:</label>
-            <span className="badge">{stackIcons[currentApplication.stack] || currentApplication.stack}</span>
+            <span className={`stack-chip ${stackInfo[currentApplication.stack]?.tone ?? 'tone-neutral'}`}>
+              <span className="stack-dot" />
+              {stackInfo[currentApplication.stack]?.label ?? currentApplication.stack}
+            </span>
           </div>
           {currentApplication.description && (
             <div className="header-field">
@@ -456,7 +459,10 @@ async def get_user(user=Depends(auth.require_auth)):
           <div className="info-item">
             <label>Technology Stack</label>
             <div className="info-value">
-              <span className="badge">{stackIcons[currentApplication.stack] || currentApplication.stack}</span>
+              <span className={`stack-chip ${stackInfo[currentApplication.stack]?.tone ?? 'tone-neutral'}`}>
+                <span className="stack-dot" />
+                {stackInfo[currentApplication.stack]?.label ?? currentApplication.stack}
+              </span>
             </div>
           </div>
             <div className="info-item">
@@ -469,7 +475,7 @@ async def get_user(user=Depends(auth.require_auth)):
                   onClick={() => handleCopy(currentApplication.primusClientId, 'primusClientId')}
                   title="Copy to clipboard"
                 >
-                  {copiedText === 'primusClientId' ? '✓' : '📋'}
+                  {copiedText === 'primusClientId' ? 'Copied' : 'Copy'}
                 </button>
               </div>
             </div>
@@ -504,7 +510,7 @@ async def get_user(user=Depends(auth.require_auth)):
                     onClick={() => handleCopy(latestSecret.clientSecret, 'client-secret')}
                     title="Copy to clipboard"
                   >
-                    {copiedText === 'client-secret' ? '✓' : '📋'}
+                    {copiedText === 'client-secret' ? 'Copied' : 'Copy'}
                   </button>
                 </div>
               ) : (
@@ -525,7 +531,7 @@ async def get_user(user=Depends(auth.require_auth)):
               onClick={handleRotateSecret}
               disabled={rotatingSecret}
             >
-              {rotatingSecret ? 'Generating…' : latestSecret ? 'Rotate Secret' : 'Generate Secret'}
+              {rotatingSecret ? 'Generating...' : latestSecret ? 'Rotate Secret' : 'Generate Secret'}
             </button>
           </div>
         </div>
@@ -567,7 +573,7 @@ async def get_user(user=Depends(auth.require_auth)):
                     <div className="version-row">
                       <label>Status:</label>
                       <span className={`status-badge ${appModule.versionStatus === 'UpToDate' ? 'status-uptodate' : 'status-update-available'}`}>
-                        {appModule.versionStatus === 'UpToDate' ? 'Up-to-date ✓' : 'New version available'}
+                        {appModule.versionStatus === 'UpToDate' ? 'Up to date' : 'New version available'}
                       </span>
                     </div>
                   </div>
@@ -610,7 +616,7 @@ async def get_user(user=Depends(auth.require_auth)):
           <h2>Integration Documentation</h2>
           
           <div className="docs-section">
-            <h3>📦 Step 1: Install the SDK</h3>
+            <h3>Step 1: Install the SDK</h3>
             <p>Add the Primus Identity Validator SDK to your {currentApplication.stack} project:</p>
             <div className="code-block-container">
               <pre className="code-block">
@@ -621,13 +627,13 @@ async def get_user(user=Depends(auth.require_auth)):
                 className="copy-btn"
                 onClick={() => handleCopy(getInstallCommand(), 'install')}
               >
-                {copiedText === 'install' ? '✓ Copied' : '📋 Copy'}
+                {copiedText === 'install' ? 'Copied' : 'Copy'}
               </button>
             </div>
           </div>
 
           <div className="docs-section">
-            <h3>⚙️ Step 2: Configure Your Application</h3>
+            <h3>Step 2: Configure Your Application</h3>
             <p>Add your Primus Client ID and Azure AD credentials to your configuration:</p>
             <div className="alert alert-info">
               <strong>Note:</strong> The <code>PrimusClientId</code> is pre-filled with your application's ID. 
@@ -642,15 +648,15 @@ async def get_user(user=Depends(auth.require_auth)):
                 className="copy-btn"
                 onClick={() => handleCopy(getConfigTemplate(), 'config')}
               >
-                {copiedText === 'config' ? '✓ Copied' : '📋 Copy'}
+                {copiedText === 'config' ? 'Copied' : 'Copy'}
               </button>
             </div>
             
             <div className="config-help">
-              <h4>📘 Configuration Guide:</h4>
+              <h4>Configuration Guide:</h4>
               <ul>
                 <li>
-                  <strong>&lt;YOUR_TENANT_ID&gt;</strong>: Your Azure AD tenant ID (found in Azure Portal → Azure Active Directory → Overview)
+                  <strong>&lt;YOUR_TENANT_ID&gt;</strong>: Your Azure AD tenant ID (found in Azure Portal &gt; Azure Active Directory &gt; Overview)
                 </li>
                 <li>
                   <strong>&lt;YOUR_AZURE_CLIENT_ID&gt;</strong>: Your application's client ID from Azure AD App Registration
@@ -663,7 +669,7 @@ async def get_user(user=Depends(auth.require_auth)):
                 </li>
               </ul>
               <p className="help-link">
-                💡 <a href="https://docs.microsoft.com/azure/active-directory/develop/quickstart-register-app" target="_blank" rel="noopener noreferrer">
+                <a href="https://docs.microsoft.com/azure/active-directory/develop/quickstart-register-app" target="_blank" rel="noopener noreferrer">
                   Learn how to find these values in Azure Portal
                 </a>
               </p>
@@ -671,7 +677,7 @@ async def get_user(user=Depends(auth.require_auth)):
           </div>
 
           <div className="docs-section">
-            <h3>🌱 Required Environment Variables</h3>
+            <h3>Required Environment Variables</h3>
             <ul className="env-list">
               <li><code>PRIMUS_CLIENT_ID</code> = {currentApplication.primusClientId}</li>
               <li><code>AZURE_TENANT_ID</code> = &lt;YOUR_TENANT_ID&gt;</li>
@@ -682,7 +688,7 @@ async def get_user(user=Depends(auth.require_auth)):
           </div>
 
           <div className="docs-section">
-            <h3>🔧 Step 3: Initialize in Your Code</h3>
+            <h3>Step 3: Initialize in Your Code</h3>
             <p>Add the Primus Identity Validator to your application startup:</p>
             <div className="code-block-container">
               <pre className="code-block">
@@ -693,13 +699,13 @@ async def get_user(user=Depends(auth.require_auth)):
                 className="copy-btn"
                 onClick={() => handleCopy(getCodeSnippet(), 'code')}
               >
-                {copiedText === 'code' ? '✓ Copied' : '📋 Copy'}
+                {copiedText === 'code' ? 'Copied' : 'Copy'}
               </button>
             </div>
           </div>
 
           <div className="docs-section">
-            <h3>🔒 Step 4: Protected Routes Guide</h3>
+            <h3>Step 4: Protected Routes Guide</h3>
             <p>Apply authentication to your API endpoints:</p>
             {currentApplication.stack === 'NodeJS' && (
               <div className="code-block-container">
@@ -722,7 +728,7 @@ public class MyController : ControllerBase
           </div>
 
           <div className="docs-section">
-            <h3>📚 Additional Resources</h3>
+            <h3>Additional Resources</h3>
             <ul className="resources-list">
               <li>
                 <a href="https://docs.microsoft.com/azure/active-directory/develop/quickstart-register-app" target="_blank" rel="noopener noreferrer">
@@ -748,7 +754,7 @@ public class MyController : ControllerBase
               className="btn-primary"
               onClick={handleCopyAll}
             >
-              {copiedText === 'all-docs' ? '✓ All Copied!' : '📋 Copy All'}
+              {copiedText === 'all-docs' ? 'All content copied' : 'Copy all to clipboard'}
             </button>
             <button 
               type="button" 
@@ -756,7 +762,7 @@ public class MyController : ControllerBase
               onClick={handleDownloadPdf}
               title="Download PDF with integration steps"
             >
-              {copiedText === 'pdf' ? '✓ PDF Downloaded' : '📄 Export PDF'}
+              {copiedText === 'pdf' ? 'PDF downloaded' : 'Export PDF'}
             </button>
           </div>
         </div>
@@ -794,7 +800,7 @@ public class MyController : ControllerBase
                   <option value="">Choose a version...</option>
                   {selectedModule.moduleVersions?.map(version => (
                     <option key={version.id} value={version.id}>
-                      {version.version} {version.isBreakingChange ? '⚠️ Breaking' : ''}
+                      {version.version} {version.isBreakingChange ? '(Breaking change)' : ''}
                     </option>
                   ))}
                 </select>
@@ -835,7 +841,7 @@ public class MyController : ControllerBase
                   .find(m => m.id === changingModule.moduleId)
                   ?.moduleVersions?.map((version) => (
                     <option key={version.id} value={version.version}>
-                      v{version.version} {version.isBreakingChange ? '⚠️ Breaking Change' : ''}
+                      v{version.version} {version.isBreakingChange ? '(Breaking change)' : ''}
                       {version.version === changingModule.version ? ' (Current)' : ''}
                     </option>
                   ))}
@@ -868,7 +874,7 @@ public class MyController : ControllerBase
                 <div className="changelog-header">
                   <h3>Version {changelogModule.version} {changelogModule.versionStatus === 'UpToDate' ? '(Current)' : ''}</h3>
                   {changelogModule.isBreakingChange && (
-                    <span className="breaking-badge">⚠️ Breaking Change</span>
+                    <span className="breaking-badge">Breaking change</span>
                   )}
                 </div>
                 <div className="changelog-body">
@@ -897,7 +903,7 @@ public class MyController : ControllerBase
 
               {changelogModule.latestVersion !== changelogModule.version && (
                 <div className="changelog-notice">
-                  <p>📢 <strong>A new version (v{changelogModule.latestVersion}) is available!</strong></p>
+                  <p><strong>A newer version (v{changelogModule.latestVersion}) is available.</strong></p>
                   <button 
                     type="button"
                     className="btn-primary"

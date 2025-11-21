@@ -22,7 +22,21 @@ builder.Services.Configure<IpRateLimitPolicies>(builder.Configuration.GetSection
 builder.Services.AddInMemoryRateLimiting();
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
-// Add JWT authentication
+// Add Azure AD authentication
+var azureAdConfig = builder.Configuration.GetSection("AzureAd");
+var tenantId = azureAdConfig["TenantId"];
+var clientId = azureAdConfig["ClientId"];
+
+Console.WriteLine($"[Azure AD Config] Tenant ID: {tenantId}");
+Console.WriteLine($"[Azure AD Config] Client ID: {clientId}");
+Console.WriteLine($"[Azure AD Config] Authority: https://login.microsoftonline.com/{tenantId}/v2.0");
+Console.WriteLine($"[Azure AD Config] Audience: {clientId}");
+
+// Configure JWT authentication to use local signing key for session tokens
+var jwtKey = builder.Configuration["Jwt:Key"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -32,10 +46,40 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured")))
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!))
+        };
+        
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine($"[Auth Failed] {context.Exception.Message}");
+                Console.WriteLine($"[Auth Failed] Token: {context.Request.Headers["Authorization"]}");
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                Console.WriteLine($"[Token Validated] User: {context.Principal?.Identity?.Name}");
+                Console.WriteLine($"[Token Validated] Claims: {string.Join(", ", context.Principal?.Claims.Select(c => $"{c.Type}={c.Value}") ?? new string[0])}");
+                return Task.CompletedTask;
+            },
+            OnChallenge = context =>
+            {
+                Console.WriteLine($"[Auth Challenge] Error: {context.Error}, Description: {context.ErrorDescription}");
+                return Task.CompletedTask;
+            },
+            OnMessageReceived = context =>
+            {
+                var token = context.Request.Headers["Authorization"].ToString();
+                Console.WriteLine($"[Message Received] Authorization Header: {(string.IsNullOrEmpty(token) ? "NONE" : "Present")}");
+                if (!string.IsNullOrEmpty(token))
+                {
+                    Console.WriteLine($"[Message Received] Token Prefix: {token.Substring(0, Math.Min(20, token.Length))}...");
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 

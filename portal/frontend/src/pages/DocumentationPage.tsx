@@ -70,7 +70,7 @@ export const DocumentationPage = () => {
               <h2>{module.moduleName}</h2>
               <span className="version-badge">
                 v{module.version}
-                {module.isBreakingChange && <span className="breaking-change"> ⚠️ Breaking</span>}
+                {module.isBreakingChange && <span className="breaking-change">Breaking</span>}
               </span>
             </div>
 

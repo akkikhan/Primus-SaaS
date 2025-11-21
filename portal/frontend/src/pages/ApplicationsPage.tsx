@@ -19,13 +19,13 @@ export const ApplicationsPage = () => {
     stack: '',
     description: '',
   });
-  const stackIcons: Record<string, string> = {
-    DotNet: '🟣 .NET',
-    NodeJS: '🟢 Node.js',
-    'NodeJS-Nest': '🟢 NestJS',
-    TypeScriptLib: '🔵 TS',
-    Python: '🟠 Python',
-    'Python-FastAPI': '🟠 FastAPI'
+  const stackInfo: Record<string, { label: string; tone: string }> = {
+    DotNet: { label: '.NET', tone: 'tone-dotnet' },
+    NodeJS: { label: 'Node.js', tone: 'tone-node' },
+    'NodeJS-Nest': { label: 'NestJS', tone: 'tone-node' },
+    TypeScriptLib: { label: 'TypeScript Library', tone: 'tone-ts' },
+    Python: { label: 'Python', tone: 'tone-python' },
+    'Python-FastAPI': { label: 'FastAPI', tone: 'tone-python' }
   };
 
   useEffect(() => {
@@ -82,24 +82,42 @@ export const ApplicationsPage = () => {
           <div key={app.id} className="apps__card">
             <Link to={`/applications/${app.id}`} className="apps__card-link">
               <div className="apps__card-header">
-                <h3>{app.name}</h3>
-                <span className="stack-pill">{stackIcons[app.stack] || app.stack}</span>
+                <div>
+                  <p className="apps__eyebrow">Registered app</p>
+                  <h3>{app.name}</h3>
+                </div>
+                <span className={`stack-chip ${stackInfo[app.stack]?.tone ?? 'tone-neutral'}`}>
+                  <span className="stack-dot" />
+                  {stackInfo[app.stack]?.label ?? app.stack}
+                </span>
               </div>
+              <p className="apps__card-desc">
+                {app.description?.trim() || 'No description added yet.'}
+              </p>
               <div className="apps__card-meta">
-                <span>Modules: {app.moduleCount || 0}</span>
-                <span>Primus ID: {app.primusClientId}</span>
+                <div className="meta-block">
+                  <span className="meta-label">Modules</span>
+                  <span className="meta-value">{app.moduleCount || 0}</span>
+                </div>
+                <div className="meta-block">
+                  <span className="meta-label">Primus ID</span>
+                  <span className="meta-value code">{app.primusClientId}</span>
+                </div>
               </div>
             </Link>
-            <button 
-              type="button" 
-              className="apps__delete"
-              onClick={(e) => {
-                e.preventDefault();
-                handleDelete(app.id, app.name);
-              }}
-            >
-              Delete
-            </button>
+            <div className="apps__card-actions">
+              <button 
+                type="button" 
+                className="apps__delete"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleDelete(app.id, app.name);
+                }}
+              >
+                Delete
+              </button>
+              <span className="apps__secondary-action">View details</span>
+            </div>
           </div>
         ))}
       </div>
