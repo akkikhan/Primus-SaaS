@@ -153,6 +153,32 @@ Portal tracks module versions per client application and provides upgrade guidan
 
 ---
 
+## 🐳 Quick Start with Docker
+
+The easiest way to run the entire Primus Portal stack locally:
+
+```bash
+# 1. Copy environment template
+cp .env.example .env
+
+# 2. Start all services (Database + Backend + Frontend)
+docker-compose up -d
+
+# 3. Access the portal
+# Frontend: http://localhost:5173
+# Backend API: http://localhost:5267
+# Default credentials: admin@primussaas.com / Admin123!
+```
+
+**Services Included**:
+- SQL Server 2022 (with automatic health checks)
+- Portal Backend (.NET 8 Web API)
+- Portal Frontend (React SPA with nginx)
+
+See [DOCKER_SETUP.md](./DOCKER_SETUP.md) for detailed configuration and troubleshooting.
+
+---
+
 ## Development
 
 See individual README files in each component directory:
