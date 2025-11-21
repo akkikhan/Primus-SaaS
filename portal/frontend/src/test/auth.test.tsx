@@ -51,7 +51,7 @@ describe('AuthProvider', () => {
     const mockToken = 'new-jwt-token';
 
     vi.mocked(apiClient.post).mockResolvedValue({
-      data: { user: mockUser, token: mockToken },
+      data: { token: mockToken, email: mockUser.email, role: 'Admin' },
     });
 
     const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -64,11 +64,13 @@ describe('AuthProvider', () => {
       await result.current.login('test@example.com', 'password123');
     });
 
-    expect(result.current.user).toEqual(mockUser);
+    const expectedUser = { id: 0, email: mockUser.email, role: 'Admin' };
+
+    expect(result.current.user).toEqual(expectedUser);
     expect(result.current.token).toBe(mockToken);
     expect(result.current.isAuthenticated).toBe(true);
     expect(localStorage.getItem('authToken')).toBe(mockToken);
-    expect(localStorage.getItem('authUser')).toBe(JSON.stringify(mockUser));
+    expect(localStorage.getItem('authUser')).toBe(JSON.stringify(expectedUser));
   });
 
   it('should logout and clear credentials', async () => {

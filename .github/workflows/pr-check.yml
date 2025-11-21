@@ -1,0 +1,70 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [ master, main ]
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  NODE_VERSION: '20'
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      # Backend tests
+      - name: Test Portal Backend
+        working-directory: portal/backend
+        run: |
+          dotnet restore
+          dotnet build --no-restore
+          dotnet test --no-build --verbosity normal
+      
+      # Frontend tests
+      - name: Test Portal Frontend
+        working-directory: portal/frontend
+        run: |
+          npm ci
+          npm run test:run
+          npm run build
+      
+      # SDK tests
+      - name: Test .NET SDK
+        working-directory: sdk/dotnet/PrimusSaaS.Identity.Validator
+        run: |
+          dotnet restore
+          dotnet build --no-restore
+          dotnet test --no-build --verbosity normal
+      
+      - name: Test Node.js SDK
+        working-directory: sdk/nodejs/primus-identity-validator
+        run: |
+          npm ci
+          npm test
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run npm audit
+        working-directory: portal/frontend
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+      
+      - name: Run npm audit (SDK)
+        working-directory: sdk/nodejs/primus-identity-validator
+        run: npm audit --audit-level=moderate
+        continue-on-error: true

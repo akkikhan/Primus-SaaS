@@ -8,11 +8,11 @@ interface SkeletonProps {
   count?: number;
 }
 
-export const Skeleton: React.FC<SkeletonProps> = ({ 
-  variant = 'text', 
-  width = '100%', 
+export const Skeleton: React.FC<SkeletonProps> = ({
+  variant = 'text',
+  width = '100%',
   height = variant === 'text' ? '1em' : '100%',
-  count = 1 
+  count = 1
 }) => {
   const getStyle = () => {
     const style: Record<string, string> = {};
@@ -74,5 +74,31 @@ export const SkeletonStats: React.FC = () => (
     <Skeleton variant="text" width="40%" height="1.2em" />
     <Skeleton variant="text" width="60%" height="2.5em" />
     <Skeleton variant="text" width="50%" height="0.9em" />
+  </div>
+);
+
+export const SkeletonDocumentation: React.FC = () => (
+  <div className="skeleton-documentation">
+    <div className="skeleton-doc-header">
+      <Skeleton variant="text" width="20%" height="1em" />
+      <Skeleton variant="text" width="60%" height="2.5em" />
+      <Skeleton variant="text" width="40%" height="1em" />
+    </div>
+    <div className="skeleton-doc-content">
+      {[1, 2].map((i) => (
+        <div key={i} className="skeleton-doc-module">
+          <Skeleton variant="text" width="30%" height="2em" />
+          <div style={{ marginTop: '1rem' }}>
+            <Skeleton variant="text" width="15%" height="1.5em" />
+            <Skeleton variant="text" width="100%" />
+            <Skeleton variant="text" width="90%" />
+            <Skeleton variant="text" width="95%" />
+          </div>
+          <div style={{ marginTop: '1rem' }}>
+            <Skeleton variant="rect" height={200} />
+          </div>
+        </div>
+      ))}
+    </div>
   </div>
 );

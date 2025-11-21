@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # SQL Server Database
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: primus-db
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: ${DB_PASSWORD:-YourStrong@Passw0rd}
+      MSSQL_PID: Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$${SA_PASSWORD}" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # Portal Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: portal/backend/Dockerfile
+    container_name: primus-backend
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Server=db;Database=PrimusPortal;User Id=sa;Password=${DB_PASSWORD:-YourStrong@Passw0rd};TrustServerCertificate=True;
+      JwtSettings__Secret: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      JwtSettings__Issuer: PrimusSaaS
+      JwtSettings__Audience: PrimusSaaS
+      JwtSettings__ExpirationMinutes: 60
+    ports:
+      - "5267:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Portal Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: portal/frontend/Dockerfile
+    container_name: primus-frontend
+    environment:
+      VITE_API_BASE_URL: http://localhost:5267/api
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mssql-data:
+    driver: local
+
+networks:
+  default:
+    name: primus-network
