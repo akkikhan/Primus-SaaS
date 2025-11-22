@@ -115,4 +115,54 @@ public class PrimusIdentityOptions
                 throw new ArgumentException($"Secret or JWKS URL is required for JWT issuer {issuer.Name}.");
         }
     }
+
+    /// <summary>
+    /// Optional function to resolve tenant context from token claims.
+    /// </summary>
+    public Func<TokenClaims, TenantContext>? TenantResolver { get; set; }
+}
+
+/// <summary>
+/// Represents the resolved tenant context.
+/// </summary>
+public class TenantContext
+{
+    /// <summary>
+    /// The unique tenant identifier.
+    /// </summary>
+    public string TenantId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The user's roles within this tenant.
+    /// </summary>
+    public List<string> Roles { get; set; } = new();
+
+    /// <summary>
+    /// Additional tenant-specific metadata.
+    /// </summary>
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+/// <summary>
+/// Wrapper around token claims for easier access.
+/// </summary>
+public class TokenClaims
+{
+    private readonly Dictionary<string, object> _claims;
+
+    public TokenClaims(Dictionary<string, object> claims)
+    {
+        _claims = claims ?? new Dictionary<string, object>();
+    }
+
+    public string? Get(string claimType) => _claims.TryGetValue(claimType, out var val) ? val?.ToString() : null;
+    
+    public T? Get<T>(string claimType)
+    {
+        if (_claims.TryGetValue(claimType, out var val) && val is T typedVal)
+            return typedVal;
+        return default;
+    }
+
+    public Dictionary<string, object> All => _claims;
 }

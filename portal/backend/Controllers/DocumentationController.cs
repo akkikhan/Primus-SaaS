@@ -122,29 +122,84 @@ public class DocumentationController : ControllerBase
 
     private string GenerateDotNetConfig(string moduleName, string primusClientId, string configJson)
     {
-        var config = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(configJson) ?? new();
-
         var sb = new StringBuilder();
         
         if (moduleName == "IdentityValidator")
         {
-            // Azure AD configuration for IdentityValidator
+            // Parse configJson to extract issuer configurations
+            var config = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(configJson) ?? new();
+            
             sb.AppendLine("{");
-            sb.AppendLine("  \"PrimusIdentityValidator\": {");
-            sb.AppendLine("    // Required: Azure AD configuration");
-            sb.AppendLine("    \"DefaultAuthority\": \"https://login.microsoftonline.com/common\",");
-            sb.AppendLine("    \"AllowedAudiences\": [");
-            sb.AppendLine("      \"api://YOUR-AZURE-APP-ID\"");
-            sb.AppendLine("    ],");
-            sb.AppendLine();
-            sb.AppendLine("    // Optional: For portal analytics and tracking");
-            sb.AppendLine($"    \"PrimusTrackingId\": \"{primusClientId}\"");
+            sb.AppendLine("  \"PrimusIdentity\": {");
+            sb.AppendLine("    \"Issuers\": [");
+            
+            // Generate issuer configurations from configJson
+            // Expected format: { "issuers": [ { "name": "...", "type": "...", ... } ] }
+            if (config.TryGetValue("issuers", out var issuersObj) && issuersObj is System.Text.Json.JsonElement issuersElement)
+            {
+                var issuers = System.Text.Json.JsonSerializer.Deserialize<List<Dictionary<string, object>>>(issuersElement.GetRawText()) ?? new();
+                
+                for (int i = 0; i < issuers.Count; i++)
+                {
+                    var issuer = issuers[i];
+                    sb.AppendLine("      {");
+                    
+                    foreach (var (key, value) in issuer)
+                    {
+                        var capitalizedKey = char.ToUpper(key[0]) + key.Substring(1);
+                        
+                        if (value is System.Text.Json.JsonElement jsonValue)
+                        {
+                            if (jsonValue.ValueKind == System.Text.Json.JsonValueKind.Array)
+                            {
+                                sb.AppendLine($"        \"{capitalizedKey}\": {jsonValue.GetRawText()},");
+                            }
+                            else if (jsonValue.ValueKind == System.Text.Json.JsonValueKind.String)
+                            {
+                                sb.AppendLine($"        \"{capitalizedKey}\": \"{jsonValue.GetString()}\",");
+                            }
+                            else
+                            {
+                                sb.AppendLine($"        \"{capitalizedKey}\": {jsonValue.GetRawText()},");
+                            }
+                        }
+                        else
+                        {
+                            sb.AppendLine($"        \"{capitalizedKey}\": \"{value}\",");
+                        }
+                    }
+                    
+                    // Remove trailing comma from last property
+                    var lastLine = sb.ToString().TrimEnd();
+                    if (lastLine.EndsWith(","))
+                    {
+                        sb.Length -= Environment.NewLine.Length + 1;
+                        sb.AppendLine();
+                    }
+                    
+                    sb.AppendLine(i < issuers.Count - 1 ? "      }," : "      }");
+                }
+            }
+            else
+            {
+                // Fallback: Generate placeholder for Azure AD
+                sb.AppendLine("      {");
+                sb.AppendLine("        \"Name\": \"AzureAD\",");
+                sb.AppendLine("        \"Type\": \"Oidc\",");
+                sb.AppendLine("        \"Authority\": \"https://login.microsoftonline.com/YOUR-TENANT-ID/v2.0\",");
+                sb.AppendLine("        \"Issuer\": \"https://login.microsoftonline.com/YOUR-TENANT-ID/v2.0\",");
+                sb.AppendLine("        \"Audiences\": [\"api://YOUR-API-ID\"]");
+                sb.AppendLine("      }");
+            }
+            
+            sb.AppendLine("    ]");
             sb.AppendLine("  }");
             sb.AppendLine("}");
         }
         else
         {
             // Generic module configuration
+            var config = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(configJson) ?? new();
             sb.AppendLine("{");
             sb.AppendLine($"  \"Primus{moduleName}\": {{");
             sb.AppendLine($"    \"PrimusTrackingId\": \"{primusClientId}\",");
@@ -169,21 +224,17 @@ public class DocumentationController : ControllerBase
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add Primus IdentityValidator middleware
-builder.Services.AddPrimusIdentityValidator(options =>
+// Add Primus Identity validation
+builder.Services.AddPrimusIdentity(options =>
 {
-    // Required: Azure AD configuration
-    options.DefaultAuthority = builder.Configuration[""PrimusIdentityValidator:DefaultAuthority""];
-    options.AllowedAudiences = builder.Configuration.GetSection(""PrimusIdentityValidator:AllowedAudiences"")
-        .Get<string[]>();
-    
-    // Optional: For portal analytics
-    options.PrimusTrackingId = builder.Configuration[""PrimusIdentityValidator:PrimusTrackingId""];
+    builder.Configuration.GetSection(""PrimusIdentity"").Bind(options);
 });
+
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Use Primus IdentityValidator (must run before UseAuthorization)
+// Use Primus Identity Validator (enables authentication)
 app.UsePrimusIdentityValidator();
 app.UseAuthorization();
 
@@ -219,34 +270,85 @@ app.Run();";
 
     private string GenerateNodeIndexJs(string moduleName, string primusClientId, string configJson)
     {
-        var config = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(configJson) ?? new();
-
         var sb = new StringBuilder();
         
-        // For IdentityValidator module, generate Azure AD configuration
+        // For IdentityValidator module, generate multi-issuer configuration
         if (moduleName == "IdentityValidator")
         {
-            sb.AppendLine($"const {{ primusIdentityValidator }} = require('primus-identity-validator');");
+            var config = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(configJson) ?? new();
+            
+            sb.AppendLine("const { primusIdentityValidator } = require('primus-identity-validator');");
             sb.AppendLine();
-            sb.AppendLine("// Azure AD Configuration");
-            sb.AppendLine("// Get these values from Azure Portal → App registrations → Your app");
+            sb.AppendLine("// Multi-Issuer Configuration");
             sb.AppendLine("const primusAuth = primusIdentityValidator({");
-            sb.AppendLine("  // Required: Azure AD configuration");
-            sb.AppendLine("  defaultAuthority: process.env.AZURE_AD_AUTHORITY || 'https://login.microsoftonline.com/common',");
-            sb.AppendLine("  allowedAudiences: [process.env.AZURE_AD_AUDIENCE || 'api://YOUR-AZURE-APP-ID'],");
-            sb.AppendLine();
-            sb.AppendLine("  // Optional: For portal analytics and tracking");
-            sb.AppendLine($"  primusTrackingId: '{primusClientId}'");
+            sb.AppendLine("  issuers: [");
+            
+            // Generate issuer configurations from configJson
+            if (config.TryGetValue("issuers", out var issuersObj) && issuersObj is System.Text.Json.JsonElement issuersElement)
+            {
+                var issuers = System.Text.Json.JsonSerializer.Deserialize<List<Dictionary<string, object>>>(issuersElement.GetRawText()) ?? new();
+                
+                for (int i = 0; i < issuers.Count; i++)
+                {
+                    var issuer = issuers[i];
+                    sb.AppendLine("    {");
+                    
+                    foreach (var (key, value) in issuer)
+                    {
+                        if (value is System.Text.Json.JsonElement jsonValue)
+                        {
+                            if (jsonValue.ValueKind == System.Text.Json.JsonValueKind.Array)
+                            {
+                                sb.AppendLine($"      {key}: {jsonValue.GetRawText()},");
+                            }
+                            else if (jsonValue.ValueKind == System.Text.Json.JsonValueKind.String)
+                            {
+                                sb.AppendLine($"      {key}: '{jsonValue.GetString()}',");
+                            }
+                            else
+                            {
+                                sb.AppendLine($"      {key}: {jsonValue.GetRawText()},");
+                            }
+                        }
+                        else
+                        {
+                            sb.AppendLine($"      {key}: '{value}',");
+                        }
+                    }
+                    
+                    sb.AppendLine(i < issuers.Count - 1 ? "    }," : "    }");
+                }
+            }
+            else
+            {
+                // Fallback: Generate placeholder for Azure AD
+                sb.AppendLine("    {");
+                sb.AppendLine("      name: 'AzureAD',");
+                sb.AppendLine("      type: 'oidc',");
+                sb.AppendLine("      authority: 'https://login.microsoftonline.com/YOUR-TENANT-ID/v2.0',");
+                sb.AppendLine("      issuer: 'https://login.microsoftonline.com/YOUR-TENANT-ID/v2.0',");
+                sb.AppendLine("      audiences: ['api://YOUR-API-ID']");
+                sb.AppendLine("    }");
+            }
+            
+            sb.AppendLine("  ]");
             sb.AppendLine("});");
             sb.AppendLine();
             sb.AppendLine("// Use in Express app");
-            sb.AppendLine("app.get('/api/protected', primusAuth, (req, res) => {");
-            sb.AppendLine("  res.json({ user: req.primusUser });");
+            sb.AppendLine("app.use(primusAuth);");
+            sb.AppendLine();
+            sb.AppendLine("// Protected route example");
+            sb.AppendLine("app.get('/api/protected', (req, res) => {");
+            sb.AppendLine("  res.json({ ");
+            sb.AppendLine("    user: req.primusUser,");
+            sb.AppendLine("    tenant: req.tenantContext");
+            sb.AppendLine("  });");
             sb.AppendLine("});");
         }
         else
         {
             // Generic module configuration (for future modules)
+            var config = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(configJson) ?? new();
             sb.AppendLine($"const {{ {moduleName} }} = require('@primus-saas/{moduleName.ToLower()}');");
             sb.AppendLine();
             sb.AppendLine($"const {moduleName.ToLower()}Config = {{");
@@ -257,7 +359,7 @@ app.Run();";
                 sb.AppendLine($"  {key}: '{value}',");
             }
 
-            sb.AppendLine("};");
+            sb.AppendLine("}");
             sb.AppendLine();
             sb.AppendLine($"// Initialize {moduleName}");
             sb.AppendLine($"const {moduleName.ToLower()}Middleware = {moduleName}.initialize({moduleName.ToLower()}Config);");

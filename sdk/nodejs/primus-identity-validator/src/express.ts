@@ -57,6 +57,11 @@ export function primusIdentityMiddleware(
       // Attach user to request
       req.primusUser = user;
 
+      // Attach tenant context if available
+      if (result.tenantContext) {
+        (req as any).tenantContext = result.tenantContext;
+      }
+
       next();
     } catch (error) {
       if (error instanceof Error) {

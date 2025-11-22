@@ -3,6 +3,8 @@ import { PrimusIdentityOptions, TokenValidationResult, IssuerConfig, PrimusUser 
 import { LocalValidator } from './validators/localValidator';
 import { AzureAdValidator } from './validators/azureAdValidator';
 
+import { JwksClient } from './services/jwksClient';
+
 /**
  * Main validator class for Primus SaaS identity validation
  */
@@ -10,12 +12,14 @@ export class PrimusIdentityValidator {
   private readonly options: PrimusIdentityOptions;
   private readonly localValidator: LocalValidator;
   private readonly azureAdValidator: AzureAdValidator;
+  private readonly jwksClient: JwksClient;
 
   constructor(options: PrimusIdentityOptions) {
     this.validateOptions(options);
     this.options = this.applyDefaults(options);
     this.localValidator = new LocalValidator();
     this.azureAdValidator = new AzureAdValidator();
+    this.jwksClient = new JwksClient(options.jwksCacheTtl);
   }
 
   /**
@@ -43,24 +47,42 @@ export class PrimusIdentityValidator {
       const issuerConfig = this.options.issuers.find(i => i.issuer === issuer);
 
       if (!issuerConfig) {
-
         return {
           isValid: false,
           error: `Untrusted issuer: ${issuer}. No matching configuration found.`
         };
       }
 
+      let result: TokenValidationResult;
+
       // 3. Route to appropriate validator
       if (issuerConfig.type === 'oidc') {
-        return this.validateOidcToken(token, issuerConfig);
+        result = await this.validateOidcToken(token, issuerConfig);
       } else if (issuerConfig.type === 'jwt') {
-        return this.validateJwtToken(token, issuerConfig);
+        result = await this.validateJwtToken(token, issuerConfig);
       } else {
         return { isValid: false, error: `Unsupported issuer type: ${(issuerConfig as any).type}` };
       }
 
-    } catch (error) {
+      // 4. Resolve Tenant Context
+      if (result.isValid && result.claims && this.options.tenantResolver) {
+        try {
+          const tenantContext = await this.options.tenantResolver(result.claims);
+          result.tenantContext = tenantContext;
+        } catch (error) {
+          console.error('Primus Identity: Tenant resolution failed', error);
+          // We don't fail validation if resolution fails, but we might want to log it
+          // Or should we fail? The spec implies it's part of the pipeline.
+          // If resolution fails, the user probably shouldn't be allowed in if they rely on it.
+          // But let's keep it safe and just log for now, or maybe fail?
+          // Let's fail if resolution fails, as it's likely critical.
+          return { isValid: false, error: `Tenant resolution failed: ${error instanceof Error ? error.message : String(error)}` };
+        }
+      }
 
+      return result;
+
+    } catch (error) {
       return {
         isValid: false,
         error: error instanceof Error ? error.message : 'Unknown validation error'
@@ -99,20 +121,48 @@ export class PrimusIdentityValidator {
    * Validates a token using Local JWT validation
    */
   private async validateJwtToken(token: string, config: IssuerConfig): Promise<TokenValidationResult> {
-    if (!config.secret) {
-      return { isValid: false, error: `Shared secret required for JWT issuer: ${config.name}` };
-    }
-
     // Use the first audience for now
     const audience = config.audiences[0];
 
-    return this.localValidator.validateTokenAsync(token, {
-      secret: config.secret,
-      issuer: config.issuer,
-      audience: audience,
-      validateLifetime: this.options.validateLifetime ?? true,
-      clockSkew: this.options.clockSkew
-    });
+    if (config.jwksUrl) {
+      try {
+        // Get kid from token header
+        const decoded = jwt.decode(token, { complete: true });
+        const kid = decoded && typeof decoded !== 'string' ? decoded.header.kid : undefined;
+
+        // Fetch signing key
+        const signingKey = await this.jwksClient.getSigningKey(config.jwksUrl, kid);
+
+        // Validate using the key
+        return new Promise((resolve) => {
+          jwt.verify(token, signingKey, {
+            algorithms: ['RS256'],
+            audience: audience,
+            issuer: config.issuer,
+            ignoreExpiration: !(this.options.validateLifetime ?? true),
+            clockTolerance: this.options.clockSkew
+          }, (err, decoded) => {
+            if (err) {
+              resolve({ isValid: false, error: err.message });
+            } else {
+              resolve({ isValid: true, claims: decoded as Record<string, unknown> });
+            }
+          });
+        });
+      } catch (error) {
+        return { isValid: false, error: `JWKS validation failed: ${error instanceof Error ? error.message : String(error)}` };
+      }
+    } else if (config.secret) {
+      return this.localValidator.validateTokenAsync(token, {
+        secret: config.secret,
+        issuer: config.issuer,
+        audience: audience,
+        validateLifetime: this.options.validateLifetime ?? true,
+        clockSkew: this.options.clockSkew
+      });
+    } else {
+      return { isValid: false, error: `Secret or JWKS URL required for JWT issuer: ${config.name}` };
+    }
   }
 
   private extractTenantId(authority: string): string | null {

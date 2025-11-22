@@ -6,6 +6,7 @@ export {
   PrimusUser,
   JwtPayload,
   TokenValidationResult,
+  TenantContext,
   OpenIdConfiguration,
   JsonWebKeySet,
   JsonWebKey
@@ -16,6 +17,9 @@ export { PrimusIdentityValidator } from './validator';
 
 // Export Express middleware
 export { primusIdentityMiddleware, requireRoles } from './express';
+
+// Alias for convenience (matches spec)
+export { primusIdentityMiddleware as primusIdentityValidator } from './express';
 
 // Export validators for advanced usage
 export { LocalValidator } from './validators/localValidator';

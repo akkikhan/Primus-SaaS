@@ -56,11 +56,28 @@ export interface PrimusIdentityOptions {
    * Whether to validate token lifetime (default: true)
    */
   validateLifetime?: boolean;
-  
+
+  /**
+   * JWKS cache TTL in hours (default: 24)
+   */
   /**
    * JWKS cache TTL in hours (default: 24)
    */
   jwksCacheTtl?: number;
+
+  /**
+   * Optional function to resolve tenant context from token claims.
+   */
+  tenantResolver?: (claims: Record<string, unknown>) => TenantContext | Promise<TenantContext>;
+}
+
+/**
+ * Represents the resolved tenant context.
+ */
+export interface TenantContext {
+  tenantId: string;
+  roles: string[];
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -102,6 +119,7 @@ export interface TokenValidationResult {
   isValid: boolean;
   claims?: Record<string, unknown>;
   error?: string;
+  tenantContext?: TenantContext;
 }
 
 /**

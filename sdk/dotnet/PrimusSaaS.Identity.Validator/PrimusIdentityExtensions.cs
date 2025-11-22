@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -70,6 +71,7 @@ public static class PrimusIdentityExtensions
                 var sp = services.BuildServiceProvider();
                 var primusOptions = sp.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
                 var azureValidator = sp.GetRequiredService<AzureAdValidator>();
+                var jwksService = sp.GetRequiredService<JwksService>();
                 
                 primusOptions.Validate();
 
@@ -140,12 +142,6 @@ public static class PrimusIdentityExtensions
                             else // Jwt
                             {
                                 // Validate as Local JWT token
-                                if (string.IsNullOrEmpty(issuerConfig.Secret))
-                                {
-                                    context.Fail($"Shared secret is required for JWT issuer {issuerConfig.Name}");
-                                    return;
-                                }
-
                                 var validationParameters = new TokenValidationParameters
                                 {
                                     ValidateIssuer = true,
@@ -154,15 +150,72 @@ public static class PrimusIdentityExtensions
                                     ValidAudiences = issuerConfig.Audiences,
                                     ValidateLifetime = primusOptions.ValidateLifetime,
                                     ValidateIssuerSigningKey = true,
-                                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(issuerConfig.Secret)),
                                     ClockSkew = primusOptions.ClockSkew
                                 };
+
+                                if (!string.IsNullOrEmpty(issuerConfig.JwksUrl))
+                                {
+                                    // Fetch keys from JWKS endpoint
+                                    var keySet = await jwksService.GetJwksAsync(issuerConfig.JwksUrl);
+                                    var securityKeys = new List<SecurityKey>();
+
+                                    foreach (var key in keySet.Keys)
+                                    {
+                                        var jsonKey = new Microsoft.IdentityModel.Tokens.JsonWebKey
+                                        {
+                                            Kty = key.KeyType,
+                                            Use = key.Use,
+                                            Kid = key.KeyId,
+                                            N = key.Modulus,
+                                            E = key.Exponent,
+                                            Alg = key.Algorithm,
+                                            X5t = key.X509Thumbprint,
+                                            // Map other properties if needed
+                                        };
+                                        
+                                        // Add X5C if present
+                                        if (key.X509CertificateChain != null)
+                                        {
+                                            foreach (var cert in key.X509CertificateChain)
+                                            {
+                                                jsonKey.X5c.Add(cert);
+                                            }
+                                        }
+
+                                        securityKeys.Add(jsonKey);
+                                    }
+
+                                    validationParameters.IssuerSigningKeys = securityKeys;
+                                }
+                                else if (!string.IsNullOrEmpty(issuerConfig.Secret))
+                                {
+                                    validationParameters.IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(issuerConfig.Secret));
+                                }
+                                else
+                                {
+                                    context.Fail($"Secret or JWKS URL is required for JWT issuer {issuerConfig.Name}");
+                                    return;
+                                }
 
                                 var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
                                 principal = handler.ValidateToken(token.RawData, validationParameters, out _);
                             }
 
                             context.Principal = principal;
+                            
+                            // Resolve Tenant Context
+                            if (primusOptions.TenantResolver != null)
+                            {
+                                var claimsDict = principal.Claims.ToDictionary(c => c.Type, c => (object)c.Value);
+                                var tokenClaims = new TokenClaims(claimsDict);
+                                var tenantContext = primusOptions.TenantResolver(tokenClaims);
+                                
+                                if (tenantContext != null)
+                                {
+                                    context.HttpContext.Items["TenantContext"] = tenantContext;
+                                }
+                            }
+
                             Console.WriteLine($"Primus Identity: Token validated for user - {principal.Identity?.Name} (Issuer: {issuerConfig.Name})");
                         }
                         catch (Exception ex)
@@ -185,6 +238,23 @@ public static class PrimusIdentityExtensions
             });
 
         return services;
+    }
+
+    /// <summary>
+    /// Adds the Primus Identity Validator middleware to the pipeline.
+    /// This enables authentication capabilities.
+    /// </summary>
+    /// <param name="app">The application builder.</param>
+    /// <returns>The application builder.</returns>
+    public static IApplicationBuilder UsePrimusIdentityValidator(this IApplicationBuilder app)
+    {
+        if (app == null)
+        {
+            throw new ArgumentNullException(nameof(app));
+        }
+
+        app.UseAuthentication();
+        return app;
     }
 
     private static string? ExtractTenantId(string authority)
