@@ -1,0 +1,12 @@
+{
+    "name": "acme-dashboard",
+    "version": "1.0.0",
+    "description": "Real-life demo application for Primus SaaS",
+    "main": "server.js",
+    "dependencies": {
+        "axios": "^1.13.2",
+        "express": "^4.18.2",
+        "jsonwebtoken": "^9.0.2",
+        "primus-identity-validator": "file:../../sdk/nodejs/primus-identity-validator"
+    }
+}
