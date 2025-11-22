@@ -1,21 +1,41 @@
-/**
- * Validation mode for JWT token validation
- */
-export enum ValidationMode {
+export type IssuerType = 'oidc' | 'jwt';
+
+export interface IssuerConfig {
   /**
-   * Local JWT validation using symmetric key (HMAC)
+   * Friendly name for this issuer (e.g., "AzureAD", "LocalAuth")
    */
-  Local = 'Local',
-  
+  name: string;
+
   /**
-   * Azure AD token validation using asymmetric keys (RSA)
+   * Type of issuer
    */
-  AzureAd = 'AzureAd',
-  
+  type: IssuerType;
+
   /**
-   * Hybrid mode - try Azure AD first, fallback to Local
+   * The 'iss' claim value to match in the token.
+   * Used to route the token to the correct validator.
    */
-  Hybrid = 'Hybrid'
+  issuer: string;
+
+  /**
+   * For OIDC: The authority URL (e.g., https://login.microsoftonline.com/...)
+   */
+  authority?: string;
+
+  /**
+   * For JWT: The JWKS endpoint URL
+   */
+  jwksUrl?: string;
+
+  /**
+   * For JWT (Local Dev): Shared secret key
+   */
+  secret?: string;
+
+  /**
+   * Valid audiences for this issuer
+   */
+  audiences: string[];
 }
 
 /**
@@ -23,67 +43,24 @@ export enum ValidationMode {
  */
 export interface PrimusIdentityOptions {
   /**
-   * The base URL of the Primus SaaS Portal
-   * @example "https://portal.primus-saas.com"
+   * List of trusted identity providers
    */
-  portalUrl: string;
+  issuers: IssuerConfig[];
 
   /**
-   * The client ID issued by Primus SaaS Portal
-   */
-  clientId: string;
-
-  /**
-   * The client secret issued by Primus SaaS Portal
-   */
-  clientSecret: string;
-
-  /**
-   * Validation mode
-   * @default ValidationMode.Local
-   */
-  mode?: ValidationMode;
-
-  /**
-   * Azure AD tenant ID (required for AzureAd and Hybrid modes)
-   * @example "cbd15a9b-cd52-4ccc-916a-00e2edb13043"
-   */
-  tenantId?: string;
-
-  /**
-   * JWKS cache TTL in hours
-   * @default 24
-   */
-  jwksCacheTtl?: number;
-
-  /**
-   * The JWT secret key for token validation (required for Local and Hybrid modes)
-   */
-  jwtSecret?: string;
-
-  /**
-   * The expected issuer of JWT tokens
-   * @default portalUrl
-   */
-  issuer?: string;
-
-  /**
-   * The expected audience of JWT tokens
-   * @default clientId
-   */
-  audience?: string;
-
-  /**
-   * Whether to validate token expiration
-   * @default true
-   */
-  validateLifetime?: boolean;
-
-  /**
-   * Clock tolerance in seconds for token expiration validation
-   * @default 300 (5 minutes)
+   * Global clock skew in seconds (default: 300)
    */
   clockSkew?: number;
+
+  /**
+   * Whether to validate token lifetime (default: true)
+   */
+  validateLifetime?: boolean;
+  
+  /**
+   * JWKS cache TTL in hours (default: 24)
+   */
+  jwksCacheTtl?: number;
 }
 
 /**
@@ -131,29 +108,10 @@ export interface TokenValidationResult {
  * Represents a user authenticated via Primus SaaS Portal
  */
 export interface PrimusUser {
-  /**
-   * The unique user ID from Primus SaaS Portal
-   */
   userId: string;
-
-  /**
-   * The user's email address
-   */
   email: string;
-
-  /**
-   * The user's full name
-   */
   name: string;
-
-  /**
-   * The roles assigned to the user
-   */
   roles: string[];
-
-  /**
-   * Additional claims from the JWT token
-   */
   additionalClaims: Record<string, string>;
 }
 

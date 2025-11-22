@@ -1,9 +1,10 @@
 // Export types
-export { 
-  PrimusIdentityOptions, 
-  PrimusUser, 
-  JwtPayload, 
-  ValidationMode,
+export {
+  PrimusIdentityOptions,
+  IssuerConfig,
+  IssuerType,
+  PrimusUser,
+  JwtPayload,
   TokenValidationResult,
   OpenIdConfiguration,
   JsonWebKeySet,
@@ -11,7 +12,7 @@ export {
 } from './types';
 
 // Export main validator
-export { PrimusIdentityValidator, validateToken, extractUser } from './validator';
+export { PrimusIdentityValidator } from './validator';
 
 // Export Express middleware
 export { primusIdentityMiddleware, requireRoles } from './express';

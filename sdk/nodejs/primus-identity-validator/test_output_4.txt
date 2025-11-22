@@ -1,0 +1,56 @@
+
+> primus-identity-validator@1.0.0 test
+> jest
+
+PASS tests/services/jwksService.test.ts (12.533 s)
+PASS tests/validators/azureAdValidator.test.ts (12.902 s)
+PASS tests/validator.test.ts (13.448 s)
+  ΓùÅ Console
+
+    console.error
+      Untrusted issuer: https://unknown.issuer
+
+      44 |
+      45 |       if (!issuerConfig) {
+    > 46 |         console.error(`Untrusted issuer: ${issuer}`);
+         |                 ^
+      47 |         return {
+      48 |           isValid: false,
+      49 |           error: `Untrusted issuer: ${issuer}. No matching configuration found.`
+
+      at PrimusIdentityValidator.validateToken (src/validator.ts:46:17)
+      at Object.<anonymous> (tests/validator.test.ts:43:36)
+
+PASS tests/services/jwksCache.test.ts (12.774 s)
+PASS tests/multiIssuer.test.ts (13.521 s)
+  ΓùÅ Console
+
+    console.error
+      Untrusted issuer: https://unknown.issuer
+
+      44 |
+      45 |       if (!issuerConfig) {
+    > 46 |         console.error(`Untrusted issuer: ${issuer}`);
+         |                 ^
+      47 |         return {
+      48 |           isValid: false,
+      49 |           error: `Untrusted issuer: ${issuer}. No matching configuration found.`
+
+      at PrimusIdentityValidator.validateToken (src/validator.ts:46:17)
+      at Object.<anonymous> (tests/multiIssuer.test.ts:35:40)
+
+PASS tests/services/openIdConfigurationService.test.ts (13.932 s)
+FAIL tests/express.test.ts
+  ΓùÅ Test suite failed to run
+
+    src/express.ts:3:35 - error TS2305: Module '"./validator"' has no exported member 'extractUser'.
+
+    3 import { PrimusIdentityValidator, extractUser } from './validator';
+                                        ~~~~~~~~~~~
+    message TS151002: Using hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+
+Test Suites: 1 failed, 6 passed, 7 total
+Tests:       65 passed, 65 total
+Snapshots:   0 total
+Time:        19.018 s
+Ran all test suites.

@@ -1,0 +1,127 @@
+
+> primus-identity-validator@1.0.0 test
+> jest
+
+FAIL tests/validator.test.ts
+  ΓùÅ Test suite failed to run
+
+    TypeError: validator_1.PrimusIdentityValidator is not a constructor
+
+      21 |
+      22 | describe('PrimusIdentityValidator ΓÇô Local JWT flow', () => {
+    > 23 |   const validator = new PrimusIdentityValidator(buildOptions());
+         |                     ^
+      24 |
+      25 |   it('accepts a valid token', async () => {
+      26 |     const payload = { iss: 'https://auth.local', aud: 'api://my-api', sub: 'user-1' };
+
+      at tests/validator.test.ts:23:21
+      at Object.<anonymous> (tests/validator.test.ts:22:1)
+
+PASS tests/services/jwksCache.test.ts (11.72 s)
+FAIL tests/multiIssuer.test.ts
+  ΓùÅ Test suite failed to run
+
+    TypeError: validator_1.PrimusIdentityValidator is not a constructor
+
+      21 |
+      22 | describe('PrimusIdentityValidator ΓÇô MultiΓÇæIssuer Routing (Local only)', () => {
+    > 23 |     const validator = new PrimusIdentityValidator(buildOptions());
+         |                       ^
+      24 |
+      25 |     it('validates a proper Local JWT', async () => {
+      26 |         const payload = { iss: 'https://auth.local', aud: 'api://my-api', sub: 'local-user' };
+
+      at tests/multiIssuer.test.ts:23:23
+      at Object.<anonymous> (tests/multiIssuer.test.ts:22:1)
+
+FAIL tests/express.test.ts (12.152 s)
+  ΓùÅ primusIdentityMiddleware ΓÇ║ should attach user to request with valid token
+
+    portalUrl is required
+
+       8 |  */
+       9 | export class PrimusIdentityValidator {
+    > 10 |   private readonly options: PrimusIdentityOptions;
+         |           ^
+      11 |   private readonly localValidator: LocalValidator;
+      12 |   private readonly azureAdValidator: AzureAdValidator;
+      13 |
+
+      at validateOptions (src/validator.ts:10:11)
+      at primusIdentityMiddleware (src/express.ts:24:18)
+      at Object.<anonymous> (tests/express.test.ts:56:48)
+
+  ΓùÅ primusIdentityMiddleware ΓÇ║ should return 401 when Authorization header is missing
+
+    portalUrl is required
+
+       8 |  */
+       9 | export class PrimusIdentityValidator {
+    > 10 |   private readonly options: PrimusIdentityOptions;
+         |           ^
+      11 |   private readonly localValidator: LocalValidator;
+      12 |   private readonly azureAdValidator: AzureAdValidator;
+      13 |
+
+      at validateOptions (src/validator.ts:10:11)
+      at primusIdentityMiddleware (src/express.ts:24:18)
+      at Object.<anonymous> (tests/express.test.ts:69:48)
+
+  ΓùÅ primusIdentityMiddleware ΓÇ║ should return 401 when Authorization header format is invalid
+
+    portalUrl is required
+
+       8 |  */
+       9 | export class PrimusIdentityValidator {
+    > 10 |   private readonly options: PrimusIdentityOptions;
+         |           ^
+      11 |   private readonly localValidator: LocalValidator;
+      12 |   private readonly azureAdValidator: AzureAdValidator;
+      13 |
+
+      at validateOptions (src/validator.ts:10:11)
+      at primusIdentityMiddleware (src/express.ts:24:18)
+      at Object.<anonymous> (tests/express.test.ts:81:48)
+
+  ΓùÅ primusIdentityMiddleware ΓÇ║ should return 401 when token is missing
+
+    portalUrl is required
+
+       8 |  */
+       9 | export class PrimusIdentityValidator {
+    > 10 |   private readonly options: PrimusIdentityOptions;
+         |           ^
+      11 |   private readonly localValidator: LocalValidator;
+      12 |   private readonly azureAdValidator: AzureAdValidator;
+      13 |
+
+      at validateOptions (src/validator.ts:10:11)
+      at primusIdentityMiddleware (src/express.ts:24:18)
+      at Object.<anonymous> (tests/express.test.ts:95:48)
+
+  ΓùÅ primusIdentityMiddleware ΓÇ║ should return 401 when token is invalid
+
+    portalUrl is required
+
+       8 |  */
+       9 | export class PrimusIdentityValidator {
+    > 10 |   private readonly options: PrimusIdentityOptions;
+         |           ^
+      11 |   private readonly localValidator: LocalValidator;
+      12 |   private readonly azureAdValidator: AzureAdValidator;
+      13 |
+
+      at validateOptions (src/validator.ts:10:11)
+      at primusIdentityMiddleware (src/express.ts:24:18)
+      at Object.<anonymous> (tests/express.test.ts:107:48)
+
+PASS tests/services/jwksService.test.ts (12.186 s)
+PASS tests/services/openIdConfigurationService.test.ts (12.251 s)
+PASS tests/validators/azureAdValidator.test.ts (12.46 s)
+
+Test Suites: 3 failed, 4 passed, 7 total
+Tests:       5 failed, 63 passed, 68 total
+Snapshots:   0 total
+Time:        15.653 s, estimated 20 s
+Ran all test suites.

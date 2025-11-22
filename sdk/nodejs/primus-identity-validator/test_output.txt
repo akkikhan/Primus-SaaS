@@ -1,0 +1,137 @@
+
+> primus-identity-validator@1.0.0 test
+> jest
+
+FAIL tests/express.test.ts (13.999 s)
+  ΓùÅ primusIdentityMiddleware ΓÇ║ should attach user to request with valid token
+
+    portalUrl is required
+
+       99 |    * Validates a token using Local JWT validation
+      100 |    */
+    > 101 |   private async validateJwtToken(token: string, config: IssuerConfig): Promise<TokenValidationResult> {
+          |             ^
+      102 |     if (!config.secret) {
+      103 |       return { isValid: false, error: `Shared secret required for JWT issuer: ${config.name}` };
+      104 |     }
+
+      at PrimusIdentityValidator.validateOptions (src/validator.ts:101:13)
+      at new PrimusIdentityValidator (src/validator.ts:14:10)
+      at primusIdentityMiddleware (src/express.ts:24:21)
+      at Object.<anonymous> (tests/express.test.ts:56:48)
+
+  ΓùÅ primusIdentityMiddleware ΓÇ║ should return 401 when Authorization header is missing
+
+    portalUrl is required
+
+       99 |    * Validates a token using Local JWT validation
+      100 |    */
+    > 101 |   private async validateJwtToken(token: string, config: IssuerConfig): Promise<TokenValidationResult> {
+          |             ^
+      102 |     if (!config.secret) {
+      103 |       return { isValid: false, error: `Shared secret required for JWT issuer: ${config.name}` };
+      104 |     }
+
+      at PrimusIdentityValidator.validateOptions (src/validator.ts:101:13)
+      at new PrimusIdentityValidator (src/validator.ts:14:10)
+      at primusIdentityMiddleware (src/express.ts:24:21)
+      at Object.<anonymous> (tests/express.test.ts:69:48)
+
+  ΓùÅ primusIdentityMiddleware ΓÇ║ should return 401 when Authorization header format is invalid
+
+    portalUrl is required
+
+       99 |    * Validates a token using Local JWT validation
+      100 |    */
+    > 101 |   private async validateJwtToken(token: string, config: IssuerConfig): Promise<TokenValidationResult> {
+          |             ^
+      102 |     if (!config.secret) {
+      103 |       return { isValid: false, error: `Shared secret required for JWT issuer: ${config.name}` };
+      104 |     }
+
+      at PrimusIdentityValidator.validateOptions (src/validator.ts:101:13)
+      at new PrimusIdentityValidator (src/validator.ts:14:10)
+      at primusIdentityMiddleware (src/express.ts:24:21)
+      at Object.<anonymous> (tests/express.test.ts:81:48)
+
+  ΓùÅ primusIdentityMiddleware ΓÇ║ should return 401 when token is missing
+
+    portalUrl is required
+
+       99 |    * Validates a token using Local JWT validation
+      100 |    */
+    > 101 |   private async validateJwtToken(token: string, config: IssuerConfig): Promise<TokenValidationResult> {
+          |             ^
+      102 |     if (!config.secret) {
+      103 |       return { isValid: false, error: `Shared secret required for JWT issuer: ${config.name}` };
+      104 |     }
+
+      at PrimusIdentityValidator.validateOptions (src/validator.ts:101:13)
+      at new PrimusIdentityValidator (src/validator.ts:14:10)
+      at primusIdentityMiddleware (src/express.ts:24:21)
+      at Object.<anonymous> (tests/express.test.ts:95:48)
+
+  ΓùÅ primusIdentityMiddleware ΓÇ║ should return 401 when token is invalid
+
+    portalUrl is required
+
+       99 |    * Validates a token using Local JWT validation
+      100 |    */
+    > 101 |   private async validateJwtToken(token: string, config: IssuerConfig): Promise<TokenValidationResult> {
+          |             ^
+      102 |     if (!config.secret) {
+      103 |       return { isValid: false, error: `Shared secret required for JWT issuer: ${config.name}` };
+      104 |     }
+
+      at PrimusIdentityValidator.validateOptions (src/validator.ts:101:13)
+      at new PrimusIdentityValidator (src/validator.ts:14:10)
+      at primusIdentityMiddleware (src/express.ts:24:21)
+      at Object.<anonymous> (tests/express.test.ts:107:48)
+
+PASS tests/services/jwksService.test.ts (14.078 s)
+PASS tests/services/jwksCache.test.ts (13.8 s)
+PASS tests/validators/azureAdValidator.test.ts (14.787 s)
+PASS tests/services/openIdConfigurationService.test.ts (14.435 s)
+ts-jest[ts-compiler] (WARN) message TS151002: Using hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+ts-jest[ts-compiler] (WARN) message TS151002: Using hybrid module kind (Node16/18/Next) is only supported in "isolatedModules: true". Please set "isolatedModules: true" in your tsconfig.json. To disable this message, you can set "diagnostics.ignoreCodes" to include 151002 in your ts-jest config. See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/options/diagnostics
+FAIL tests/multiIssuer.test.ts
+  ΓùÅ Test suite failed to run
+
+    portalUrl is required
+
+       99 |    * Validates a token using Local JWT validation
+      100 |    */
+    > 101 |   private async validateJwtToken(token: string, config: IssuerConfig): Promise<TokenValidationResult> {
+          |             ^
+      102 |     if (!config.secret) {
+      103 |       return { isValid: false, error: `Shared secret required for JWT issuer: ${config.name}` };
+      104 |     }
+
+      at PrimusIdentityValidator.validateOptions (src/validator.ts:101:13)
+      at new PrimusIdentityValidator (src/validator.ts:14:10)
+      at tests/multiIssuer.test.ts:23:23
+      at Object.<anonymous> (tests/multiIssuer.test.ts:22:1)
+
+FAIL tests/validator.test.ts
+  ΓùÅ Test suite failed to run
+
+    portalUrl is required
+
+       99 |    * Validates a token using Local JWT validation
+      100 |    */
+    > 101 |   private async validateJwtToken(token: string, config: IssuerConfig): Promise<TokenValidationResult> {
+          |             ^
+      102 |     if (!config.secret) {
+      103 |       return { isValid: false, error: `Shared secret required for JWT issuer: ${config.name}` };
+      104 |     }
+
+      at PrimusIdentityValidator.validateOptions (src/validator.ts:101:13)
+      at new PrimusIdentityValidator (src/validator.ts:14:10)
+      at tests/validator.test.ts:23:21
+      at Object.<anonymous> (tests/validator.test.ts:22:1)
+
+Test Suites: 3 failed, 4 passed, 7 total
+Tests:       5 failed, 63 passed, 68 total
+Snapshots:   0 total
+Time:        19.764 s
+Ran all test suites.

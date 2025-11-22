@@ -1,4 +1,5 @@
-import { PrimusIdentityOptions, JwtPayload, PrimusUser, ValidationMode, TokenValidationResult } from './types';
+import * as jwt from 'jsonwebtoken';
+import { PrimusIdentityOptions, TokenValidationResult, IssuerConfig, PrimusUser } from './types';
 import { LocalValidator } from './validators/localValidator';
 import { AzureAdValidator } from './validators/azureAdValidator';
 
@@ -18,116 +19,141 @@ export class PrimusIdentityValidator {
   }
 
   /**
-   * Validates a JWT token based on configured mode
+   * Validates a JWT token based on configured issuers
    * @param token JWT token to validate
    * @returns Token validation result
    */
   async validateToken(token: string): Promise<TokenValidationResult> {
-    const mode = this.options.mode ?? ValidationMode.Local;
+    try {
+      // 1. Decode token to find issuer
+      const decoded = jwt.decode(token, { complete: true });
 
-    switch (mode) {
-      case ValidationMode.Local:
-        return this.validateLocalToken(token);
-
-      case ValidationMode.AzureAd:
-        return this.validateAzureAdToken(token);
-
-      case ValidationMode.Hybrid: {
-        // Try Azure AD first, fallback to Local
-        const azureResult = await this.validateAzureAdToken(token);
-        if (azureResult.isValid) {
-          return azureResult;
-        }
-        return this.validateLocalToken(token);
+      if (!decoded || typeof decoded === 'string') {
+        return { isValid: false, error: 'Invalid token format' };
       }
 
-      default:
-        throw new Error(`Unsupported validation mode: ${mode}`);
+      const payload = decoded.payload as jwt.JwtPayload;
+      const issuer = payload.iss;
+
+      if (!issuer) {
+        return { isValid: false, error: 'Token missing issuer (iss) claim' };
+      }
+
+      // 2. Find matching issuer configuration
+      const issuerConfig = this.options.issuers.find(i => i.issuer === issuer);
+
+      if (!issuerConfig) {
+
+        return {
+          isValid: false,
+          error: `Untrusted issuer: ${issuer}. No matching configuration found.`
+        };
+      }
+
+      // 3. Route to appropriate validator
+      if (issuerConfig.type === 'oidc') {
+        return this.validateOidcToken(token, issuerConfig);
+      } else if (issuerConfig.type === 'jwt') {
+        return this.validateJwtToken(token, issuerConfig);
+      } else {
+        return { isValid: false, error: `Unsupported issuer type: ${(issuerConfig as any).type}` };
+      }
+
+    } catch (error) {
+
+      return {
+        isValid: false,
+        error: error instanceof Error ? error.message : 'Unknown validation error'
+      };
     }
+  }
+
+  /**
+   * Validates a token using OIDC (Azure AD) validation
+   */
+  private async validateOidcToken(token: string, config: IssuerConfig): Promise<TokenValidationResult> {
+    if (!config.authority) {
+      return { isValid: false, error: `Authority URL required for OIDC issuer: ${config.name}` };
+    }
+
+    // Extract Tenant ID from Authority URL
+    // Expected format: https://login.microsoftonline.com/<tenant-id>/v2.0
+    const tenantId = this.extractTenantId(config.authority);
+
+    if (!tenantId) {
+      return { isValid: false, error: `Could not extract Tenant ID from authority: ${config.authority}` };
+    }
+
+    // Use the first audience for now (TODO: Update AzureAdValidator to support array)
+    const audience = config.audiences[0];
+
+    return this.azureAdValidator.validateTokenAsync(token, {
+      tenantId: tenantId,
+      audience: audience,
+      validateLifetime: this.options.validateLifetime ?? true,
+      clockSkew: this.options.clockSkew
+    });
   }
 
   /**
    * Validates a token using Local JWT validation
    */
-  private async validateLocalToken(token: string): Promise<TokenValidationResult> {
-    if (!this.options.jwtSecret) {
-      return {
-        isValid: false,
-        error: 'JWT secret not configured for Local mode'
-      };
+  private async validateJwtToken(token: string, config: IssuerConfig): Promise<TokenValidationResult> {
+    if (!config.secret) {
+      return { isValid: false, error: `Shared secret required for JWT issuer: ${config.name}` };
     }
 
+    // Use the first audience for now
+    const audience = config.audiences[0];
+
     return this.localValidator.validateTokenAsync(token, {
-      secret: this.options.jwtSecret,
-      issuer: this.options.issuer,
-      audience: this.options.audience,
+      secret: config.secret,
+      issuer: config.issuer,
+      audience: audience,
       validateLifetime: this.options.validateLifetime ?? true,
       clockSkew: this.options.clockSkew
     });
   }
 
-  /**
-   * Validates a token using Azure AD validation
-   */
-  private async validateAzureAdToken(token: string): Promise<TokenValidationResult> {
-    if (!this.options.tenantId) {
-      return {
-        isValid: false,
-        error: 'Tenant ID not configured for Azure AD mode'
-      };
+  private extractTenantId(authority: string): string | null {
+    try {
+      const url = new URL(authority);
+      const parts = url.pathname.split('/').filter(p => p);
+      // Handle https://login.microsoftonline.com/<tenant-id>/v2.0
+      if (parts.length >= 1) {
+        // Check if first part is a GUID-like string
+        if (parts[0].match(/^[0-9a-fA-F-]{36}$/)) {
+          return parts[0];
+        }
+        // Handle common variations if needed
+      }
+      return null;
+    } catch {
+      return null;
     }
-
-    if (!this.options.clientId) {
-      return {
-        isValid: false,
-        error: 'Client ID not configured for Azure AD mode'
-      };
-    }
-
-    return this.azureAdValidator.validateTokenAsync(token, {
-      tenantId: this.options.tenantId,
-      audience: this.options.clientId,
-      validateLifetime: this.options.validateLifetime ?? true,
-      clockSkew: this.options.clockSkew
-    });
   }
 
   /**
    * Validates configuration options
-   * @throws {Error} If required fields are missing or invalid
    */
   private validateOptions(options: PrimusIdentityOptions): void {
-    if (!options.portalUrl) {
-      throw new Error('portalUrl is required');
+    if (!options.issuers || !Array.isArray(options.issuers) || options.issuers.length === 0) {
+      throw new Error('At least one issuer configuration is required');
     }
 
-    if (!options.clientId) {
-      throw new Error('clientId is required');
-    }
+    for (const issuer of options.issuers) {
+      if (!issuer.name) throw new Error('Issuer name is required');
+      if (!issuer.type) throw new Error(`Issuer type is required for ${issuer.name}`);
+      if (!issuer.issuer) throw new Error(`Issuer claim value is required for ${issuer.name}`);
+      if (!issuer.audiences || issuer.audiences.length === 0) throw new Error(`At least one audience is required for ${issuer.name}`);
 
-    if (!options.clientSecret) {
-      throw new Error('clientSecret is required');
-    }
-
-    const mode = options.mode ?? ValidationMode.Local;
-
-    // Validate mode-specific requirements
-    if (mode === ValidationMode.Local || mode === ValidationMode.Hybrid) {
-      if (!options.jwtSecret) {
-        throw new Error('jwtSecret is required for Local and Hybrid modes');
+      if (issuer.type === 'oidc' && !issuer.authority) {
+        throw new Error(`Authority URL is required for OIDC issuer ${issuer.name}`);
       }
-    }
 
-    if (mode === ValidationMode.AzureAd || mode === ValidationMode.Hybrid) {
-      if (!options.tenantId) {
-        throw new Error('tenantId is required for AzureAd and Hybrid modes');
+      if (issuer.type === 'jwt' && !issuer.secret && !issuer.jwksUrl) {
+        throw new Error(`Secret or JWKS URL is required for JWT issuer ${issuer.name}`);
       }
-    }
-
-    try {
-      new URL(options.portalUrl);
-    } catch {
-      throw new Error('portalUrl must be a valid URL');
     }
   }
 
@@ -137,10 +163,6 @@ export class PrimusIdentityValidator {
   private applyDefaults(options: PrimusIdentityOptions): PrimusIdentityOptions {
     return {
       ...options,
-      mode: options.mode ?? ValidationMode.Local,
-      issuer: options.issuer || options.portalUrl,
-      audience: options.audience || options.clientId,
-      validateLifetime: options.validateLifetime ?? true,
       clockSkew: options.clockSkew ?? 300,
       jwksCacheTtl: options.jwksCacheTtl ?? 24
     };
@@ -155,43 +177,29 @@ export class PrimusIdentityValidator {
 }
 
 /**
- * Validates a JWT token (backward compatible function)
- * @param token JWT token to validate
- * @param options Validation options
- * @returns Token validation result
- */
-export async function validateToken(
-  token: string,
-  options: PrimusIdentityOptions
-): Promise<TokenValidationResult> {
-  const validator = new PrimusIdentityValidator(options);
-  return validator.validateToken(token);
-}
-
-/**
  * Extracts user information from JWT payload
  */
-export function extractUser(payload: JwtPayload): PrimusUser {
-  const roles = Array.isArray(payload.role)
-    ? payload.role
-    : payload.role
-    ? [payload.role]
-    : [];
+export function extractUser(claims: any): PrimusUser {
+  const roles = Array.isArray(claims.role)
+    ? claims.role
+    : claims.role
+      ? [claims.role]
+      : [];
 
-  const additionalClaims: Record<string, string> = {};
-  const standardClaims = ['sub', 'email', 'name', 'role', 'iss', 'aud', 'exp', 'iat', 'nbf', 'jti'];
-
-  for (const [key, value] of Object.entries(payload)) {
-    if (!standardClaims.includes(key) && typeof value === 'string') {
-      additionalClaims[key] = value;
-    }
-  }
+  // Filter out standard claims to get additional claims
+  const standardClaims = ['iss', 'sub', 'aud', 'exp', 'nbf', 'iat', 'jti', 'role', 'name', 'email'];
+  const additionalClaims = Object.keys(claims)
+    .filter(key => !standardClaims.includes(key))
+    .reduce((obj, key) => {
+      obj[key] = claims[key];
+      return obj;
+    }, {} as Record<string, any>);
 
   return {
-    userId: payload.sub || '',
-    email: payload.email || '',
-    name: payload.name || '',
+    userId: claims.sub || '',
+    email: claims.email || '',
+    name: claims.name || '',
     roles,
-    additionalClaims,
+    additionalClaims
   };
 }

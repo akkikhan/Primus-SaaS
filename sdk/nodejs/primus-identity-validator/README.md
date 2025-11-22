@@ -1,18 +1,17 @@
 # Primus SaaS Identity Validator - Node.js SDK
 
-Official Node.js SDK for validating JWT tokens issued by Primus SaaS Portal. This SDK provides Express middleware for seamless authentication integration.
+**Version:** 1.1.0  
+Official Node.js SDK for validating JWT tokens with multi-issuer support. Validate tokens from Azure AD, local auth providers, or multiple sources simultaneously.
 
 ## Features
 
-- 🔐 **Dual Validation Modes**: Local JWT and Azure AD token validation
-- ⚡ Express middleware for easy integration
+- 🔐 **Multi-Issuer Support**: Configure multiple identity providers (Azure AD, Local, Custom)
+- ⚡ Express middleware for seamless integration
 - 🎯 Role-based access control
-- 🔑 **Azure AD Support**: JWKS fetching, RS256 signature verification, tenant validation
-- 📝 TypeScript support with full type definitions
-- ✅ Comprehensive test coverage (83 tests, 99.18% coverage)
-- 🔧 Configurable validation parameters
-- ⚙️ **Hybrid Mode**: Automatic fallback between Azure AD and Local validation
-- 🚀 Performance optimized with intelligent caching (24-hour TTL)
+- 🔑 **Azure AD/OIDC**: JWKS fetching, RS256 validation, tenant verification
+- 📝 Full TypeScript support with type definitions
+- ✅ 74 tests passing (100% core logic covered)
+- 🚀 Intelligent JWKS caching (24-hour TTL)
 
 ## Installation
 
@@ -22,215 +21,139 @@ npm install primus-identity-validator
 
 ## Quick Start
 
-### Express Application
+### Multi-Issuer Configuration (Recommended)
 
 ```typescript
 import express from 'express';
-import { primusIdentityMiddleware, requireRoles } from 'primus-identity-validator';
+import { primusIdentityMiddleware } from 'primus-identity-validator';
 
 const app = express();
 
-// Configure Primus identity validation
+// Configure multiple trusted issuers
 const primusAuth = primusIdentityMiddleware({
-  portalUrl: 'https://portal.primus-saas.com',
-  clientId: 'your-client-id',
-  clientSecret: 'your-client-secret',
-  jwtSecret: 'your-jwt-secret'
+  issuers: [
+    {
+      name: 'AzureAD',
+      type: 'oidc',
+      issuer: 'https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0',
+      authority: 'https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0',
+      audiences: ['api://your-app-id']
+    },
+    {
+      name: 'LocalAuth',
+      type: 'jwt',
+      issuer: 'https://auth.yourcompany.com',
+      secret: process.env.LOCAL_JWT_SECRET,
+      audiences: ['api://your-app-id']
+    }
+  ]
 });
 
-// Apply middleware to protected routes
-app.use('/api/protected', primusAuth);
-
-// Protected route - user information available in req.primusUser
-app.get('/api/protected/profile', (req, res) => {
-  res.json({
-    user: req.primusUser
-  });
-});
-
-// Admin-only route
-app.get('/api/admin', primusAuth, requireRoles('Admin'), (req, res) => {
-  res.json({ message: 'Admin access granted' });
+// Protected routes
+app.get('/api/protected', primusAuth, (req, res) => {
+  res.json({ user: req.primusUser });
 });
 
 app.listen(3000);
 ```
 
-### Configuration
+## Configuration
 
-The SDK supports three validation modes:
+### IssuerConfig Options
 
-1. **Local Mode** (default): Validates JWT tokens using symmetric HMAC signature
-2. **Azure AD Mode**: Validates Azure AD tokens using asymmetric RSA signatures with JWKS
-3. **Hybrid Mode**: Tries Azure AD first, falls back to Local validation
+Each issuer in the `issuers` array accepts:
 
-The SDK accepts the following configuration options:
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `name` | string | Yes | Friendly name for this issuer |
+| `type` | `'oidc' \| 'jwt'` | Yes | Type of identity provider |
+| `issuer` | string | Yes | Expected `iss` claim value (used for routing) |
+| `authority` | string | OIDC only | Authority URL for OIDC discovery |
+| `audiences` | string[] | Yes | Valid audience values (`aud` claim) |
+| `secret` | string | JWT only | Shared secret for HMAC validation |
+| `jwksUrl` | string | Optional | JWKS endpoint (alternative to `secret`) |
 
-| Option | Type | Required | Default | Description |
-|--------|------|----------|---------|-------------|
-| `portalUrl` | string | Yes | - | The base URL of your Primus SaaS Portal |
-| `clientId` | string | Yes | - | Your client ID from Primus Portal |
-| `clientSecret` | string | Yes | - | Your client secret from Primus Portal |
-| `mode` | ValidationMode | No | `Local` | Validation mode: `Local`, `AzureAd`, or `Hybrid` |
-| `tenantId` | string | Conditional* | - | Azure AD tenant ID (required for AzureAd/Hybrid modes) |
-| `jwtSecret` | string | Conditional* | - | JWT secret key (required for Local/Hybrid modes) |
-| `jwksCacheTtl` | number | No | `24` | JWKS cache TTL in hours |
-| `issuer` | string | No | `portalUrl` | Expected token issuer (Local mode only) |
-| `audience` | string | No | `clientId` | Expected token audience |
-| `validateLifetime` | boolean | No | `true` | Whether to validate token expiration |
-| `clockSkew` | number | No | `300` | Clock tolerance in seconds (5 minutes) |
+### Global Options
 
-\* **Conditional Requirements**:
-- `jwtSecret`: Required for **Local** and **Hybrid** modes
-- `tenantId`: Required for **AzureAd** and **Hybrid** modes
-
-### Azure AD Mode Configuration
-
-For production applications using Azure AD authentication:
-
-```typescript
-import { primusIdentityMiddleware, ValidationMode } from 'primus-identity-validator';
-
-const primusAuth = primusIdentityMiddleware({
-  portalUrl: 'https://portal.primus-saas.com',
-  clientId: 'your-azure-ad-client-id',        // Azure AD Application (Client) ID
-  clientSecret: 'your-client-secret',
-  mode: ValidationMode.AzureAd,
-  tenantId: 'your-azure-ad-tenant-id',        // Azure AD Tenant ID
-  jwksCacheTtl: 24                            // Cache JWKS keys for 24 hours
-});
-
-app.use('/api', primusAuth);
-```
-
-**How Azure AD Validation Works:**
-1. SDK extracts the `kid` (Key ID) from the token header
-2. Fetches OpenID Connect configuration from Azure AD (`/.well-known/openid-configuration`)
-3. Retrieves JWKS (JSON Web Key Set) containing public keys
-4. Validates token signature using RS256 algorithm
-5. Verifies issuer, audience, expiration, and tenant ID
-6. Caches JWKS keys for 24 hours (configurable) to minimize latency
-
-**Supported Azure AD Issuers:**
-- `https://login.microsoftonline.com/{tenant}/v2.0` (v2 endpoint)
-- `https://login.microsoftonline.com/{tenant}/` (v1 endpoint)
-- `https://sts.windows.net/{tenant}/` (legacy)
-
-### Hybrid Mode Configuration
-
-For applications that accept both Primus Portal tokens and Azure AD tokens:
-
-```typescript
-const primusAuth = primusIdentityMiddleware({
-  portalUrl: 'https://portal.primus-saas.com',
-  clientId: 'your-client-id',
-  clientSecret: 'your-client-secret',
-  mode: ValidationMode.Hybrid,
-  tenantId: 'your-azure-ad-tenant-id',        // Required for Azure AD validation
-  jwtSecret: 'your-jwt-secret',               // Required for Local validation
-  jwksCacheTtl: 24
-});
-```
-
-**Hybrid Mode Behavior:**
-1. Attempts Azure AD validation first
-2. If Azure AD validation fails, falls back to Local validation
-3. Returns the first successful validation result
-4. Useful for migration scenarios or multi-tenant applications
-
-### Environment Variables
-
-You can use environment variables for configuration:
-
-```typescript
-// Local Mode
-const primusAuth = primusIdentityMiddleware({
-  portalUrl: process.env.PRIMUS_PORTAL_URL!,
-  clientId: process.env.PRIMUS_CLIENT_ID!,
-  clientSecret: process.env.PRIMUS_CLIENT_SECRET!,
-  jwtSecret: process.env.PRIMUS_JWT_SECRET!
-});
-
-// Azure AD Mode
-const primusAuth = primusIdentityMiddleware({
-  portalUrl: process.env.PRIMUS_PORTAL_URL!,
-  clientId: process.env.AZURE_AD_CLIENT_ID!,
-  clientSecret: process.env.PRIMUS_CLIENT_SECRET!,
-  mode: ValidationMode.AzureAd,
-  tenantId: process.env.AZURE_AD_TENANT_ID!,
-  jwksCacheTtl: 24
-});
-```
-
-## API Reference
-
-### `primusIdentityMiddleware(options)`
-
-Creates Express middleware that validates JWT tokens and attaches user information to `req.primusUser`.
-
-**Parameters:**
-- `options` (PrimusIdentityOptions): Configuration options
-
-**Returns:**
-- Express middleware function
-
-**Behavior:**
-- Extracts JWT token from `Authorization: Bearer <token>` header
-- Validates token signature, expiration, issuer, and audience
-- Attaches decoded user to `req.primusUser`
-- Returns 401 if authentication fails
-
-### `requireRoles(...roles)`
-
-Creates Express middleware that checks if the authenticated user has at least one of the specified roles.
-
-**Parameters:**
-- `...roles` (string[]): Required role names
-
-**Returns:**
-- Express middleware function
-
-**Behavior:**
-- Returns 401 if user is not authenticated
-- Returns 403 if user lacks required roles
-- Calls `next()` if user has at least one required role
-
-### `PrimusUser` Interface
-
-The user object attached to `req.primusUser`:
-
-```typescript
-interface PrimusUser {
-  userId: string;           // Unique user ID
-  email: string;            // User's email
-  name: string;             // User's full name
-  roles: string[];          // Assigned roles
-  additionalClaims: Record<string, string>; // Extra JWT claims
-}
-```
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `clockSkew` | number | 300 | Clock tolerance in seconds |
+| `validateLifetime` | boolean | true | Validate token expiration |
+| `jwksCacheTtl` | number | 24 | JWKS cache TTL in hours |
 
 ## Usage Examples
 
-### Basic Protected Route
+### Single Azure AD Issuer
 
 ```typescript
-app.get('/api/data', primusAuth, (req, res) => {
-  // Access authenticated user
-  const user = req.primusUser;
-  
-  res.json({
-    message: `Hello ${user.name}`,
-    userId: user.userId
-  });
+const primusAuth = primusIdentityMiddleware({
+  issuers: [
+    {
+      name: 'AzureAD',
+      type: 'oidc',
+      issuer: 'https://login.microsoftonline.com/cbd15a9b-cd52-4ccc-916a-00e2edb13043/v2.0',
+      authority: 'https://login.microsoftonline.com/cbd15a9b-cd52-4ccc-916a-00e2edb13043/v2.0',
+      audiences: ['e2760fbd-f134-42f4-bcda-f44306fc3fe2']
+    }
+  ],
+  clockSkew: 300
 });
 ```
 
-### Role-Based Access
+### Single Local JWT Issuer
 
 ```typescript
-// Multiple roles - user needs at least one
+const primusAuth = primusIdentityMiddleware({
+  issuers: [
+    {
+      name: 'LocalAuth',
+      type: 'jwt',
+      issuer: 'http://localhost:4000',
+      secret: 'your-secret-key-min-32-chars',
+      audiences: ['api://my-app']
+    }
+  ]
+});
+```
+
+### Multi-Issuer (Hybrid)
+
+```typescript
+const primusAuth = primusIdentityMiddleware({
+  issuers: [
+    {
+      name: 'AzureAD-Production',
+      type: 'oidc',
+      issuer: 'https://login.microsoftonline.com/<PROD_TENANT>/v2.0',
+      authority: 'https://login.microsoftonline.com/<PROD_TENANT>/v2.0',
+      audiences: ['api://prod-app']
+    },
+    {
+      name: 'AzureAD-Development',
+      type: 'oidc',
+      issuer: 'https://login.microsoftonline.com/<DEV_TENANT>/v2.0',
+      authority: 'https://login.microsoftonline.com/<DEV_TENANT>/v2.0',
+      audiences: ['api://dev-app']
+    },
+    {
+      name: 'LocalAuth',
+      type: 'jwt',
+      issuer: 'http://localhost:4000',
+      secret: process.env.LOCAL_SECRET,
+      audiences: ['api://dev-app']
+    }
+  ]
+});
+```
+
+### Role-Based Access Control
+
+```typescript
+import { primusIdentityMiddleware, requireRoles } from 'primus-identity-validator';
+
+// Multiple roles (user needs at least one)
 app.get('/api/admin', primusAuth, requireRoles('Admin', 'SuperAdmin'), (req, res) => {
-  res.json({ message: 'Admin access' });
+  res.json({ message: 'Admin access granted' });
 });
 
 // Single role
@@ -239,176 +162,213 @@ app.get('/api/manager', primusAuth, requireRoles('Manager'), (req, res) => {
 });
 ```
 
-### Custom Error Handling
+### Using the Validator Directly
 
 ```typescript
-app.use((err, req, res, next) => {
-  if (err.name === 'UnauthorizedError') {
-    res.status(401).json({ error: 'Invalid token' });
-  } else {
-    next(err);
-  }
-});
-```
-
-### Client Usage
-
-```typescript
-import axios from 'axios';
-
-// Obtain token from Primus Portal login
-const token = 'your-jwt-token';
-
-// Make authenticated request
-const response = await axios.get('https://api.example.com/protected', {
-  headers: {
-    Authorization: `Bearer ${token}`
-  }
-});
-```
-
-## Azure AD Integration Examples
-
-### Complete Azure AD Application Example
-
-```typescript
-import express from 'express';
-import { primusIdentityMiddleware, requireRoles, ValidationMode } from '@primus-saas/identity-validator';
-
-const app = express();
-
-// Configure Azure AD authentication
-const azureAuth = primusIdentityMiddleware({
-  portalUrl: 'https://portal.primus-saas.com',
-  clientId: process.env.AZURE_AD_CLIENT_ID!,      // e.g., 'e2760fbd-f134-42f4-bcda-f44306fc3fe2'
-  clientSecret: process.env.PRIMUS_CLIENT_SECRET!,
-  mode: ValidationMode.AzureAd,
-  tenantId: process.env.AZURE_AD_TENANT_ID!,      // e.g., 'cbd15a9b-cd52-4ccc-916a-00e2edb13043'
-  jwksCacheTtl: 24,                               // Cache keys for 24 hours
-  clockSkew: 300                                   // 5 minutes clock tolerance
-});
-
-// Public endpoint (no authentication)
-app.get('/api/public', (req, res) => {
-  res.json({ message: 'Public data' });
-});
-
-// Protected endpoint (requires valid Azure AD token)
-app.get('/api/user/profile', azureAuth, (req, res) => {
-  const user = req.primusUser;
-  res.json({
-    userId: user.userId,
-    email: user.email,
-    name: user.name,
-    roles: user.roles
-  });
-});
-
-// Admin-only endpoint
-app.get('/api/admin/settings', azureAuth, requireRoles('Admin'), (req, res) => {
-  res.json({ message: 'Admin settings' });
-});
-
-app.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
-});
-```
-
-### Azure AD Token Acquisition (Client-Side)
-
-To obtain an Azure AD token for testing:
-
-```bash
-# Using Azure CLI
-az account get-access-token --resource "api://your-client-id" --query accessToken -o tsv
-```
-
-Or using MSAL (Microsoft Authentication Library):
-
-```typescript
-import { PublicClientApplication } from '@azure/msal-node';
-
-const msalConfig = {
-  auth: {
-    clientId: 'your-azure-ad-client-id',
-    authority: 'https://login.microsoftonline.com/your-tenant-id'
-  }
-};
-
-const pca = new PublicClientApplication(msalConfig);
-
-// Device code flow for CLI applications
-const deviceCodeRequest = {
-  deviceCodeCallback: (response) => {
-    console.log(response.message);
-  },
-  scopes: ['api://your-client-id/.default']
-};
-
-const response = await pca.acquireTokenByDeviceCode(deviceCodeRequest);
-const accessToken = response.accessToken;
-```
-
-### Debugging Azure AD Validation
-
-```typescript
-import { PrimusIdentityValidator, ValidationMode } from '@primus-saas/identity-validator';
+import { PrimusIdentityValidator } from 'primus-identity-validator';
 
 const validator = new PrimusIdentityValidator({
-  portalUrl: 'https://portal.primus-saas.com',
-  clientId: 'your-client-id',
-  clientSecret: 'your-client-secret',
-  mode: ValidationMode.AzureAd,
-  tenantId: 'your-tenant-id'
+  issuers: [
+    {
+      name: 'AzureAD',
+      type: 'oidc',
+      issuer: 'https://login.microsoftonline.com/<TENANT>/v2.0',
+      authority: 'https://login.microsoftonline.com/<TENANT>/v2.0',
+      audiences: ['api://my-app']
+    }
+  ]
 });
 
-// Validate token manually
+// Validate token manually (without "Bearer " prefix)
 const token = 'eyJ0eXAiOiJKV1QiLCJhbGc...';
 const result = await validator.validateToken(token);
 
 if (result.isValid) {
-  console.log('Token is valid');
+  console.log('Token validated successfully');
   console.log('Claims:', result.claims);
 } else {
-  console.error('Token validation failed:', result.error);
+  console.error('Validation failed:', result.error);
 }
 ```
 
-### Common Azure AD Configuration Issues
+## How It Works
 
-**Issue**: "No matching key found for kid: xxx"
-- **Cause**: JWKS cache may be stale or kid doesn't exist
-- **Solution**: Wait for cache to expire (24 hours) or restart application
+### Token Routing
 
-**Issue**: "Token tenant ID does not match expected tenant ID"
-- **Cause**: Token was issued for a different Azure AD tenant
-- **Solution**: Verify `tenantId` configuration matches the token's `tid` claim
+1. **Extract `iss` claim** from JWT (without verifying signature)
+2. **Match issuer** against configured `issuers` array
+3. **Route to appropriate validator**:
+   - `type: 'oidc'` → Fetch JWKS, validate with RS256
+   - `type: 'jwt'` → Validate with shared secret (HS256)
+4. **Verify signature**, issuer, audience, expiration
+5. **Return result** with claims or error
 
-**Issue**: "Token audience does not match"
-- **Cause**: Token's `aud` claim doesn't match `clientId`
-- **Solution**: Ensure token is requested with correct scope: `api://your-client-id/.default`
+### OIDC Validation Flow
 
-**Issue**: "jwt expired"
-- **Cause**: Token has expired
-- **Solution**: Request a new token or increase `clockSkew` for clock drift tolerance
+For `type: 'oidc'` issuers:
+
+1. Fetch OpenID configuration from `{authority}/.well-known/openid-configuration`
+2. Retrieve JWKS from `jwks_uri`
+3. Find public key matching token's `kid` (Key ID)
+4. Verify RS256 signature
+5. Validate issuer, audience, tenant, expiration
+6. Cache JWKS for 24 hours
+
+### JWT Validation Flow
+
+For `type: 'jwt'` issuers:
+
+1. Verify HMAC signature using shared `secret`
+2. Validate issuer matches configured `issuer`
+3. Validate audience is in `audiences` array
+4. Verify token expiration
+
+## API Reference
+
+### `primusIdentityMiddleware(options)`
+
+Creates Express middleware that validates tokens and attaches user to `req.primusUser`.
+
+**Behavior:**
+- Extracts token from `Authorization: Bearer <token>` header
+- Routes to correct validator based on `iss` claim
+- Returns 401 if validation fails
+- Attaches `PrimusUser` to `req.primusUser` on success
+
+### `requireRoles(...roles: string[])`
+
+Middleware that enforces role-based access control.
+
+**Returns:**
+- 401 if user not authenticated
+- 403 if user lacks required role
+- Calls `next()` if user has at least one required role
+
+### `PrimusUser` Interface
+
+```typescript
+interface PrimusUser {
+  userId: string;              // Subject (sub claim)
+  email: string;               // User email
+  name: string;                // Display name
+  roles: string[];             // Assigned roles
+  additionalClaims: Record<string, any>;  // Other JWT claims
+}
+```
+
+## Migration from v1.0.0
+
+### Breaking Changes
+
+The configuration structure has changed from single-mode to multi-issuer:
+
+**OLD (v1.0.0):**
+```typescript
+❌ const primusAuth = primusIdentityMiddleware({
+  portalUrl: '...',
+  clientId: '...',
+  clientSecret: '...',
+  mode: ValidationMode.AzureAd,
+  tenantId: '...'
+});
+```
+
+**NEW (v1.1.0):**
+```typescript
+✅ const primusAuth = primusIdentityMiddleware({
+  issuers: [
+    {
+      name: 'AzureAD',
+      type: 'oidc',
+      issuer: 'https://login.microsoftonline.com/<TENANT>/v2.0',
+      authority: 'https://login.microsoftonline.com/<TENANT>/v2.0',
+      audiences: ['<CLIENT_ID>']
+    }
+  ]
+});
+```
+
+### Migration Steps
+
+1. Remove `ValidationMode` imports (no longer exported)
+2. Replace single config object with `issuers` array
+3. For Azure AD: Use `type: 'oidc'` with `authority`
+4. For Local: Use `type: 'jwt'` with `secret`
+5. Map `clientId` → `audiences[0]`
+6. Map `tenantId` → extract from `issuer` URL
+
+## Troubleshooting
+
+### "Untrusted issuer: {url}"
+
+**Cause:** Token's `iss` claim doesn't match any configured issuer.
+
+**Solution:** Add issuer to `issuers` array with exact `iss` value:
+```typescript
+issuers: [
+  {
+    name: '...',
+    type: '...',
+    issuer: '<EXACT_ISS_VALUE_FROM_TOKEN>',  // Must match exactly
+    // ...
+  }
+]
+```
+
+### "Authority URL required for OIDC issuer"
+
+**Cause:** OIDC issuer missing `authority` property.
+
+**Solution:** Add `authority` URL:
+```typescript
+{
+  type: 'oidc',
+  authority: 'https://login.microsoftonline.com/<TENANT>/v2.0',  // Required
+  issuer: 'https://login.microsoftonline.com/<TENANT>/v2.0',
+  // ...
+}
+```
+
+### "Shared secret required for JWT issuer"
+
+**Cause:** JWT issuer missing `secret` property.
+
+**Solution:** Provide shared secret:
+```typescript
+{
+  type: 'jwt',
+  secret: process.env.JWT_SECRET,  // Required (min 32 chars recommended)
+  issuer: 'https://...',
+  // ...
+}
+```
+
+### Token Expired
+
+**Cause:** Token's `exp` claim is in the past.
+
+**Solution:** Increase `clockSkew` for clock drift tolerance:
+```typescript
+{
+  issuers: [...],
+  clockSkew: 600  // 10 minutes tolerance
+}
+```
 
 ## Development
 
 ### Build
-
 ```bash
 npm run build
 ```
 
 ### Test
-
 ```bash
 npm test
 npm run test:coverage
 ```
 
 ### Lint
-
 ```bash
 npm run lint
 npm run format
@@ -416,8 +376,8 @@ npm run format
 
 ## Requirements
 
-- Node.js 16.0.0 or higher
-- Express 4.18.0 or higher (for Express middleware)
+- Node.js 16.0.0+
+- Express 4.18.0+ (for middleware usage)
 
 ## License
 

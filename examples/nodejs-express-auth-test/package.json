@@ -21,7 +21,7 @@
   "author": "Primus SaaS",
   "license": "MIT",
   "dependencies": {
-    "primus-identity-validator": "^1.0.0",
+    "primus-identity-validator": "^1.1.0",
     "express": "^4.18.2",
     "dotenv": "^16.3.1",
     "cors": "^2.8.5"

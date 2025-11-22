@@ -1,18 +1,30 @@
 import { Request, Response } from 'express';
 import { sign } from 'jsonwebtoken';
 import { primusIdentityMiddleware, requireRoles } from '../src/express';
-import { PrimusIdentityOptions } from '../src/types';
+import { PrimusIdentityOptions, IssuerConfig, IssuerType } from '../src/types';
+
+/** Helper to build options with a single local JWT issuer */
+function buildOptions(): PrimusIdentityOptions {
+  const localIssuer: IssuerConfig = {
+    name: 'LocalAuth',
+    type: 'jwt' as IssuerType,
+    issuer: 'https://auth.local',
+    secret: 'test-jwt-secret-key',
+    audiences: ['test-client']
+  };
+  return {
+    issuers: [localIssuer],
+    clockSkew: 300,
+    validateLifetime: true,
+    jwksCacheTtl: 24
+  };
+}
 
 describe('primusIdentityMiddleware', () => {
-  const options: PrimusIdentityOptions = {
-    portalUrl: 'https://portal.primus-saas.com',
-    clientId: 'test-client',
-    clientSecret: 'test-secret',
-    jwtSecret: 'test-jwt-secret-key',
-  };
+  const options = buildOptions();
 
   const createMockRequest = (authHeader?: string): Partial<Request> => ({
-    headers: authHeader ? { authorization: authHeader } : {},
+    headers: authHeader ? { authorization: authHeader } : {}
   });
 
   const createMockResponse = (): Partial<Response> => {
@@ -34,11 +46,10 @@ describe('primusIdentityMiddleware', () => {
       email: 'test@example.com',
       name: 'Test User',
       role: 'Admin',
-      iss: 'https://portal.primus-saas.com',
-      aud: 'test-client',
+      iss: 'https://auth.local',
+      aud: 'test-client'
     };
-
-    const token = sign(payload, options.jwtSecret!, { expiresIn: '1h' });
+    const token = sign(payload, 'test-jwt-secret-key', { expiresIn: '1h' });
     const req = createMockRequest(`Bearer ${token}`) as Request;
     const res = createMockResponse() as Response;
 
@@ -72,7 +83,7 @@ describe('primusIdentityMiddleware', () => {
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({
-      error: 'Invalid Authorization header format. Expected: Bearer <token>',
+      error: 'Invalid Authorization header format. Expected: Bearer <token>'
     });
     expect(nextFunction).not.toHaveBeenCalled();
   });
@@ -106,13 +117,13 @@ describe('requireRoles', () => {
   const createMockRequest = (roles?: string[]): Partial<Request> => ({
     primusUser: roles
       ? {
-          userId: 'user-123',
-          email: 'test@example.com',
-          name: 'Test User',
-          roles,
-          additionalClaims: {},
-        }
-      : undefined,
+        userId: 'user-123',
+        email: 'test@example.com',
+        name: 'Test User',
+        roles,
+        additionalClaims: {}
+      }
+      : undefined
   });
 
   const createMockResponse = (): Partial<Response> => {
@@ -158,7 +169,7 @@ describe('requireRoles', () => {
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({
       error: 'Insufficient permissions',
-      requiredRoles: ['Admin'],
+      requiredRoles: ['Admin']
     });
     expect(nextFunction).not.toHaveBeenCalled();
   });

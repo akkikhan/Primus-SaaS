@@ -1,11 +1,11 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import { 
-  primusIdentityMiddleware, 
-  requireRoles, 
-  ValidationMode,
-  PrimusUser 
+import {
+  primusIdentityMiddleware,
+  requireRoles,
+  PrimusUser,
+  IssuerConfig
 } from 'primus-identity-validator';
 
 // Load environment variables
@@ -21,30 +21,49 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Determine validation mode from environment
-const getValidationMode = (): ValidationMode => {
-  const mode = process.env.VALIDATION_MODE?.toLowerCase();
-  switch (mode) {
-    case 'azuread':
-      return ValidationMode.AzureAd;
-    case 'hybrid':
-      return ValidationMode.Hybrid;
-    case 'local':
-    default:
-      return ValidationMode.Local;
-  }
-};
+// Build issuers array dynamically from environment variables
+// Supports Local JWT and Azure AD OIDC configurations
+const issuers: IssuerConfig[] = [];
+
+// Add Local JWT issuer if secret is provided
+if (process.env.PRIMUS_JWT_SECRET || process.env.PRIMUS_CLIENT_SECRET) {
+  const localSecret = process.env.PRIMUS_JWT_SECRET || process.env.PRIMUS_CLIENT_SECRET!;
+  issuers.push({
+    name: 'LocalAuth',
+    type: 'jwt',
+    issuer: process.env.PRIMUS_PORTAL_URL || 'https://portal.primus-saas.com',
+    secret: localSecret,
+    audiences: [process.env.PRIMUS_CLIENT_ID || 'default-client']
+  });
+}
+
+// Add Azure AD issuer if tenant is provided
+if (process.env.AZURE_AD_TENANT_ID) {
+  const tenantId = process.env.AZURE_AD_TENANT_ID;
+  const clientId = process.env.PRIMUS_CLIENT_ID || 'default-client';
+
+  issuers.push({
+    name: 'AzureAD',
+    type: 'oidc',
+    issuer: `https://login.microsoftonline.com/${tenantId}/v2.0`,
+    authority: `https://login.microsoftonline.com/${tenantId}/v2.0`,
+    audiences: [clientId]
+  });
+}
+
+// Ensure at least one issuer is configured
+if (issuers.length === 0) {
+  throw new Error(
+    'No issuers configured! Set either PRIMUS_JWT_SECRET (for local) or AZURE_AD_TENANT_ID (for Azure AD)'
+  );
+}
 
 // Configure Primus authentication middleware
 const primusAuth = primusIdentityMiddleware({
-  portalUrl: process.env.PRIMUS_PORTAL_URL || 'https://portal.primus-saas.com',
-  clientId: process.env.PRIMUS_CLIENT_ID!,
-  clientSecret: process.env.PRIMUS_CLIENT_SECRET!,
-  jwtSecret: process.env.PRIMUS_CLIENT_SECRET!, // For Local mode, jwtSecret is the same as clientSecret
-  mode: getValidationMode(),
-  tenantId: process.env.AZURE_AD_TENANT_ID,
+  issuers,
   jwksCacheTtl: process.env.JWKS_CACHE_TTL ? parseInt(process.env.JWKS_CACHE_TTL) : 24,
-  clockSkew: 300 // 5 minutes tolerance
+  clockSkew: 300, // 5 minutes tolerance
+  validateLifetime: true
 });
 
 // Extend Express Request type to include primusUser
@@ -63,7 +82,7 @@ declare global {
 app.get('/', (req: Request, res: Response) => {
   res.json({
     message: 'Primus Auth Test Application',
-    version: '1.0.0',
+    version: '1.1.0',
     endpoints: {
       public: [
         'GET /',
@@ -84,10 +103,8 @@ app.get('/', (req: Request, res: Response) => {
       ]
     },
     configuration: {
-      validationMode: process.env.VALIDATION_MODE || 'Local',
-      portalUrl: process.env.PRIMUS_PORTAL_URL,
-      clientId: process.env.PRIMUS_CLIENT_ID,
-      azureTenantId: process.env.AZURE_AD_TENANT_ID ? '***configured***' : undefined
+      issuers: issuers.map(i => ({ name: i.name, type: i.type, issuer: i.issuer })),
+      clientId: process.env.PRIMUS_CLIENT_ID
     }
   });
 });
@@ -217,15 +234,14 @@ app.use((err: any, req: Request, res: Response, next: any) => {
 
 const server = app.listen(PORT, () => {
   console.log('='.repeat(60));
-  console.log('🚀 Primus Auth Test Application');
+  console.log('🚀 Primus Auth Test Application (SDK v1.1.0)');
   console.log('='.repeat(60));
   console.log(`📍 Server: http://localhost:${PORT}`);
-  console.log(`🔒 Validation Mode: ${process.env.VALIDATION_MODE || 'Local'}`);
-  console.log(`🏢 Portal URL: ${process.env.PRIMUS_PORTAL_URL}`);
+  console.log(`🔒 Configured Issuers:`);
+  issuers.forEach(issuer => {
+    console.log(`   - ${issuer.name} (${issuer.type.toUpperCase()}) - ${issuer.issuer}`);
+  });
   console.log(`🆔 Client ID: ${process.env.PRIMUS_CLIENT_ID}`);
-  if (process.env.AZURE_AD_TENANT_ID) {
-    console.log(`☁️  Azure AD Tenant: ${process.env.AZURE_AD_TENANT_ID}`);
-  }
   console.log('='.repeat(60));
   console.log('\n📋 Available Endpoints:');
   console.log('  Public:    GET /');

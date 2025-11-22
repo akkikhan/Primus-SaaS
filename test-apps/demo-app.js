@@ -20,11 +20,18 @@ const PORT = 3100;
 
 // Initialize Primus Identity Validator middleware
 const primusAuth = primusIdentityMiddleware({
-    portalUrl: 'http://localhost:5267',
-    clientId: credentials.clientId,
-    clientSecret: credentials.clientSecret,
-    jwtSecret: credentials.clientSecret, // Same as clientSecret for Local mode
-    mode: 'Local'
+    issuers: [
+        {
+            name: 'LocalAuth',
+            type: 'jwt',
+            issuer: 'http://localhost:4000', // Local IdP URL as issuer
+            secret: credentials.clientSecret,
+            audiences: [credentials.clientId]
+        }
+    ],
+    jwksCacheTtl: 24,
+    clockSkew: 300,
+    validateLifetime: true
 });
 
 // Public endpoint - no authentication

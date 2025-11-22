@@ -1,7 +1,16 @@
 # 🚀 Real-Life Integration Guide - Primus SaaS Platform
 
-**Last Updated**: November 21, 2025  
-**Version**: 1.0.0
+**Last Updated**: November 22, 2025  
+**Version**: 1.1.0
+
+---
+
+## 🆕 Release Notes (v1.1.0)
+
+- **Multi-Issuer Support**: Now supports configuring multiple identity providers (e.g., Azure AD + Local) simultaneously.
+- **Simplified Configuration**: Removed `mode` and `portalUrl`. Use the `issuers` array instead.
+- **Local Auth**: Enhanced support for self-hosted Local Identity Providers.
+- **Breaking Changes**: `PrimusIdentityOptions` structure has changed. See [Node.js Integration](#nodejs--express-integration) for details.
 
 ---
 
@@ -97,11 +106,23 @@ const app = express();
 
 // ✅ Step 1: Configure Primus Authentication
 const primusAuth = primusIdentityMiddleware({
-    portalUrl: process.env.PRIMUS_PORTAL_URL || 'https://portal.yourcompany.com',
-    clientId: process.env.PRIMUS_CLIENT_ID,        // From Step 1
-    clientSecret: process.env.PRIMUS_CLIENT_SECRET, // From Step 1
-    jwtSecret: process.env.PRIMUS_CLIENT_SECRET,    // Same as clientSecret for Local mode
-    mode: 'Local' // or 'AzureAd' or 'Hybrid'
+    issuers: [
+        {
+            name: 'LocalAuth',
+            type: 'jwt',
+            issuer: 'https://auth.local',
+            secret: process.env.LOCAL_JWT_SECRET,
+            audiences: ['api://my-app']
+        },
+        {
+            name: 'AzureAD',
+            type: 'oidc',
+            authority: 'https://login.microsoftonline.com/common/v2.0',
+            issuer: 'https://login.microsoftonline.com/{tenant-id}/v2.0',
+            audiences: ['api://my-app']
+        }
+    ],
+    clockSkew: 300
 });
 
 // ✅ Step 2: Create Public Endpoints (no authentication)
@@ -163,11 +184,15 @@ declare global {
 
 const app = express();
 const primusAuth = primusIdentityMiddleware({
-    portalUrl: process.env.PRIMUS_PORTAL_URL!,
-    clientId: process.env.PRIMUS_CLIENT_ID!,
-    clientSecret: process.env.PRIMUS_CLIENT_SECRET!,
-    jwtSecret: process.env.PRIMUS_CLIENT_SECRET!,
-    mode: 'Local'
+    issuers: [
+        {
+            name: 'LocalAuth',
+            type: 'jwt',
+            issuer: 'https://auth.local',
+            secret: process.env.LOCAL_JWT_SECRET!,
+            audiences: ['api://my-app']
+        }
+    ]
 });
 
 app.get('/api/protected', primusAuth, (req: Request, res: Response) => {
@@ -199,13 +224,28 @@ using Microsoft.AspNetCore.Authorization;
 var builder = WebApplication.CreateBuilder(args);
 
 // ✅ Step 1: Add Primus Identity Services
+// ✅ Step 1: Add Primus Identity Services
 builder.Services.AddPrimusIdentity(options =>
 {
-    options.PortalUrl = builder.Configuration["Primus:PortalUrl"] 
-        ?? "https://portal.yourcompany.com";
-    options.ClientId = builder.Configuration["Primus:ClientId"]!;
-    options.ClientSecret = builder.Configuration["Primus:ClientSecret"]!;
-    options.JwtSecret = builder.Configuration["Primus:ClientSecret"]!;
+    options.Issuers = new List<IssuerConfig>
+    {
+        new IssuerConfig
+        {
+            Name = "LocalAuth",
+            Type = IssuerType.Jwt,
+            Issuer = "https://auth.local",
+            Secret = builder.Configuration["Primus:LocalSecret"],
+            Audiences = new List<string> { "api://my-app" }
+        },
+        new IssuerConfig
+        {
+            Name = "AzureAD",
+            Type = IssuerType.Oidc,
+            Authority = "https://login.microsoftonline.com/common/v2.0",
+            Issuer = "https://login.microsoftonline.com/{tenant-id}/v2.0",
+            Audiences = new List<string> { "api://my-app" }
+        }
+    };
     
     // Optional: Configure for development
     options.RequireHttpsMetadata = builder.Environment.IsProduction();
@@ -232,9 +272,11 @@ app.Run();
 ```json
 {
   "Primus": {
-    "PortalUrl": "https://portal.yourcompany.com",
-    "ClientId": "PSP-CLI-932655",
-    "ClientSecret": "psp_ppXmhBjdNlkj1cEqFRQJqo82p6mPGay5LFxmycgPd1k"
+    "LocalSecret": "your-local-jwt-secret-key-here",
+    "AzureAd": {
+      "TenantId": "your-tenant-id",
+      "ClientId": "your-client-id"
+    }
   }
 }
 ```

@@ -1,27 +1,61 @@
 namespace PrimusSaaS.Identity.Validator;
 
 /// <summary>
-/// Authentication validation mode.
+/// Type of identity issuer.
 /// </summary>
-public enum ValidationMode
+public enum IssuerType
 {
     /// <summary>
-    /// Local JWT validation using symmetric key (HMAC).
-    /// Portal generates and signs tokens directly.
+    /// OpenID Connect issuer (e.g., Azure AD).
     /// </summary>
-    Local,
+    Oidc,
 
     /// <summary>
-    /// Azure AD validation using asymmetric keys (RS256).
-    /// Tokens are issued by Azure AD and validated using JWKS.
+    /// JWT issuer using shared secret (e.g., Local Auth).
     /// </summary>
-    AzureAd,
+    Jwt
+}
+
+/// <summary>
+/// Configuration for a single identity issuer.
+/// </summary>
+public class IssuerConfig
+{
+    /// <summary>
+    /// Friendly name for this issuer (e.g., "AzureAD", "LocalAuth").
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// Hybrid mode: supports both Local and Azure AD validation.
-    /// Automatically detects token type based on issuer.
+    /// Type of issuer (Oidc or Jwt).
     /// </summary>
-    Hybrid
+    public IssuerType Type { get; set; }
+
+    /// <summary>
+    /// The 'iss' claim value to match in the token.
+    /// Used to route the token to the correct validator.
+    /// </summary>
+    public string Issuer { get; set; } = string.Empty;
+
+    /// <summary>
+    /// For OIDC: The authority URL (e.g., https://login.microsoftonline.com/...).
+    /// </summary>
+    public string? Authority { get; set; }
+
+    /// <summary>
+    /// For JWT: The JWKS endpoint URL (optional if Secret is provided).
+    /// </summary>
+    public string? JwksUrl { get; set; }
+
+    /// <summary>
+    /// For JWT (Local Dev): Shared secret key.
+    /// </summary>
+    public string? Secret { get; set; }
+
+    /// <summary>
+    /// Valid audiences for this issuer.
+    /// </summary>
+    public List<string> Audiences { get; set; } = new();
 }
 
 /// <summary>
@@ -30,45 +64,9 @@ public enum ValidationMode
 public class PrimusIdentityOptions
 {
     /// <summary>
-    /// The validation mode to use. Defaults to Local for backward compatibility.
+    /// List of trusted identity providers.
     /// </summary>
-    public ValidationMode Mode { get; set; } = ValidationMode.Local;
-
-    /// <summary>
-    /// The base URL of the Primus SaaS Portal (e.g., https://portal.primus-saas.com).
-    /// </summary>
-    public string PortalUrl { get; set; } = string.Empty;
-
-    /// <summary>
-    /// The Client ID for your application registered in Primus SaaS Portal.
-    /// </summary>
-    public string ClientId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// The Client Secret for your application registered in Primus SaaS Portal.
-    /// </summary>
-    public string ClientSecret { get; set; } = string.Empty;
-
-    /// <summary>
-    /// The JWT secret key used to validate tokens (Local mode only). Retrieved from the portal.
-    /// </summary>
-    public string? JwtSecret { get; set; }
-
-    /// <summary>
-    /// The Azure AD Tenant ID (AzureAd or Hybrid mode only).
-    /// Format: GUID (e.g., 12345678-1234-1234-1234-123456789012).
-    /// </summary>
-    public string? TenantId { get; set; }
-
-    /// <summary>
-    /// The issuer value expected in JWT tokens. Defaults to portal URL (Local) or Azure AD issuer (AzureAd).
-    /// </summary>
-    public string? Issuer { get; set; }
-
-    /// <summary>
-    /// The audience value expected in JWT tokens. Defaults to ClientId if not specified.
-    /// </summary>
-    public string? Audience { get; set; }
+    public List<IssuerConfig> Issuers { get; set; } = new();
 
     /// <summary>
     /// Whether to validate the token lifetime. Default is true.
@@ -87,7 +85,7 @@ public class PrimusIdentityOptions
     public TimeSpan ClockSkew { get; set; } = TimeSpan.FromMinutes(5);
 
     /// <summary>
-    /// Time-to-live for JWKS cache (AzureAd mode only). Default is 24 hours.
+    /// Time-to-live for JWKS cache (OIDC mode only). Default is 24 hours.
     /// </summary>
     public TimeSpan JwksCacheTtl { get; set; } = TimeSpan.FromHours(24);
 
@@ -96,45 +94,25 @@ public class PrimusIdentityOptions
     /// </summary>
     public void Validate()
     {
-        if (string.IsNullOrWhiteSpace(PortalUrl))
-            throw new ArgumentException("PortalUrl is required.", nameof(PortalUrl));
+        if (Issuers == null || !Issuers.Any())
+            throw new ArgumentException("At least one issuer configuration is required.", nameof(Issuers));
 
-        if (string.IsNullOrWhiteSpace(ClientId))
-            throw new ArgumentException("ClientId is required.", nameof(ClientId));
-
-        if (string.IsNullOrWhiteSpace(ClientSecret))
-            throw new ArgumentException("ClientSecret is required.", nameof(ClientSecret));
-
-        if (!Uri.IsWellFormedUriString(PortalUrl, UriKind.Absolute))
-            throw new ArgumentException("PortalUrl must be a valid absolute URI.", nameof(PortalUrl));
-
-        // Mode-specific validation
-        switch (Mode)
+        foreach (var issuer in Issuers)
         {
-            case ValidationMode.Local:
-                if (string.IsNullOrWhiteSpace(JwtSecret))
-                    throw new ArgumentException("JwtSecret is required for Local mode.", nameof(JwtSecret));
-                break;
+            if (string.IsNullOrWhiteSpace(issuer.Name))
+                throw new ArgumentException("Issuer name is required.");
 
-            case ValidationMode.AzureAd:
-                if (string.IsNullOrWhiteSpace(TenantId))
-                    throw new ArgumentException("TenantId is required for AzureAd mode.", nameof(TenantId));
-                if (!Guid.TryParse(TenantId, out _))
-                    throw new ArgumentException("TenantId must be a valid GUID.", nameof(TenantId));
-                break;
+            if (string.IsNullOrWhiteSpace(issuer.Issuer))
+                throw new ArgumentException($"Issuer claim value is required for {issuer.Name}.");
 
-            case ValidationMode.Hybrid:
-                if (string.IsNullOrWhiteSpace(JwtSecret))
-                    throw new ArgumentException("JwtSecret is required for Hybrid mode.", nameof(JwtSecret));
-                if (string.IsNullOrWhiteSpace(TenantId))
-                    throw new ArgumentException("TenantId is required for Hybrid mode.", nameof(TenantId));
-                if (!Guid.TryParse(TenantId, out _))
-                    throw new ArgumentException("TenantId must be a valid GUID.", nameof(TenantId));
-                break;
+            if (issuer.Audiences == null || !issuer.Audiences.Any())
+                throw new ArgumentException($"At least one audience is required for {issuer.Name}.");
+
+            if (issuer.Type == IssuerType.Oidc && string.IsNullOrWhiteSpace(issuer.Authority))
+                throw new ArgumentException($"Authority URL is required for OIDC issuer {issuer.Name}.");
+
+            if (issuer.Type == IssuerType.Jwt && string.IsNullOrWhiteSpace(issuer.Secret) && string.IsNullOrWhiteSpace(issuer.JwksUrl))
+                throw new ArgumentException($"Secret or JWKS URL is required for JWT issuer {issuer.Name}.");
         }
-
-        // Set defaults if not provided
-        Issuer ??= PortalUrl;
-        Audience ??= ClientId;
     }
 }

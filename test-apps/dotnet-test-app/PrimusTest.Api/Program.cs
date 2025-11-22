@@ -6,30 +6,30 @@ var builder = WebApplication.CreateBuilder(args);
 // Add Primus Identity Validator
 builder.Services.AddPrimusIdentity(options =>
 {
-    options.PortalUrl = builder.Configuration["PrimusIdentity:PortalUrl"] ?? "https://localhost:7001";
-    options.ClientId = builder.Configuration["PrimusIdentity:ClientId"] ?? "test-client-123";
-    options.ClientSecret = builder.Configuration["PrimusIdentity:ClientSecret"] ?? "test-secret-456";
-    
-    // Read Mode from configuration (Local or AzureAd)
-    var mode = builder.Configuration["PrimusIdentity:Mode"] ?? "Local";
-    options.Mode = Enum.Parse<ValidationMode>(mode, ignoreCase: true);
-    
-    // Local JWT mode settings
-    if (options.Mode == ValidationMode.Local)
+    options.Issuers = new List<IssuerConfig>
     {
-        options.JwtSecret = builder.Configuration["PrimusIdentity:JwtSecret"] ?? "test-jwt-secret-key-with-at-least-32-characters";
-    }
-    
-    // Azure AD mode settings
-    if (options.Mode == ValidationMode.AzureAd || options.Mode == ValidationMode.Hybrid)
-    {
-        options.TenantId = builder.Configuration["PrimusIdentity:TenantId"] ?? throw new InvalidOperationException("TenantId is required for Azure AD mode");
-        
-        // Optional: JWKS cache TTL (default is 24 hours)
-        if (int.TryParse(builder.Configuration["PrimusIdentity:JwksCacheTtl"], out var cacheTtl))
+        new IssuerConfig
         {
-            options.JwksCacheTtl = TimeSpan.FromHours(cacheTtl);
+            Name = "LocalAuth",
+            Type = IssuerType.Jwt,
+            Issuer = "http://localhost:5267",
+            Secret = builder.Configuration["PrimusIdentity:JwtSecret"] ?? "test-jwt-secret-key-with-at-least-32-characters",
+            Audiences = new List<string> { "test-client-123" }
+        },
+        new IssuerConfig
+        {
+            Name = "AzureAD",
+            Type = IssuerType.Oidc,
+            Issuer = $"https://login.microsoftonline.com/{builder.Configuration["PrimusIdentity:TenantId"] ?? "common"}/v2.0",
+            Authority = $"https://login.microsoftonline.com/{builder.Configuration["PrimusIdentity:TenantId"] ?? "common"}/v2.0",
+            Audiences = new List<string> { "test-client-123" }
         }
+    };
+    
+    // Optional: JWKS cache TTL (default is 24 hours)
+    if (int.TryParse(builder.Configuration["PrimusIdentity:JwksCacheTtl"], out var cacheTtl))
+    {
+        options.JwksCacheTtl = TimeSpan.FromHours(cacheTtl);
     }
 });
 

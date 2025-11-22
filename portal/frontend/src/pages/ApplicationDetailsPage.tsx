@@ -203,29 +203,22 @@ ${getCodeSnippet()}
 
   const getConfigTemplate = () => {
     const primusClientId = currentApplication.primusClientId;
-    
+
     switch (currentApplication.stack) {
       case 'DotNet':
         return `{
-  "PrimusIdentity": {
-    "PortalUrl": "https://portal.primus-saas.com",
-    "ClientId": "${primusClientId}",
-    "ClientSecret": "<YOUR_PRIMUS_CLIENT_SECRET>",
-    "Mode": "AzureAd",
-    "TenantId": "<YOUR_TENANT_ID>",
-    "RequireHttpsMetadata": true
+  "Primus": {
+    "AzureAd": {
+      "TenantId": "<YOUR_TENANT_ID>"
+    }
   }
 }`;
       case 'NodeJS':
       case 'NodeJS-Nest':
       case 'TypeScriptLib':
-        return `{
-  "portalUrl": "https://portal.primus-saas.com",
-  "clientId": "${primusClientId}",
-  "clientSecret": "<YOUR_PRIMUS_CLIENT_SECRET>",
-  "mode": "AzureAd",
-  "tenantId": "<YOUR_TENANT_ID>"
-}`;
+        return `// No configuration file needed.
+// Pass issuers directly to middleware/validator:
+// See code snippet below for inline configuration.`;
       case 'Python':
       case 'Python-FastAPI':
         return `{
@@ -249,21 +242,28 @@ ${getCodeSnippet()}
 
   const getCodeSnippet = () => {
     const primusClientId = currentApplication.primusClientId;
-    
+
     switch (currentApplication.stack) {
       case 'DotNet':
         return `// Program.cs
-using PrimusSaaS.Identity.Validator; // Provides AddPrimusIdentity and ValidationMode
+using PrimusSaaS.Identity.Validator;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddPrimusIdentity(options =>
 {
-    options.PortalUrl = builder.Configuration["PrimusIdentity:PortalUrl"] ?? "https://portal.primus-saas.com";
-    options.ClientId = builder.Configuration["PrimusIdentity:ClientId"] ?? "${primusClientId}";
-    options.ClientSecret = builder.Configuration["PrimusIdentity:ClientSecret"] ?? "<YOUR_PRIMUS_CLIENT_SECRET>";
-    options.Mode = ValidationMode.AzureAd;
-    options.TenantId = builder.Configuration["PrimusIdentity:TenantId"] ?? "<YOUR_TENANT_ID>";
+    options.Issuers = new List<IssuerConfig>
+    {
+        new IssuerConfig
+        {
+            Name = "AzureAD",
+            Type = IssuerType.Oidc,
+            Issuer = "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
+            Authority = "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
+            Audiences = new List<string> { "${primusClientId}" }
+        }
+    };
+    options.RequireHttpsMetadata = builder.Environment.IsProduction();
 });
 
 var app = builder.Build();
@@ -274,16 +274,20 @@ app.Run();`;
       case 'NodeJS':
         return `// server.ts
 import express from "express";
-import { primusIdentityMiddleware, ValidationMode } from "primus-identity-validator";
+import { primusIdentityMiddleware } from "primus-identity-validator";
 
 const app = express();
 
 const primusAuth = primusIdentityMiddleware({
-  portalUrl: process.env.PRIMUS_PORTAL_URL ?? "https://portal.primus-saas.com",
-  clientId: process.env.PRIMUS_CLIENT_ID ?? "${primusClientId}",
-  clientSecret: process.env.PRIMUS_CLIENT_SECRET ?? "<YOUR_PRIMUS_CLIENT_SECRET>",
-  mode: ValidationMode.AzureAd,
-  tenantId: process.env.AZURE_TENANT_ID ?? "<YOUR_TENANT_ID>"
+  issuers: [
+    {
+      name: "AzureAD",
+      type: "oidc",
+      issuer: "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
+      authority: "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
+      audiences: ["${primusClientId}"]
+    }
+  ]
 });
 
 app.get("/api/me", primusAuth, (req, res) => {
@@ -292,14 +296,18 @@ app.get("/api/me", primusAuth, (req, res) => {
       case 'NodeJS-Nest':
         return `// auth.module.ts
 import { Module, MiddlewareConsumer, NestModule } from "@nestjs/common";
-import { primusIdentityMiddleware, ValidationMode } from "primus-identity-validator";
+import { primusIdentityMiddleware } from "primus-identity-validator";
 
 const primusAuth = primusIdentityMiddleware({
-  portalUrl: process.env.PRIMUS_PORTAL_URL ?? "https://portal.primus-saas.com",
-  clientId: process.env.PRIMUS_CLIENT_ID ?? "${primusClientId}",
-  clientSecret: process.env.PRIMUS_CLIENT_SECRET ?? "<YOUR_PRIMUS_CLIENT_SECRET>",
-  mode: ValidationMode.AzureAd,
-  tenantId: process.env.AZURE_TENANT_ID ?? "<YOUR_TENANT_ID>"
+  issuers: [
+    {
+      name: "AzureAD",
+      type: "oidc",
+      issuer: "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
+      authority: "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
+      audiences: ["${primusClientId}"]
+    }
+  ]
 });
 
 @Module({
@@ -313,22 +321,25 @@ export class AuthModule implements NestModule {
 }`;
       case 'TypeScriptLib':
         return `// validator.ts
-import { PrimusIdentityValidator, ValidationMode } from "primus-identity-validator";
+import { PrimusIdentityValidator } from "primus-identity-validator";
 
 export const validator = new PrimusIdentityValidator({
-  portalUrl: process.env.PRIMUS_PORTAL_URL ?? "https://portal.primus-saas.com",
-  clientId: process.env.PRIMUS_CLIENT_ID ?? "${primusClientId}",
-  clientSecret: process.env.PRIMUS_CLIENT_SECRET ?? "<YOUR_PRIMUS_CLIENT_SECRET>",
-  jwtSecret: process.env.PRIMUS_JWT_SECRET, // required for Local/Hybrid modes
-  mode: ValidationMode.AzureAd,
-  tenantId: process.env.AZURE_TENANT_ID ?? "<YOUR_TENANT_ID>"
+  issuers: [
+    {
+      name: "AzureAD",
+      type: "oidc",
+      issuer: "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
+      authority: "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
+      audiences: ["${primusClientId}"]
+    }
+  ]
 });
 
-const token = "Bearer eyJ...";
+const token = "eyJ...";  // Without "Bearer " prefix
 const result = await validator.validateToken(token);
 
 if (result.isValid) {
-  console.log("User:", result.user);
+  console.log("Claims:", result.claims);
 } else {
   console.error("Validation failed:", result.error);
 }`;
@@ -394,8 +405,8 @@ async def get_user(user=Depends(auth.require_auth)):
             <label>Primus Client ID:</label>
             <div className="value-with-copy">
               <code>{currentApplication.primusClientId}</code>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="copy-btn-inline"
                 onClick={() => handleCopy(currentApplication.primusClientId, 'header-clientId')}
                 title="Copy to clipboard"
@@ -434,21 +445,21 @@ async def get_user(user=Depends(auth.require_auth)):
               <label>Application Name</label>
               <div className="info-value">{currentApplication.name}</div>
             </div>
-          <div className="info-item">
-            <label>Technology Stack</label>
-            <div className="info-value">
-              <span className={`stack-chip ${stackInfo[currentApplication.stack]?.tone ?? 'tone-neutral'}`}>
-                <span className="stack-dot" />
-                {stackInfo[currentApplication.stack]?.label ?? currentApplication.stack}
-              </span>
+            <div className="info-item">
+              <label>Technology Stack</label>
+              <div className="info-value">
+                <span className={`stack-chip ${stackInfo[currentApplication.stack]?.tone ?? 'tone-neutral'}`}>
+                  <span className="stack-dot" />
+                  {stackInfo[currentApplication.stack]?.label ?? currentApplication.stack}
+                </span>
+              </div>
             </div>
-          </div>
             <div className="info-item">
               <label>Primus Client ID</label>
               <div className="info-value copy-container">
                 <code className="code-inline">{currentApplication.primusClientId}</code>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="copy-btn"
                   onClick={() => handleCopy(currentApplication.primusClientId, 'primusClientId')}
                   title="Copy to clipboard"
@@ -538,7 +549,7 @@ async def get_user(user=Depends(auth.require_auth)):
                       <h3>{appModule.moduleName}</h3>
                     </div>
                   </div>
-                  
+
                   <div className="module-version-info">
                     <div className="version-row">
                       <label>Current Version:</label>
@@ -557,23 +568,23 @@ async def get_user(user=Depends(auth.require_auth)):
                   </div>
 
                   <div className="module-actions">
-                    <button 
+                    <button
                       type="button"
                       className="btn-secondary"
                       onClick={() => handleOpenChangeVersion(appModule.moduleId, appModule.version)}
                     >
                       Change Version
                     </button>
-                    <button 
+                    <button
                       type="button"
                       className="btn-secondary"
                       onClick={() => handleViewChangelog(appModule)}
                     >
                       View Changelog
                     </button>
-                    <button 
+                    <button
                       type="button"
-                      className="btn-danger" 
+                      className="btn-danger"
                       onClick={() => handleRemoveModule(appModule.moduleId, appModule.moduleName)}
                     >
                       Remove
@@ -592,7 +603,7 @@ async def get_user(user=Depends(auth.require_auth)):
         {/* Section 3: Integration Documentation */}
         <div className="app-detail__panel app-detail__docs-panel">
           <h2>Integration Documentation</h2>
-          
+
           <div className="docs-section">
             <h3>Step 1: Install the SDK</h3>
             <p>Add the Primus Identity Validator SDK to your {currentApplication.stack} project:</p>
@@ -600,7 +611,7 @@ async def get_user(user=Depends(auth.require_auth)):
               <pre className="code-block">
                 <code>{getInstallCommand()}</code>
               </pre>
-              <button 
+              <button
                 type="button"
                 className="copy-btn"
                 onClick={() => handleCopy(getInstallCommand(), 'install')}
@@ -614,14 +625,14 @@ async def get_user(user=Depends(auth.require_auth)):
             <h3>Step 2: Configure Your Application</h3>
             <p>Add your Primus portal credentials and Azure AD tenant settings (for AzureAd/Hybrid):</p>
             <div className="alert alert-info">
-              <strong>Note:</strong> The <code>PrimusClientId</code> is pre-filled with your application's ID. 
+              <strong>Note:</strong> The <code>PrimusClientId</code> is pre-filled with your application's ID.
               Replace the placeholders with your portal secret and Azure AD tenant details.
             </div>
             <div className="code-block-container">
               <pre className="code-block">
                 <code>{getConfigTemplate()}</code>
               </pre>
-              <button 
+              <button
                 type="button"
                 className="copy-btn"
                 onClick={() => handleCopy(getConfigTemplate(), 'config')}
@@ -629,7 +640,7 @@ async def get_user(user=Depends(auth.require_auth)):
                 {copiedText === 'config' ? 'Copied' : 'Copy'}
               </button>
             </div>
-            
+
             <div className="config-help">
               <h4>Configuration Guide:</h4>
               <ul>
@@ -676,7 +687,7 @@ async def get_user(user=Depends(auth.require_auth)):
               <pre className="code-block">
                 <code>{getCodeSnippet()}</code>
               </pre>
-              <button 
+              <button
                 type="button"
                 className="copy-btn"
                 onClick={() => handleCopy(getCodeSnippet(), 'code')}
@@ -731,15 +742,15 @@ public class MyController : ControllerBase
           </div>
 
           <div className="docs-actions">
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="btn-primary"
               onClick={handleCopyAll}
             >
               {copiedText === 'all-docs' ? 'All content copied' : 'Copy all to clipboard'}
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="btn-secondary"
               onClick={handleDownloadPdf}
               title="Download PDF with integration steps"
@@ -791,8 +802,8 @@ public class MyController : ControllerBase
 
             <div className="modal-actions">
               <button type="button" onClick={() => setShowAddModule(false)}>Cancel</button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={handleAddModule}
                 disabled={!selectedModuleId || !selectedVersionId}
               >
@@ -810,7 +821,7 @@ public class MyController : ControllerBase
             <h2>Change {changingModule.moduleName} Version</h2>
             <p>Current version: <strong>v{changingModule.version}</strong></p>
             <p>Latest available: <strong>v{changingModule.latestVersion}</strong></p>
-            
+
             <div className="form-group">
               <label htmlFor="new-version">Select New Version</label>
               <select
@@ -832,8 +843,8 @@ public class MyController : ControllerBase
 
             <div className="modal-actions">
               <button type="button" onClick={() => setShowChangeVersion(false)}>Cancel</button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="btn-primary"
                 onClick={handleChangeVersion}
                 disabled={!newVersion || newVersion === changingModule.version}
@@ -850,7 +861,7 @@ public class MyController : ControllerBase
         <div className="modal-overlay" onClick={() => setShowChangelog(false)}>
           <div className="modal modal-large" onClick={(e) => e.stopPropagation()}>
             <h2>{changelogModule.moduleName} - Changelog</h2>
-            
+
             <div className="changelog-content">
               <div className="changelog-item">
                 <div className="changelog-header">
@@ -862,7 +873,7 @@ public class MyController : ControllerBase
                 <div className="changelog-body">
                   <h4>Release Notes</h4>
                   <p>{changelogModule.releaseNotes || 'No release notes available for this version.'}</p>
-                  
+
                   {changelogModule.changelog && (
                     <div className="changelog-section">
                       <h4>Detailed Changelog</h4>
@@ -871,7 +882,7 @@ public class MyController : ControllerBase
                       </pre>
                     </div>
                   )}
-                  
+
                   {changelogModule.demoCode && (
                     <div className="changelog-section">
                       <h4>Demo Code</h4>
@@ -886,7 +897,7 @@ public class MyController : ControllerBase
               {changelogModule.latestVersion !== changelogModule.version && (
                 <div className="changelog-notice">
                   <p><strong>A newer version (v{changelogModule.latestVersion}) is available.</strong></p>
-                  <button 
+                  <button
                     type="button"
                     className="btn-primary"
                     onClick={() => {

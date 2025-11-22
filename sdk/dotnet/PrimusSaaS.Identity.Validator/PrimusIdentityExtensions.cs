@@ -35,7 +35,7 @@ public static class PrimusIdentityExtensions
         // Validate options on startup
         services.AddSingleton<IValidateOptions<PrimusIdentityOptions>, PrimusIdentityOptionsValidator>();
 
-        // Register Azure AD services (used when Mode is AzureAd or Hybrid)
+        // Register services
         services.AddHttpClient();
         services.AddSingleton<JwksCache>(sp =>
         {
@@ -69,34 +69,111 @@ public static class PrimusIdentityExtensions
             {
                 var sp = services.BuildServiceProvider();
                 var primusOptions = sp.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
+                var azureValidator = sp.GetRequiredService<AzureAdValidator>();
+                
                 primusOptions.Validate();
 
-                // Configure based on validation mode
-                if (primusOptions.Mode == ValidationMode.Local)
-                {
-                    ConfigureLocalMode(options, primusOptions);
-                }
-                else if (primusOptions.Mode == ValidationMode.AzureAd)
-                {
-                    ConfigureAzureAdMode(options, primusOptions, sp);
-                }
-                else if (primusOptions.Mode == ValidationMode.Hybrid)
-                {
-                    ConfigureHybridMode(options, primusOptions, sp);
-                }
-
                 options.RequireHttpsMetadata = primusOptions.RequireHttpsMetadata;
+                
+                // Custom validation logic to handle multiple issuers
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false, // We'll validate manually based on config
+                    ValidateAudience = false, // We'll validate manually based on config
+                    ValidateLifetime = primusOptions.ValidateLifetime,
+                    ClockSkew = primusOptions.ClockSkew,
+                    ValidateIssuerSigningKey = true,
+                    RequireSignedTokens = true,
+                    RequireExpirationTime = true
+                };
 
                 options.Events = new JwtBearerEvents
                 {
+                    OnTokenValidated = async context =>
+                    {
+                        try
+                        {
+                            var token = context.SecurityToken as System.IdentityModel.Tokens.Jwt.JwtSecurityToken;
+                            if (token == null)
+                            {
+                                context.Fail("Invalid token type.");
+                                return;
+                            }
+
+                            var issuer = token.Issuer;
+                            var issuerConfig = primusOptions.Issuers.FirstOrDefault(i => i.Issuer == issuer);
+
+                            if (issuerConfig == null)
+                            {
+                                context.Fail($"Untrusted issuer: {issuer}. No matching configuration found.");
+                                return;
+                            }
+
+                            System.Security.Claims.ClaimsPrincipal principal;
+
+                            if (issuerConfig.Type == IssuerType.Oidc)
+                            {
+                                // Validate as OIDC (Azure AD) token
+                                if (string.IsNullOrEmpty(issuerConfig.Authority))
+                                {
+                                    context.Fail($"Authority URL is required for OIDC issuer {issuerConfig.Name}");
+                                    return;
+                                }
+
+                                var tenantId = ExtractTenantId(issuerConfig.Authority);
+                                if (string.IsNullOrEmpty(tenantId))
+                                {
+                                    context.Fail($"Could not extract Tenant ID from authority: {issuerConfig.Authority}");
+                                    return;
+                                }
+
+                                // Use first audience for now
+                                var audience = issuerConfig.Audiences.FirstOrDefault();
+
+                                principal = await azureValidator.ValidateTokenAsync(
+                                    token.RawData,
+                                    tenantId,
+                                    audience ?? string.Empty,
+                                    primusOptions.ValidateLifetime,
+                                    primusOptions.ClockSkew);
+                            }
+                            else // Jwt
+                            {
+                                // Validate as Local JWT token
+                                if (string.IsNullOrEmpty(issuerConfig.Secret))
+                                {
+                                    context.Fail($"Shared secret is required for JWT issuer {issuerConfig.Name}");
+                                    return;
+                                }
+
+                                var validationParameters = new TokenValidationParameters
+                                {
+                                    ValidateIssuer = true,
+                                    ValidIssuer = issuerConfig.Issuer,
+                                    ValidateAudience = true,
+                                    ValidAudiences = issuerConfig.Audiences,
+                                    ValidateLifetime = primusOptions.ValidateLifetime,
+                                    ValidateIssuerSigningKey = true,
+                                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(issuerConfig.Secret)),
+                                    ClockSkew = primusOptions.ClockSkew
+                                };
+
+                                var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                                principal = handler.ValidateToken(token.RawData, validationParameters, out _);
+                            }
+
+                            context.Principal = principal;
+                            Console.WriteLine($"Primus Identity: Token validated for user - {principal.Identity?.Name} (Issuer: {issuerConfig.Name})");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Primus Identity: Validation failed - {ex.Message}");
+                            context.Fail(ex);
+                        }
+                    },
                     OnAuthenticationFailed = context =>
                     {
                         Console.WriteLine($"Primus Identity: Authentication failed - {context.Exception.Message}");
-                        return Task.CompletedTask;
-                    },
-                    OnTokenValidated = context =>
-                    {
-                        Console.WriteLine($"Primus Identity: Token validated for user - {context.Principal?.Identity?.Name}");
                         return Task.CompletedTask;
                     },
                     OnChallenge = context =>
@@ -110,172 +187,27 @@ public static class PrimusIdentityExtensions
         return services;
     }
 
-    /// <summary>
-    /// Configures Local mode (symmetric key validation).
-    /// </summary>
-    private static void ConfigureLocalMode(JwtBearerOptions options, PrimusIdentityOptions primusOptions)
+    private static string? ExtractTenantId(string authority)
     {
-        options.TokenValidationParameters = new TokenValidationParameters
+        try
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = primusOptions.ValidateLifetime,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = primusOptions.Issuer,
-            ValidAudience = primusOptions.Audience,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(primusOptions.JwtSecret!)),
-            ClockSkew = primusOptions.ClockSkew
-        };
-    }
-
-    /// <summary>
-    /// Configures Azure AD mode (asymmetric key validation with JWKS).
-    /// </summary>
-    private static void ConfigureAzureAdMode(
-        JwtBearerOptions options,
-        PrimusIdentityOptions primusOptions,
-        IServiceProvider serviceProvider)
-    {
-        var validator = serviceProvider.GetRequiredService<AzureAdValidator>();
-
-        // Use custom token validation
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = false, // We'll validate manually in the event
-            ValidateAudience = false, // We'll validate manually in the event
-            ValidateLifetime = primusOptions.ValidateLifetime,
-            ClockSkew = primusOptions.ClockSkew,
-            ValidateIssuerSigningKey = true,
-            RequireSignedTokens = true,
-            RequireExpirationTime = true
-        };
-
-        // Override token validation event
-        options.Events = new JwtBearerEvents
-        {
-            OnTokenValidated = async context =>
+            var uri = new Uri(authority);
+            var parts = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            // Handle https://login.microsoftonline.com/<tenant-id>/v2.0
+            if (parts.Length >= 1)
             {
-                try
+                // Check if first part is a GUID-like string
+                if (Guid.TryParse(parts[0], out _))
                 {
-                    var token = context.SecurityToken as System.IdentityModel.Tokens.Jwt.JwtSecurityToken;
-                    if (token == null)
-                    {
-                        context.Fail("Invalid token type.");
-                        return;
-                    }
-
-                    // Validate using Azure AD validator
-                    var principal = await validator.ValidateTokenAsync(
-                        token.RawData,
-                        primusOptions.TenantId!,
-                        primusOptions.Audience ?? primusOptions.ClientId,
-                        primusOptions.ValidateLifetime,
-                        primusOptions.ClockSkew);
-
-                    context.Principal = principal;
-                    Console.WriteLine($"Primus Identity (Azure AD): Token validated for user - {principal.Identity?.Name}");
+                    return parts[0];
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Primus Identity (Azure AD): Validation failed - {ex.Message}");
-                    context.Fail(ex);
-                }
-            },
-            OnAuthenticationFailed = context =>
-            {
-                Console.WriteLine($"Primus Identity (Azure AD): Authentication failed - {context.Exception.Message}");
-                return Task.CompletedTask;
-            },
-            OnChallenge = context =>
-            {
-                Console.WriteLine($"Primus Identity (Azure AD): Authentication challenge - {context.Error}, {context.ErrorDescription}");
-                return Task.CompletedTask;
             }
-        };
-    }
-
-    /// <summary>
-    /// Configures Hybrid mode (supports both Local and Azure AD validation).
-    /// </summary>
-    private static void ConfigureHybridMode(
-        JwtBearerOptions options,
-        PrimusIdentityOptions primusOptions,
-        IServiceProvider serviceProvider)
-    {
-        var validator = serviceProvider.GetRequiredService<AzureAdValidator>();
-
-        // Use custom token validation
-        options.TokenValidationParameters = new TokenValidationParameters
+            return null;
+        }
+        catch
         {
-            ValidateIssuer = false, // We'll validate manually
-            ValidateAudience = true,
-            ValidAudience = primusOptions.Audience,
-            ValidateLifetime = primusOptions.ValidateLifetime,
-            ClockSkew = primusOptions.ClockSkew,
-            ValidateIssuerSigningKey = true,
-            RequireSignedTokens = true
-        };
-
-        // Override token validation event to detect issuer
-        options.Events = new JwtBearerEvents
-        {
-            OnTokenValidated = async context =>
-            {
-                try
-                {
-                    var token = context.SecurityToken as System.IdentityModel.Tokens.Jwt.JwtSecurityToken;
-                    if (token == null)
-                    {
-                        context.Fail("Invalid token type.");
-                        return;
-                    }
-
-                    // Check issuer to determine which validation to use
-                    var issuer = token.Issuer;
-                    var isAzureAdToken = issuer.Contains("login.microsoftonline.com") ||
-                                        issuer.Contains("sts.windows.net");
-
-                    if (isAzureAdToken)
-                    {
-                        // Validate as Azure AD token
-                        var principal = await validator.ValidateTokenAsync(
-                            token.RawData,
-                            primusOptions.TenantId!,
-                            primusOptions.Audience ?? primusOptions.ClientId,
-                            primusOptions.ValidateLifetime,
-                            primusOptions.ClockSkew);
-
-                        context.Principal = principal;
-                        Console.WriteLine($"Primus Identity (Hybrid - Azure AD): Token validated for user - {principal.Identity?.Name}");
-                    }
-                    else
-                    {
-                        // Validate as Local token (already validated by JWT Bearer middleware)
-                        Console.WriteLine($"Primus Identity (Hybrid - Local): Token validated for user - {context.Principal?.Identity?.Name}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Primus Identity (Hybrid): Validation failed - {ex.Message}");
-                    context.Fail(ex);
-                }
-            },
-            OnAuthenticationFailed = context =>
-            {
-                Console.WriteLine($"Primus Identity (Hybrid): Authentication failed - {context.Exception.Message}");
-                return Task.CompletedTask;
-            },
-            OnChallenge = context =>
-            {
-                Console.WriteLine($"Primus Identity (Hybrid): Authentication challenge - {context.Error}, {context.ErrorDescription}");
-                return Task.CompletedTask;
-            }
-        };
-
-        // For Local tokens, add symmetric key
-        options.TokenValidationParameters.IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(primusOptions.JwtSecret!));
+            return null;
+        }
     }
 }
 

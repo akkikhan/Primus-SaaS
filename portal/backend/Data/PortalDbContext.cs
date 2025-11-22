@@ -16,6 +16,7 @@ public class PortalDbContext : DbContext
     public DbSet<ApplicationModule> ApplicationModules { get; set; } = null!;
     public DbSet<PackageRegistryMapping> PackageRegistryMappings { get; set; } = null!;
     public DbSet<WebhookRequest> WebhookRequests { get; set; } = null!;
+    public DbSet<AppUser> AppUsers { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -28,6 +29,21 @@ public class PortalDbContext : DbContext
             entity.HasIndex(e => e.Email).IsUnique();
             entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
             entity.Property(e => e.PasswordHash).IsRequired();
+        });
+
+        // AppUser entity (End-users of client apps)
+        modelBuilder.Entity<AppUser>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ApplicationId, e.Username }).IsUnique(); // Unique username per app
+            entity.Property(e => e.Username).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Email).HasMaxLength(255);
+            entity.Property(e => e.PasswordHash).IsRequired();
+
+            entity.HasOne(e => e.Application)
+                .WithMany() // No navigation property back needed for now
+                .HasForeignKey(e => e.ApplicationId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Module entity
@@ -64,6 +80,7 @@ public class PortalDbContext : DbContext
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.Property(e => e.PrimusClientId).IsRequired().HasMaxLength(50);
             entity.Property(e => e.ClientSecretHash).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.JwtSigningKey).IsRequired().HasMaxLength(200);
             entity.Property(e => e.ClientSecretLastRotatedAt);
 
             entity.HasOne(e => e.Owner)

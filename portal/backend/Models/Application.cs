@@ -8,6 +8,7 @@ public class Application
     public AppStack Stack { get; set; }
     public string PrimusClientId { get; set; } = string.Empty; // Auto-generated tracking ID (e.g., PSP-CLI-000123)
     public string ClientSecretHash { get; set; } = string.Empty;
+    public string JwtSigningKey { get; set; } = string.Empty; // Shared secret for Local Mode JWT signing
     public DateTime? ClientSecretLastRotatedAt { get; set; }
     public string? Description { get; set; } // Optional description
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
