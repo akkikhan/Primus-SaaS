@@ -1,0 +1,26 @@
+{
+  "id": "integrations/overview",
+  "title": "Integration Overview",
+  "description": "Primus authenticates requests by routing JWT/OIDC tokens to the correct issuer based on the iss claim, validating signatures, audiences, lifetimes, and then attaching a normalized PrimusUser to the request context.",
+  "source": "@site/docs/integrations/overview.md",
+  "sourceDirName": "integrations",
+  "slug": "/integrations/overview",
+  "permalink": "/docs/integrations/overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "overview",
+    "title": "Integration Overview"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Primus Integration Hub",
+    "permalink": "/docs/"
+  },
+  "next": {
+    "title": "Node.js (Express)",
+    "permalink": "/docs/integrations/node-express"
+  }
+}

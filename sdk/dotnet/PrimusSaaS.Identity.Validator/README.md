@@ -1,6 +1,6 @@
 # Primus SaaS Identity Validator - .NET SDK
 
-Official .NET SDK for validating JWT tokens issued by the Primus SaaS Portal. This package provides middleware and extensions for ASP.NET Core applications to easily authenticate users.
+Official .NET SDK for validating JWT/OIDC tokens from your configured identity providers (Azure AD, LocalAuth, or any JWT issuer). The package is library-only: no Primus-hosted login, no Primus-issued tokens, no outbound calls to Primus.
 
 ## Installation
 
@@ -23,26 +23,45 @@ using PrimusSaaS.Identity.Validator;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add Primus Identity validation
+// Add Primus Identity validation (multi-issuer)
 builder.Services.AddPrimusIdentity(options =>
 {
-    options.PortalUrl = "https://portal.primus-saas.com";
-    options.ClientId = "your-client-id";
-    options.ClientSecret = "your-client-secret";
-    options.JwtSecret = "your-jwt-secret-key";
-    
-    // Optional: Configure additional settings
+    options.Issuers = new()
+    {
+        new IssuerConfig
+        {
+            Name = "AzureAD",
+            Type = IssuerType.Oidc,
+            Issuer = "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+            Authority = "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+            Audiences = new List<string> { "api://your-api-id" }
+        },
+        new IssuerConfig
+        {
+            Name = "LocalAuth",
+            Type = IssuerType.Jwt,
+            Issuer = "https://auth.yourcompany.com",
+            Secret = "your-local-secret",
+            Audiences = new List<string> { "api://your-api-id" }
+        }
+    };
+
     options.ValidateLifetime = true;
-    options.RequireHttpsMetadata = true; // Set false for development
+    options.RequireHttpsMetadata = true; // Set false for local dev only
     options.ClockSkew = TimeSpan.FromMinutes(5);
+
+    // Optional: map claims to tenant context
+    options.TenantResolver = claims => new TenantContext
+    {
+        TenantId = claims.Get("tid") ?? "default",
+        Roles = claims.Get<List<string>>("roles") ?? new List<string>()
+    };
 });
 
-// Add authorization
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Enable authentication & authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -62,7 +81,7 @@ using PrimusSaaS.Identity.Validator;
 public class SecureController : ControllerBase
 {
     [HttpGet]
-    [Authorize] // Requires valid Primus SaaS JWT token
+    [Authorize] // Requires valid token from a configured issuer
     public IActionResult GetSecureData()
     {
         // Get the authenticated Primus user
@@ -82,7 +101,7 @@ public class SecureController : ControllerBase
     }
 
     [HttpGet("admin")]
-    [Authorize(Roles = "Admin")] // Requires Admin role
+    [Authorize(Roles = "Admin")] // Requires Admin role from your IdP
     public IActionResult GetAdminData()
     {
         return Ok(new { message = "Admin-only data" });
@@ -115,25 +134,46 @@ if (primusUser != null)
 
 | Option | Required | Description | Default |
 |--------|----------|-------------|---------|
-| `PortalUrl` | Yes | Base URL of Primus SaaS Portal | - |
-| `ClientId` | Yes | Your application's Client ID | - |
-| `ClientSecret` | Yes | Your application's Client Secret | - |
-| `JwtSecret` | Yes | JWT secret key from portal | - |
-| `Issuer` | No | Expected token issuer | PortalUrl |
-| `Audience` | No | Expected token audience | ClientId |
+| `Issuers` | Yes | List of issuer configs (Oidc or Jwt) | - |
 | `ValidateLifetime` | No | Validate token expiration | `true` |
 | `RequireHttpsMetadata` | No | Require HTTPS for metadata | `true` |
 | `ClockSkew` | No | Allowed time difference | 5 minutes |
+| `JwksCacheTtl` | No | JWKS cache TTL (OIDC) | 24 hours |
+| `TenantResolver` | No | Map claims → `TenantContext` | `null` |
+
+### IssuerConfig
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `Name` | Yes | Friendly name (e.g., AzureAD, LocalAuth) |
+| `Type` | Yes | `Oidc` or `Jwt` |
+| `Issuer` | Yes | Expected `iss` value to route tokens |
+| `Authority` | OIDC only | Authority URL for discovery/JWKS |
+| `JwksUrl` | JWT optional | JWKS endpoint (if not using `Secret`) |
+| `Secret` | JWT optional | Symmetric key for HMAC tokens |
+| `Audiences` | Yes | Allowed audience values |
 
 ## Configuration from appsettings.json
 
 ```json
 {
   "PrimusIdentity": {
-    "PortalUrl": "https://portal.primus-saas.com",
-    "ClientId": "your-client-id",
-    "ClientSecret": "your-client-secret",
-    "JwtSecret": "your-jwt-secret-key",
+    "Issuers": [
+      {
+        "Name": "AzureAD",
+        "Type": "Oidc",
+        "Issuer": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+        "Authority": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+        "Audiences": [ "api://your-api-id" ]
+      },
+      {
+        "Name": "LocalAuth",
+        "Type": "Jwt",
+        "Issuer": "https://auth.yourcompany.com",
+        "Secret": "your-local-secret",
+        "Audiences": [ "api://your-api-id" ]
+      }
+    ],
     "RequireHttpsMetadata": false
   }
 }

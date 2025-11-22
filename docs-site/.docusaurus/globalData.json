@@ -1,0 +1,48 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/docs",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": true,
+          "path": "/docs",
+          "mainDocId": "intro",
+          "docs": [
+            {
+              "id": "integrations/dotnet-aspnet",
+              "path": "/docs/integrations/dotnet-aspnet",
+              "sidebar": "docs"
+            },
+            {
+              "id": "integrations/node-express",
+              "path": "/docs/integrations/node-express",
+              "sidebar": "docs"
+            },
+            {
+              "id": "integrations/overview",
+              "path": "/docs/integrations/overview",
+              "sidebar": "docs"
+            },
+            {
+              "id": "intro",
+              "path": "/docs/",
+              "sidebar": "docs"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "docs": {
+              "link": {
+                "path": "/docs/",
+                "label": "intro"
+              }
+            }
+          }
+        }
+      ],
+      "breadcrumbs": true
+    }
+  }
+}

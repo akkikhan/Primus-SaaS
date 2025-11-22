@@ -1,0 +1,22 @@
+{
+  "id": "integrations/dotnet-aspnet",
+  "title": ".NET 8 (ASP.NET Core Minimal API)",
+  "description": "Use the official PrimusSaaS.Identity.Validator package to validate Azure AD and LocalAuth tokens in the same pipeline.",
+  "source": "@site/docs/integrations/dotnet-aspnet.md",
+  "sourceDirName": "integrations",
+  "slug": "/integrations/dotnet-aspnet",
+  "permalink": "/docs/integrations/dotnet-aspnet",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "dotnet-aspnet",
+    "title": ".NET 8 (ASP.NET Core Minimal API)"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Node.js (Express)",
+    "permalink": "/docs/integrations/node-express"
+  }
+}

@@ -1,6 +1,6 @@
 # Primus SaaS .NET SDK Example
 
-This is an example ASP.NET Core Web API demonstrating how to use the **PrimusSaaS.Identity.Validator** package to secure your API with JWT authentication from Primus Portal.
+This is an example ASP.NET Core Web API demonstrating how to use the **PrimusSaaS.Identity.Validator** package to secure your API with JWT/OIDC authentication from your own identity providers (e.g., Azure AD + LocalAuth). Primus does not issue tokens or sit in the runtime path.
 
 ## Features Demonstrated
 
@@ -14,8 +14,7 @@ This is an example ASP.NET Core Web API demonstrating how to use the **PrimusSaa
 ## Prerequisites
 
 - .NET 7.0 SDK or later
-- Primus Portal account with application credentials
-- JWT secret key from your Primus Portal application
+- Identity provider credentials (e.g., Azure AD app registration, local issuer secret/JWKS)
 
 ## Getting Started
 
@@ -30,15 +29,27 @@ dotnet restore
 
 ### 2. Configure Application Settings
 
-Update `appsettings.Development.json` with your Primus Portal credentials:
+Update `appsettings.Development.json` with your issuer configurations:
 
 ```json
 {
   "PrimusIdentity": {
-    "PortalUrl": "https://portal.primus-saas.com",
-    "ClientId": "your-actual-client-id",
-    "ClientSecret": "your-actual-client-secret",
-    "JwtSecret": "your-actual-jwt-secret-key"
+    "Issuers": [
+      {
+        "Name": "AzureAD",
+        "Type": "Oidc",
+        "Issuer": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+        "Authority": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+        "Audiences": [ "api://your-api-id" ]
+      },
+      {
+        "Name": "LocalAuth",
+        "Type": "Jwt",
+        "Issuer": "https://auth.yourcompany.com",
+        "Secret": "your-local-secret",
+        "Audiences": [ "api://your-api-id" ]
+      }
+    ]
   }
 }
 ```
@@ -119,10 +130,7 @@ Returns 14-day weather forecast. Demonstrates role-based authorization.
 // Add Primus Identity authentication
 builder.Services.AddPrimusIdentity(options =>
 {
-    options.PortalUrl = builder.Configuration["PrimusIdentity:PortalUrl"];
-    options.ClientId = builder.Configuration["PrimusIdentity:ClientId"];
-    options.ClientSecret = builder.Configuration["PrimusIdentity:ClientSecret"];
-    options.JwtSecret = builder.Configuration["PrimusIdentity:JwtSecret"];
+    builder.Configuration.GetSection("PrimusIdentity").Bind(options);
 });
 
 // Enable authentication and authorization middleware
@@ -191,8 +199,8 @@ public class WeatherController : ControllerBase
 ### Option 2: Using curl
 
 ```bash
-# Get a JWT token from Primus Portal (example)
-TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+# Get a JWT access token from your IdP (e.g., Azure AD or LocalAuth)
+TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
 
 # Test protected endpoint
 curl -H "Authorization: Bearer $TOKEN" https://localhost:7001/api/protected
@@ -203,7 +211,7 @@ curl -H "Authorization: Bearer $TOKEN" https://localhost:7001/api/admin
 
 ### Option 3: Creating Test Tokens
 
-For development, you can create test JWT tokens using your JwtSecret:
+For development, you can create test JWT tokens using your local issuer secret:
 
 ```csharp
 // Token payload should include:
@@ -212,8 +220,8 @@ For development, you can create test JWT tokens using your JwtSecret:
   "email": "test@example.com",
   "name": "Test User",
   "role": ["Admin", "User"],
-  "iss": "https://portal.primus-saas.com",
-  "aud": "your-client-id",
+  "iss": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+  "aud": "api://your-api-id",
   "exp": 1700000000
 }
 ```
@@ -241,7 +249,7 @@ PrimusSaaS.Example.Api/
 builder.Services.AddPrimusIdentity(options => { /* config */ });
 ```
 
-This extension method configures JWT Bearer authentication with your Primus Portal settings.
+This extension method configures JWT Bearer authentication with your issuer settings.
 
 ### 2. User Extraction
 
@@ -277,7 +285,7 @@ The `GetPrimusUser()` extension method extracts user information from the authen
 
 - Ensure all required configuration values are set
 - Check PortalUrl format (must be valid URL)
-- Verify ClientId and ClientSecret are correct
+- Verify issuer URLs and audiences match your IdP configuration
 
 ## Next Steps
 

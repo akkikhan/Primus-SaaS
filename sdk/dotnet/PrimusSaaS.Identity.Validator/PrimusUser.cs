@@ -3,12 +3,12 @@ using System.Security.Claims;
 namespace PrimusSaaS.Identity.Validator;
 
 /// <summary>
-/// Represents a user authenticated via Primus SaaS Portal.
+/// Represents a user authenticated via a configured issuer.
 /// </summary>
 public class PrimusUser
 {
     /// <summary>
-    /// The unique user ID from Primus SaaS Portal.
+    /// The unique subject identifier from the token.
     /// </summary>
     public string UserId { get; set; } = string.Empty;
 

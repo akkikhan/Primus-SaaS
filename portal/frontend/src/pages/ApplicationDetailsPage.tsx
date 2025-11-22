@@ -8,7 +8,7 @@ import './ApplicationDetailsPage.css';
 export const ApplicationDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentApplication, fetchApplication, addModule, removeModule, changeModuleVersion, updateApplication, rotateClientSecret, isLoading } = useApplicationsStore();
+  const { currentApplication, fetchApplication, addModule, removeModule, changeModuleVersion, updateApplication, isLoading } = useApplicationsStore();
   const { modules, fetchModules } = useModulesStore();
   const [showAddModule, setShowAddModule] = useState(false);
   const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);
@@ -21,8 +21,6 @@ export const ApplicationDetailsPage = () => {
   const [changelogModule, setChangelogModule] = useState<IntegratedModule | null>(null);
   const [showEditApp, setShowEditApp] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', stack: '', description: '' });
-  const [latestSecret, setLatestSecret] = useState<{ clientSecret: string; rotatedAt: string } | null>(null);
-  const [rotatingSecret, setRotatingSecret] = useState(false);
   const stackInfo: Record<string, { label: string; tone: string }> = {
     DotNet: { label: '.NET', tone: 'tone-dotnet' },
     NodeJS: { label: 'Node.js', tone: 'tone-node' },
@@ -38,15 +36,6 @@ export const ApplicationDetailsPage = () => {
       void fetchModules();
     }
   }, [id, fetchApplication, fetchModules]);
-
-  useEffect(() => {
-    if (currentApplication?.clientSecret) {
-      setLatestSecret({
-        clientSecret: currentApplication.clientSecret,
-        rotatedAt: currentApplication.clientSecretLastRotatedAt ?? new Date().toISOString(),
-      });
-    }
-  }, [currentApplication?.clientSecret, currentApplication?.clientSecretLastRotatedAt]);
 
   if (isLoading || !currentApplication) {
     return <p>Loading application...</p>;
@@ -109,11 +98,11 @@ export const ApplicationDetailsPage = () => {
 ${getInstallCommand()}
 
 ## Required Environment Variables
-PRIMUS_PORTAL_URL=https://portal.primus-saas.com
-PRIMUS_CLIENT_ID=${currentApplication.primusClientId}
-PRIMUS_CLIENT_SECRET=<YOUR_PRIMUS_CLIENT_SECRET>
-PRIMUS_JWT_SECRET=<YOUR_JWT_SECRET_FOR_LOCAL_OR_HYBRID>
-AZURE_TENANT_ID=<TENANT_ID>
+API_AUDIENCE=${currentApplication.primusClientId}
+AZURE_AD_ISSUER=https://login.microsoftonline.com/<TENANT_ID>/v2.0
+AZURE_AD_AUTHORITY=https://login.microsoftonline.com/<TENANT_ID>/v2.0
+LOCAL_ISSUER=http://localhost:4000
+LOCAL_SECRET=<LOCAL_DEV_SECRET>
 
 ## Configuration
 ${getConfigTemplate()}
@@ -165,20 +154,6 @@ ${getCodeSnippet()}
     });
     await fetchApplication(Number(id));
     setShowEditApp(false);
-  };
-
-  const handleRotateSecret = async () => {
-    if (!id) return;
-    setRotatingSecret(true);
-    try {
-      const credentials = await rotateClientSecret(Number(id));
-      setLatestSecret({
-        clientSecret: credentials.clientSecret,
-        rotatedAt: credentials.rotatedAt,
-      });
-    } finally {
-      setRotatingSecret(false);
-    }
   };
 
   // Generate integration documentation based on stack
@@ -455,7 +430,7 @@ async def get_user(user=Depends(auth.require_auth)):
               </div>
             </div>
             <div className="info-item">
-              <label>Primus Client ID</label>
+              <label>Primus App ID</label>
               <div className="info-value copy-container">
                 <code className="code-inline">{currentApplication.primusClientId}</code>
                 <button
@@ -485,45 +460,9 @@ async def get_user(user=Depends(auth.require_auth)):
             <div className="info-item">
               <label>Integrated Modules</label>
               <div className="info-value">{currentApplication.integratedModules?.length || 0}</div>
+              </div>
             </div>
           </div>
-          <div className="secret-panel">
-            <div>
-              <label>Client Secret</label>
-              {latestSecret ? (
-                <div className="info-value copy-container">
-                  <code className="code-inline">{latestSecret.clientSecret}</code>
-                  <button
-                    type="button"
-                    className="copy-btn"
-                    onClick={() => handleCopy(latestSecret.clientSecret, 'client-secret')}
-                    title="Copy to clipboard"
-                  >
-                    {copiedText === 'client-secret' ? 'Copied' : 'Copy'}
-                  </button>
-                </div>
-              ) : (
-                <p className="secret-placeholder">
-                  Generate a client secret to hand off to engineering teams. It will only be shown immediately after generation.
-                </p>
-              )}
-              <small>
-                Last rotated:{' '}
-                {currentApplication.clientSecretLastRotatedAt
-                  ? new Date(currentApplication.clientSecretLastRotatedAt).toLocaleString()
-                  : 'Never generated'}
-              </small>
-            </div>
-            <button
-              type="button"
-              className="rotate-secret-btn"
-              onClick={handleRotateSecret}
-              disabled={rotatingSecret}
-            >
-              {rotatingSecret ? 'Generating...' : latestSecret ? 'Rotate Secret' : 'Generate Secret'}
-            </button>
-          </div>
-        </div>
 
         {/* Section 2: Integrated Modules */}
         <div className="app-detail__panel">
@@ -602,161 +541,237 @@ async def get_user(user=Depends(auth.require_auth)):
 
         {/* Section 3: Integration Documentation */}
         <div className="app-detail__panel app-detail__docs-panel">
-          <h2>Integration Documentation</h2>
-
-          <div className="docs-section">
-            <h3>Step 1: Install the SDK</h3>
-            <p>Add the Primus Identity Validator SDK to your {currentApplication.stack} project:</p>
-            <div className="code-block-container">
-              <pre className="code-block">
-                <code>{getInstallCommand()}</code>
-              </pre>
-              <button
-                type="button"
-                className="copy-btn"
-                onClick={() => handleCopy(getInstallCommand(), 'install')}
-              >
-                {copiedText === 'install' ? 'Copied' : 'Copy'}
-              </button>
-            </div>
-          </div>
-
-          <div className="docs-section">
-            <h3>Step 2: Configure Your Application</h3>
-            <p>Add your Primus portal credentials and Azure AD tenant settings (for AzureAd/Hybrid):</p>
-            <div className="alert alert-info">
-              <strong>Note:</strong> The <code>PrimusClientId</code> is pre-filled with your application's ID.
-              Replace the placeholders with your portal secret and Azure AD tenant details.
-            </div>
-            <div className="code-block-container">
-              <pre className="code-block">
-                <code>{getConfigTemplate()}</code>
-              </pre>
-              <button
-                type="button"
-                className="copy-btn"
-                onClick={() => handleCopy(getConfigTemplate(), 'config')}
-              >
-                {copiedText === 'config' ? 'Copied' : 'Copy'}
-              </button>
-            </div>
-
-            <div className="config-help">
-              <h4>Configuration Guide:</h4>
-              <ul>
-                <li>
-                  <strong>PortalUrl</strong>: Base URL of your Primus portal (e.g., <code>https://portal.primus-saas.com</code>)
-                </li>
-                <li>
-                  <strong>ClientSecret</strong>: Generated secret from the Primus portal for this app
-                </li>
-                <li>
-                  <strong>Mode</strong>: Use <code>AzureAd</code> to validate Azure AD tokens (or <code>Hybrid</code>/<code>Local</code> if you also use Primus-issued tokens)
-                </li>
-                <li>
-                  <strong>&lt;YOUR_TENANT_ID&gt;</strong>: Azure AD tenant ID (required for AzureAd/Hybrid). Found in Azure Portal &gt; Azure Active Directory &gt; Overview.
-                </li>
-                <li>
-                  <strong>JwtSecret</strong>: Required only for Local or Hybrid modes to validate Primus-issued tokens.
-                </li>
-              </ul>
-              <p className="help-link">
-                <a href="https://docs.microsoft.com/azure/active-directory/develop/quickstart-register-app" target="_blank" rel="noopener noreferrer">
-                  Learn how to find these values in Azure Portal
-                </a>
+          <div className="docs-hero">
+            <div className="docs-hero__text">
+              <p className="eyebrow">Integration playbook</p>
+              <h2>Integration Documentation</h2>
+              <p className="docs-subtitle">
+                Ship-ready steps tuned for {stackInfo[currentApplication.stack]?.label ?? currentApplication.stack} teams. Copy,
+                export, or hand off without losing context.
               </p>
+              <div className="docs-meta">
+                <span className="meta-chip">Stack • {stackInfo[currentApplication.stack]?.label ?? currentApplication.stack}</span>
+                <span className="meta-chip">Client ID • {currentApplication.primusClientId}</span>
+                <span className="meta-chip">
+                  Updated • {new Date(currentApplication.updatedAt ?? currentApplication.createdAt).toLocaleDateString()}
+                </span>
+              </div>
             </div>
-          </div>
-
-          <div className="docs-section">
-            <h3>Required Environment Variables</h3>
-            <ul className="env-list">
-              <li><code>PRIMUS_PORTAL_URL</code> = https://portal.primus-saas.com</li>
-              <li><code>PRIMUS_CLIENT_ID</code> = {currentApplication.primusClientId}</li>
-              <li><code>PRIMUS_CLIENT_SECRET</code> = &lt;YOUR_PRIMUS_CLIENT_SECRET&gt;</li>
-              <li><code>PRIMUS_JWT_SECRET</code> = &lt;YOUR_JWT_SECRET_FOR_LOCAL_OR_HYBRID&gt;</li>
-              <li><code>AZURE_TENANT_ID</code> = &lt;YOUR_TENANT_ID&gt; (AzureAd/Hybrid only)</li>
-            </ul>
-            <p className="muted">Tip: store these in your deployment secrets manager and reference them in your config templates above.</p>
-          </div>
-
-          <div className="docs-section">
-            <h3>Step 3: Initialize in Your Code</h3>
-            <p>Add the Primus Identity Validator to your application startup:</p>
-            <div className="code-block-container">
-              <pre className="code-block">
-                <code>{getCodeSnippet()}</code>
-              </pre>
+            <div className="docs-hero__actions">
               <button
                 type="button"
-                className="copy-btn"
-                onClick={() => handleCopy(getCodeSnippet(), 'code')}
+                className="btn-ghost"
+                onClick={handleCopyAll}
               >
-                {copiedText === 'code' ? 'Copied' : 'Copy'}
+                {copiedText === 'all-docs' ? 'All content copied' : 'Copy all'}
+              </button>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={handleDownloadPdf}
+                title="Download PDF with integration steps"
+              >
+                {copiedText === 'pdf' ? 'PDF downloaded' : 'Export PDF'}
               </button>
             </div>
           </div>
 
-          <div className="docs-section">
-            <h3>Step 4: Protected Routes Guide</h3>
-            <p>Apply authentication to your API endpoints:</p>
-            {currentApplication.stack === 'NodeJS' && (
-              <div className="code-block-container">
+          <div className="docs-grid">
+            <div className="doc-card">
+              <div className="doc-card__header">
+                <span className="step-badge">Step 1</span>
+                <div>
+                  <h3>Install the SDK</h3>
+                  <p className="muted">Add the Primus Identity Validator SDK to your {currentApplication.stack} project.</p>
+                </div>
+              </div>
+              <div className="code-block-shell">
+                <div className="code-block-toolbar">
+                  <span className="pill">CLI</span>
+                  <button
+                    type="button"
+                    className="copy-btn copy-btn--solid"
+                    onClick={() => handleCopy(getInstallCommand(), 'install')}
+                  >
+                    {copiedText === 'install' ? 'Copied' : 'Copy command'}
+                  </button>
+                </div>
                 <pre className="code-block">
-                  <code>{`app.get("/api/me", primusAuth, handler);`}</code>
+                  <code>{getInstallCommand()}</code>
                 </pre>
               </div>
-            )}
-            {currentApplication.stack === 'DotNet' && (
-              <div className="code-block-container">
+            </div>
+
+            <div className="doc-card doc-card--split">
+              <div className="doc-card__header">
+                <span className="step-badge">Step 2</span>
+                <div>
+                  <h3>Configure your application</h3>
+                  <p className="muted">Wire your Primus portal credentials and Azure AD tenant settings.</p>
+                </div>
+              </div>
+              <div className="doc-card__body doc-card__body--split">
+                <div>
+                  <div className="inline-callout">
+                    <strong>Note:</strong> The <code>PrimusClientId</code> is pre-filled with your application's ID. Replace the
+                    placeholders with your portal secret and Azure AD tenant details.
+                  </div>
+                  <div className="code-block-shell">
+                    <div className="code-block-toolbar">
+                      <span className="pill">Config template</span>
+                      <button
+                        type="button"
+                        className="copy-btn copy-btn--solid"
+                        onClick={() => handleCopy(getConfigTemplate(), 'config')}
+                      >
+                        {copiedText === 'config' ? 'Copied' : 'Copy config'}
+                      </button>
+                    </div>
+                    <pre className="code-block">
+                      <code>{getConfigTemplate()}</code>
+                    </pre>
+                  </div>
+                </div>
+                <div className="config-help">
+                  <h4>Configuration guide</h4>
+                  <ul>
+                    <li>
+                      <strong>API_AUDIENCE</strong>: Use the Primus App ID as the audience for your API.
+                    </li>
+                    <li>
+                      <strong>Azure AD</strong>: Tenant ID/authority for OIDC validation (AzureAD issuer).
+                    </li>
+                    <li>
+                      <strong>Local</strong>: Local issuer URL and secret (only if you run a local issuer).
+                    </li>
+                  </ul>
+                  <p className="help-link">
+                    <a href="https://docs.microsoft.com/azure/active-directory/develop/quickstart-register-app" target="_blank" rel="noopener noreferrer">
+                      Learn how to find these values in Azure Portal
+                    </a>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="doc-card">
+              <div className="doc-card__header">
+                <span className="step-badge badge-soft">Env</span>
+                <div>
+                  <h3>Environment baseline</h3>
+                  <p className="muted">Pin these secrets in your CI/CD or vault before deploying.</p>
+                </div>
+              </div>
+              <div className="env-pill-grid">
+                <div className="env-pill">
+                  <span className="env-key">API_AUDIENCE</span>
+                  <span className="env-value">{currentApplication.primusClientId}</span>
+                </div>
+                <div className="env-pill">
+                  <span className="env-key">AZURE_AD_ISSUER</span>
+                  <span className="env-value">https://login.microsoftonline.com/&lt;TENANT_ID&gt;/v2.0</span>
+                </div>
+                <div className="env-pill">
+                  <span className="env-key">AZURE_AD_AUTHORITY</span>
+                  <span className="env-value">https://login.microsoftonline.com/&lt;TENANT_ID&gt;/v2.0</span>
+                </div>
+                <div className="env-pill">
+                  <span className="env-key">LOCAL_ISSUER</span>
+                  <span className="env-value">http://localhost:4000</span>
+                </div>
+                <div className="env-pill">
+                  <span className="env-key">LOCAL_SECRET</span>
+                  <span className="env-value">&lt;LOCAL_DEV_SECRET&gt;</span>
+                </div>
+              </div>
+              <p className="muted tip">Tip: store these in your deployment secrets manager and reference them in your config templates above.</p>
+            </div>
+
+            <div className="doc-card">
+              <div className="doc-card__header">
+                <span className="step-badge">Step 3</span>
+                <div>
+                  <h3>Initialize in your code</h3>
+                  <p className="muted">Add the Primus Identity Validator to your application startup.</p>
+                </div>
+              </div>
+              <div className="code-block-shell">
+                <div className="code-block-toolbar">
+                  <span className="pill">Starter snippet</span>
+                  <button
+                    type="button"
+                    className="copy-btn copy-btn--solid"
+                    onClick={() => handleCopy(getCodeSnippet(), 'code')}
+                  >
+                    {copiedText === 'code' ? 'Copied' : 'Copy snippet'}
+                  </button>
+                </div>
                 <pre className="code-block">
-                  <code>{`[Authorize]
+                  <code>{getCodeSnippet()}</code>
+                </pre>
+              </div>
+            </div>
+
+            <div className="doc-card doc-card--compact">
+              <div className="doc-card__header">
+                <span className="step-badge">Step 4</span>
+                <div>
+                  <h3>Protect your routes</h3>
+                  <p className="muted">Apply authentication to your API endpoints.</p>
+                </div>
+              </div>
+              {currentApplication.stack === 'NodeJS' && (
+                <div className="code-block-shell">
+                  <div className="code-block-toolbar">
+                    <span className="pill">Express</span>
+                  </div>
+                  <pre className="code-block">
+                    <code>{`app.get("/api/me", primusAuth, handler);`}</code>
+                  </pre>
+                </div>
+              )}
+              {currentApplication.stack === 'DotNet' && (
+                <div className="code-block-shell">
+                  <div className="code-block-toolbar">
+                    <span className="pill">ASP.NET</span>
+                  </div>
+                  <pre className="code-block">
+                    <code>{`[Authorize]
 public class MyController : ControllerBase
 {
     // Your protected endpoints here
 }`}</code>
-                </pre>
+                  </pre>
+                </div>
+              )}
+            </div>
+
+            <div className="doc-card doc-card--resources">
+              <div className="doc-card__header">
+                <span className="step-badge badge-soft">Resources</span>
+                <div>
+                  <h3>More examples</h3>
+                  <p className="muted">Keep handy references for your team.</p>
+                </div>
               </div>
-            )}
-          </div>
-
-          <div className="docs-section">
-            <h3>Additional Resources</h3>
-            <ul className="resources-list">
-              <li>
-                <a href="https://docs.microsoft.com/azure/active-directory/develop/quickstart-register-app" target="_blank" rel="noopener noreferrer">
-                  How to register an Azure AD Application
-                </a>
-              </li>
-              <li>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/modules'); }}>
-                  View all available Primus modules
-                </a>
-              </li>
-              <li>
-                <a href="https://github.com/akkikhan/Primus-SaaS" target="_blank" rel="noopener noreferrer">
-                  GitHub Repository & Examples
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          <div className="docs-actions">
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={handleCopyAll}
-            >
-              {copiedText === 'all-docs' ? 'All content copied' : 'Copy all to clipboard'}
-            </button>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={handleDownloadPdf}
-              title="Download PDF with integration steps"
-            >
-              {copiedText === 'pdf' ? 'PDF downloaded' : 'Export PDF'}
-            </button>
+              <ul className="resources-list">
+                <li>
+                  <a href="https://docs.microsoft.com/azure/active-directory/develop/quickstart-register-app" target="_blank" rel="noopener noreferrer">
+                    How to register an Azure AD Application
+                  </a>
+                </li>
+                <li>
+                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/modules'); }}>
+                    View all available Primus modules
+                  </a>
+                </li>
+                <li>
+                  <a href="https://github.com/akkikhan/Primus-SaaS" target="_blank" rel="noopener noreferrer">
+                    GitHub Repository & Examples
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>

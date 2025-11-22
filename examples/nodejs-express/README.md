@@ -1,6 +1,6 @@
 # Primus SaaS Node.js Express Example
 
-This is an example Express.js application demonstrating how to use the **@primus-saas/identity-validator** package to secure your API with JWT authentication from Primus Portal.
+This is an example Express.js application demonstrating how to use the **@primus-saas/identity-validator** package to secure your API with JWT/OIDC authentication from your own identity providers (e.g., Azure AD + LocalAuth). Primus does not issue tokens or sit in the runtime path.
 
 ## Features Demonstrated
 
@@ -17,8 +17,7 @@ This is an example Express.js application demonstrating how to use the **@primus
 
 - Node.js 16 or later
 - npm or yarn
-- Primus Portal account with application credentials
-- JWT secret key from your Primus Portal application
+- Identity provider credentials (Azure AD app registration, local issuer secret/JWKS)
 
 ## Getting Started
 
@@ -43,13 +42,14 @@ Create a `.env` file by copying the example:
 cp .env.example .env
 ```
 
-Update the `.env` file with your Primus Portal credentials:
+Update the `.env` file with your issuer settings:
 
 ```env
-PRIMUS_PORTAL_URL=https://portal.primus-saas.com
-PRIMUS_CLIENT_ID=your-actual-client-id
-PRIMUS_CLIENT_SECRET=your-actual-client-secret
-PRIMUS_JWT_SECRET=your-actual-jwt-secret
+AZURE_AD_ISSUER=https://login.microsoftonline.com/<TENANT_ID>/v2.0
+AZURE_AD_AUTHORITY=https://login.microsoftonline.com/<TENANT_ID>/v2.0
+API_AUDIENCE=api://your-api-id
+LOCAL_ISSUER=http://localhost:4000
+LOCAL_SECRET=your-local-secret
 PORT=3000
 NODE_ENV=development
 ```
@@ -145,10 +145,23 @@ import { primusIdentityMiddleware, requireRoles } from '@primus-saas/identity-va
 
 // Configure authentication middleware
 const primusAuth = primusIdentityMiddleware({
-  portalUrl: process.env.PRIMUS_PORTAL_URL || 'https://portal.primus-saas.com',
-  clientId: process.env.PRIMUS_CLIENT_ID || '',
-  clientSecret: process.env.PRIMUS_CLIENT_SECRET || '',
-  jwtSecret: process.env.PRIMUS_JWT_SECRET || '',
+  issuers: [
+    {
+      name: 'AzureAD',
+      type: 'oidc',
+      issuer: process.env.AZURE_AD_ISSUER || '',
+      authority: process.env.AZURE_AD_AUTHORITY || '',
+      audiences: [process.env.API_AUDIENCE || '']
+    },
+    {
+      name: 'LocalAuth',
+      type: 'jwt',
+      issuer: process.env.LOCAL_ISSUER || 'http://localhost:4000',
+      secret: process.env.LOCAL_SECRET || 'local-dev-secret',
+      audiences: [process.env.API_AUDIENCE || '']
+    }
+  ],
+  clockSkew: 300
 });
 ```
 

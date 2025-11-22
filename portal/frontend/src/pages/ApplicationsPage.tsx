@@ -14,7 +14,7 @@ interface ApplicationFormData {
 export const ApplicationsPage = () => {
   const { applications, fetchApplications, createApplication, deleteApplication, isLoading } = useApplicationsStore();
   const [showModal, setShowModal] = useState(false);
-  const [newCredentials, setNewCredentials] = useState<{ clientId: string; clientSecret: string } | null>(null);
+  const [newCredentials, setNewCredentials] = useState<{ clientId: string } | null>(null);
   const [formData, setFormData] = useState<ApplicationFormData>({
     name: '',
     stack: '',
@@ -38,10 +38,9 @@ export const ApplicationsPage = () => {
     e.preventDefault();
     try {
       const created = await createApplication(formData);
-      if (created?.primusClientId && created?.clientSecret) {
+      if (created?.primusClientId) {
         setNewCredentials({
-          clientId: created.primusClientId,
-          clientSecret: created.clientSecret,
+          clientId: created.primusClientId
         });
       }
       setShowModal(false);
@@ -178,7 +177,7 @@ export const ApplicationsPage = () => {
                   placeholder="client@example.com"
                 />
                 <small className="form-help">
-                  We'll send the Client ID, Secret, and documentation link to this address.
+                  We'll send the App ID and documentation link to this address.
                 </small>
               </div>
               <div className="modal-actions">
@@ -193,29 +192,17 @@ export const ApplicationsPage = () => {
       {newCredentials && (
         <div className="modal-overlay" onClick={() => setNewCredentials(null)}>
           <div className="modal credentials-modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Client Credentials</h2>
+            <h2>Application Identifier</h2>
             <p className="credentials-hint">
-              Copy these values now. The client secret will not be displayed again after you close this dialog.
+              Copy this ID now. Use it in generated docs/snippets as the audience value.
             </p>
             <div className="credentials-field">
-              <label>Primus Client ID</label>
+              <label>Primus App ID</label>
               <div className="credentials-value">
                 <code>{newCredentials.clientId}</code>
                 <button
                   type="button"
                   onClick={() => navigator.clipboard.writeText(newCredentials.clientId)}
-                >
-                  Copy
-                </button>
-              </div>
-            </div>
-            <div className="credentials-field">
-              <label>Client Secret</label>
-              <div className="credentials-value">
-                <code>{newCredentials.clientSecret}</code>
-                <button
-                  type="button"
-                  onClick={() => navigator.clipboard.writeText(newCredentials.clientSecret)}
                 >
                   Copy
                 </button>

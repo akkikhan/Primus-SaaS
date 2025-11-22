@@ -1,0 +1,41 @@
+:root {
+  --ifm-font-family-base: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --ifm-color-primary: #0f766e;
+  --ifm-color-primary-dark: #0d5f59;
+  --ifm-color-primary-darker: #0b4c47;
+  --ifm-color-primary-light: #138b83;
+  --ifm-color-primary-lighter: #16a6a1;
+  --ifm-code-font-size: 95%;
+  --ifm-background-color: #0b1520;
+  --ifm-hero-background-color: transparent;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+html[data-theme='light'] {
+  --ifm-background-color: #0b1520;
+}
+
+body {
+  background: radial-gradient(circle at 20% 20%, #11253a, #0b1520 40%),
+    radial-gradient(circle at 80% 0%, #0c2b3a, #0b1520 50%),
+    #0b1520;
+  color: #e5f5f0;
+}
+
+.hero__title,
+.hero__subtitle {
+  color: #e5f5f0;
+}
+
+.button--primary {
+  box-shadow: 0 12px 30px rgba(15, 118, 110, 0.25);
+}
+
+.codeFrame {
+  background: #0f1c2b;
+  border: 1px solid #143449;
+  border-radius: 12px;
+  padding: 16px;
+  color: #e5f5f0;
+}

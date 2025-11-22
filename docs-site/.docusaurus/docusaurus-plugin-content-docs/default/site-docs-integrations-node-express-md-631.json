@@ -1,0 +1,26 @@
+{
+  "id": "integrations/node-express",
+  "title": "Node.js (Express)",
+  "description": "Build a protected API with the Node.js validator and the same multi-issuer config used in test-apps/acme-dashboard/server.js.",
+  "source": "@site/docs/integrations/node-express.md",
+  "sourceDirName": "integrations",
+  "slug": "/integrations/node-express",
+  "permalink": "/docs/integrations/node-express",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "node-express",
+    "title": "Node.js (Express)"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Integration Overview",
+    "permalink": "/docs/integrations/overview"
+  },
+  "next": {
+    "title": ".NET 8 (ASP.NET Core Minimal API)",
+    "permalink": "/docs/integrations/dotnet-aspnet"
+  }
+}

@@ -1,7 +1,7 @@
 # Primus SaaS Identity Validator - Node.js SDK
 
 **Version:** 1.1.0  
-Official Node.js SDK for validating JWT tokens with multi-issuer support. Validate tokens from Azure AD, local auth providers, or multiple sources simultaneously.
+Library-only validator for JWT/OIDC tokens from your configured issuers (Azure AD, local, or any JWT provider). No Primus-hosted login or Primus-issued tokens.
 
 ## Features
 

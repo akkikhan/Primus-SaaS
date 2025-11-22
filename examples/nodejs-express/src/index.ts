@@ -14,12 +14,25 @@ const PORT = process.env.PORT || 3000;
 app.use(morgan('dev'));
 app.use(express.json());
 
-// Configure Primus Identity validation
+// Configure Primus Identity validation (multi-issuer)
 const primusAuth = primusIdentityMiddleware({
-  portalUrl: process.env.PRIMUS_PORTAL_URL || 'https://portal.primus-saas.com',
-  clientId: process.env.PRIMUS_CLIENT_ID || '',
-  clientSecret: process.env.PRIMUS_CLIENT_SECRET || '',
-  jwtSecret: process.env.PRIMUS_JWT_SECRET || '',
+  issuers: [
+    {
+      name: 'AzureAD',
+      type: 'oidc',
+      issuer: process.env.AZURE_AD_ISSUER ?? '',
+      authority: process.env.AZURE_AD_AUTHORITY ?? '',
+      audiences: [process.env.API_AUDIENCE ?? '']
+    },
+    {
+      name: 'LocalAuth',
+      type: 'jwt',
+      issuer: process.env.LOCAL_ISSUER ?? 'http://localhost:4000',
+      secret: process.env.LOCAL_SECRET ?? 'local-dev-secret',
+      audiences: [process.env.API_AUDIENCE ?? '']
+    }
+  ],
+  clockSkew: 300
 });
 
 // Extend Express Request type to include user
