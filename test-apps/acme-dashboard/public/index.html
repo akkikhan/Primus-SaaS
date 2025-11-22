@@ -17,6 +17,9 @@
         <p>Loading...</p>
     </div>
 
+    <!-- Error Message -->
+    <div id="errorMessage" class="error-message hidden"></div>
+
     <!-- Login Screen -->
     <div id="loginScreen" class="login-body hidden">
         <div class="login-container">
@@ -24,27 +27,8 @@
                 <h1>🏦 Acme Corp</h1>
                 <p>Financial Intelligence Platform</p>
             </div>
-
-            <div class="login-card">
-                <h2>Welcome</h2>
-                <p class="subtitle">Secure authentication powered by Microsoft Azure AD</p>
-
-                <button id="loginButton" class="btn-primary btn-microsoft">
-                    <svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="10" height="10" fill="#F25022" />
-                        <rect x="11" width="10" height="10" fill="#7FBA00" />
-                        <rect y="11" width="10" height="10" fill="#00A4EF" />
-                        <rect x="11" y="11" width="10" height="10" fill="#FFB900" />
-                    </svg>
-                    <span>Sign in with Microsoft</span>
-                </button>
-
-                <div id="errorMessage" class="error-message hidden"></div>
-
-                <div class="info-box">
-                    <p><strong>Demo Mode:</strong> This application uses Azure AD for authentication.</p>
-                    <p>You'll be redirected to Microsoft's login page.</p>
-                </div>
+            <div class="login-buttons">
+                <button id="loginButton" class="btn-primary">Login with Microsoft</button>
             </div>
         </div>
     </div>

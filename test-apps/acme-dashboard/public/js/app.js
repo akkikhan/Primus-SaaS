@@ -6,6 +6,7 @@ const loadingScreen = document.getElementById('loadingScreen');
 const loginScreen = document.getElementById('loginScreen');
 const dashboardScreen = document.getElementById('dashboardScreen');
 const loginButton = document.getElementById('loginButton');
+const localLoginButton = document.getElementById('localLoginButton'); // Added
 const logoutButton = document.getElementById('logoutButton');
 const errorMessage = document.getElementById('errorMessage');
 
@@ -88,27 +89,99 @@ loginButton.addEventListener('click', async () => {
     }
 });
 
+// Login with Local Account
+if (localLoginButton) {
+    localLoginButton.addEventListener('click', async () => {
+        console.log("🔐 Initiating Local login...");
+        try {
+            // Call Local IdP
+            const response = await fetch('http://localhost:4000/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'localuser', password: 'password123' })
+            });
+
+            if (!response.ok) throw new Error('Local login failed');
+
+            const data = await response.json();
+            const token = data.token;
+
+            console.log("✅ Local login successful");
+
+            // Mock account object
+            currentAccount = {
+                username: 'localuser',
+                name: 'Local User',
+                idTokenClaims: { iss: 'http://localhost:4000' },
+                localToken: token // Store token for later use
+            };
+
+            await showDashboard();
+        } catch (error) {
+            console.error("❌ Local login failed:", error);
+            showError("Local login failed: " + error.message);
+        }
+    });
+}
+
 // Logout
 logoutButton.addEventListener('click', async () => {
     console.log("👋 Logging out...");
 
     try {
-        await msalInstance.logoutPopup({
-            account: currentAccount
-        });
+        // Handle local account logout
+        if (currentAccount && currentAccount.localToken) {
+            currentAccount = null;
+            showLoginScreen();
+            console.log("✅ Local Logout successful");
+            return;
+        }
+
+        // Clear MSAL cache
+        const accounts = msalInstance.getAllAccounts();
+        console.log(`🗑️ Clearing ${accounts.length} account(s) from cache`);
+
+        // Clear session storage
+        sessionStorage.clear();
+
+        // Reset current account
         currentAccount = null;
+
+        // Show login screen immediately
         showLoginScreen();
-        console.log("✅ Logout successful");
+
+        // Try to logout from Azure AD (this will redirect)
+        if (accounts.length > 0) {
+            console.log("🔄 Redirecting to Azure AD logout...");
+            await msalInstance.logoutRedirect({
+                account: accounts[0],
+                postLogoutRedirectUri: window.location.origin
+            });
+        } else {
+            console.log("✅ Logout successful (no Azure AD session)");
+        }
+
     } catch (error) {
-        console.error("❌ Logout failed:", error);
-        showError("Logout failed: " + error.message);
+        console.error("❌ Logout error:", error);
+        // Even if logout fails, clear local state
+        currentAccount = null;
+        sessionStorage.clear();
+        showLoginScreen();
+        console.log("✅ Local logout completed despite error");
     }
 });
+
 
 // Get access token for API calls
 async function getAccessToken() {
     if (!currentAccount) {
         throw new Error("No user logged in");
+    }
+
+    // Return local token if available
+    if (currentAccount.localToken) {
+        console.log("✅ Using Local Access Token");
+        return currentAccount.localToken;
     }
 
     try {
@@ -118,16 +191,27 @@ async function getAccessToken() {
             account: currentAccount
         });
 
-        console.log("✅ Access token acquired (silent)");
-        return response.accessToken;
+        console.log("✅ Token acquired (silent)");
+
+        // WORKAROUND: Use ID token instead of access token
+        // The access token from Azure AD might have wrong audience (Microsoft Graph)
+        // The ID token has the correct audience (our client ID)
+        const token = response.idToken || response.accessToken;
+        console.log("🎫 Using token type:", response.idToken ? "ID Token" : "Access Token");
+
+        return token;
     } catch (error) {
         console.warn("⚠️ Silent token acquisition failed, trying popup...");
 
         // If silent fails, use popup
         try {
             const response = await msalInstance.acquireTokenPopup(tokenRequest);
-            console.log("✅ Access token acquired (popup)");
-            return response.accessToken;
+            console.log("✅ Token acquired (popup)");
+
+            const token = response.idToken || response.accessToken;
+            console.log("🎫 Using token type:", response.idToken ? "ID Token" : "Access Token");
+
+            return token;
         } catch (popupError) {
             console.error("❌ Token acquisition failed:", popupError);
             throw new Error("Failed to get access token");

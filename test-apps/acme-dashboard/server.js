@@ -13,35 +13,65 @@ console.log("🏦 ACME Financial Dashboard Server Starting...");
 // ==================================================================
 // 🔐 PRIMUS IDENTITY VALIDATOR CONFIGURATION
 // ==================================================================
-// Azure AD Configuration
-// Using current SDK interface
 const PRIMUS_CONFIG = {
-    portalUrl: 'http://localhost:5267',
-
-    // IMPORTANT: In Azure AD mode, clientId must be the Azure AD Client ID
-    // because the SDK uses this for audience validation.
-    clientId: 'acc675f1-e32f-40b9-a0c6-716066cc6890',
-
-    clientSecret: 'psp_h9lckDU8Kk70PsC5u9b9uFHtIKBm62bXWO6NVqWtWPI',
-    mode: 'AzureAd',
-
-    // Azure AD configuration
-    tenantId: 'cbd15a9b-cd52-4ccc-916a-00e2edb13043',
-    audience: 'acc675f1-e32f-40b9-a0c6-716066cc6890' // Redundant but good for clarity
+    issuers: [
+        {
+            name: 'AzureAD',
+            type: 'oidc',
+            issuer: 'https://login.microsoftonline.com/cbd15a9b-cd52-4ccc-916a-00e2edb13043/v2.0',
+            authority: 'https://login.microsoftonline.com/cbd15a9b-cd52-4ccc-916a-00e2edb13043/v2.0',
+            audiences: ['acc675f1-e32f-40b9-a0c6-716066cc6890']
+        },
+        {
+            name: 'LocalAuth',
+            type: 'jwt',
+            issuer: 'http://localhost:4000',
+            secret: 'local-dev-secret-123',
+            audiences: ['acc675f1-e32f-40b9-a0c6-716066cc6890']
+        }
+    ],
+    clockSkew: 300
 };
 
 // Initialize Middleware
 const primusAuth = primusIdentityMiddleware(PRIMUS_CONFIG);
 
 console.log("✅ Primus Identity Validator configured");
-console.log("   - Mode: Azure AD");
-console.log("   - Tenant ID:", PRIMUS_CONFIG.tenantId);
-console.log("   - Audience:", PRIMUS_CONFIG.audience);
-console.log("   - Tracking ID:", PRIMUS_CONFIG.clientId);
+console.log("   - Issuers:", PRIMUS_CONFIG.issuers.map(i => i.name).join(', '));
+
 
 // ==================================================================
 // 📊 API ENDPOINTS
 // ==================================================================
+
+// Debug middleware to log token info
+app.use('/api/revenue-stats', (req, res, next) => {
+    console.log('\n🔍 DEBUG: Incoming request to /api/revenue-stats');
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+        const token = authHeader.replace('Bearer ', '');
+        console.log('📝 Token received (first 50 chars):', token.substring(0, 50) + '...');
+
+        // Decode token to see claims (without verification)
+        try {
+            const parts = token.split('.');
+            if (parts.length === 3) {
+                const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+                console.log('🎫 Token claims:', {
+                    iss: payload.iss,
+                    aud: payload.aud,
+                    sub: payload.sub,
+                    exp: payload.exp ? new Date(payload.exp * 1000).toISOString() : 'N/A'
+                });
+            }
+        } catch (e) {
+            console.log('⚠️ Could not decode token:', e.message);
+        }
+    } else {
+        console.log('❌ No Authorization header found');
+    }
+    next();
+});
 
 // Protected Data Endpoint
 app.get('/api/revenue-stats', primusAuth, (req, res) => {
