@@ -11,63 +11,37 @@ app.use(express.json());
 console.log("🏦 ACME Financial Dashboard Server Starting...");
 
 // ==================================================================
-// 🔐 SECURITY CONFIGURATION
+// 🔐 PRIMUS IDENTITY VALIDATOR CONFIGURATION
 // ==================================================================
-// TODO: Paste credentials from Primus Portal here
+// Azure AD Configuration
+// Using current SDK interface
 const PRIMUS_CONFIG = {
     portalUrl: 'http://localhost:5267',
-    clientId: 'PSP-CLI-711224',
+
+    // IMPORTANT: In Azure AD mode, clientId must be the Azure AD Client ID
+    // because the SDK uses this for audience validation.
+    clientId: 'acc675f1-e32f-40b9-a0c6-716066cc6890',
+
     clientSecret: 'psp_h9lckDU8Kk70PsC5u9b9uFHtIKBm62bXWO6NVqWtWPI',
-    jwtSecret: 'psp_h9lckDU8Kk70PsC5u9b9uFHtIKBm62bXWO6NVqWtWPI',
     mode: 'AzureAd',
-    tenantId: 'common'
+
+    // Azure AD configuration
+    tenantId: 'cbd15a9b-cd52-4ccc-916a-00e2edb13043',
+    audience: 'acc675f1-e32f-40b9-a0c6-716066cc6890' // Redundant but good for clarity
 };
 
-// Initialize Middleware (Safe initialization for demo purposes)
-const primusAuth = (req, res, next) => {
-    if (PRIMUS_CONFIG.clientId === 'REPLACE_WITH_CLIENT_ID') {
-        return res.status(500).json({ error: 'Security Module Not Configured' });
-    }
-    return primusIdentityMiddleware(PRIMUS_CONFIG)(req, res, next);
-};
+// Initialize Middleware
+const primusAuth = primusIdentityMiddleware(PRIMUS_CONFIG);
+
+console.log("✅ Primus Identity Validator configured");
+console.log("   - Mode: Azure AD");
+console.log("   - Tenant ID:", PRIMUS_CONFIG.tenantId);
+console.log("   - Audience:", PRIMUS_CONFIG.audience);
+console.log("   - Tracking ID:", PRIMUS_CONFIG.clientId);
 
 // ==================================================================
 // 📊 API ENDPOINTS
 // ==================================================================
-
-// Proxy Login to avoid CORS issues and ensure Token Compatibility
-const axios = require('axios');
-const jwt = require('jsonwebtoken');
-
-app.post('/login-proxy', async (req, res) => {
-    try {
-        // 1. Verify Credentials with Real Backend
-        const response = await axios.post(`${PRIMUS_CONFIG.portalUrl}/api/auth/login`, req.body);
-        const realUser = response.data;
-
-        // 2. Generate a Token compatible with this App (Signed with our Client Secret)
-        // This simulates an OAuth flow where the IDP issues a token FOR this app.
-        const appToken = jwt.sign({
-            sub: realUser.id || '12345',
-            email: realUser.email,
-            name: 'Admin User',
-            role: realUser.role,
-            iss: PRIMUS_CONFIG.portalUrl,
-            aud: PRIMUS_CONFIG.clientId
-        }, PRIMUS_CONFIG.jwtSecret, { expiresIn: '1h' });
-
-        // 3. Return the compatible token
-        res.json({
-            token: appToken,
-            email: realUser.email,
-            role: realUser.role
-        });
-
-    } catch (error) {
-        console.error('Login Proxy Error:', error.message);
-        res.status(error.response?.status || 500).json(error.response?.data || { message: 'Login failed' });
-    }
-});
 
 // Protected Data Endpoint
 app.get('/api/revenue-stats', primusAuth, (req, res) => {
@@ -82,7 +56,15 @@ app.get('/api/revenue-stats', primusAuth, (req, res) => {
     });
 });
 
+// Health check endpoint (no auth required)
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
 // Start Server
 app.listen(3000, () => {
     console.log('🚀 Acme Dashboard running at http://localhost:3000');
+    console.log('📝 API Endpoints:');
+    console.log('   - GET /api/revenue-stats (protected)');
+    console.log('   - GET /api/health (public)');
 });

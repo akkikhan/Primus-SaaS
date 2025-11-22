@@ -125,24 +125,74 @@ public class DocumentationController : ControllerBase
         var config = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(configJson) ?? new();
 
         var sb = new StringBuilder();
-        sb.AppendLine("{");
-        sb.AppendLine($"  \"Primus{moduleName}\": {{");
-        sb.AppendLine($"    \"ClientId\": \"{primusClientId}\",");
-
-        foreach (var (key, value) in config)
+        
+        if (moduleName == "IdentityValidator")
         {
-            sb.AppendLine($"    \"{key}\": \"{value}\",");
+            // Azure AD configuration for IdentityValidator
+            sb.AppendLine("{");
+            sb.AppendLine("  \"PrimusIdentityValidator\": {");
+            sb.AppendLine("    // Required: Azure AD configuration");
+            sb.AppendLine("    \"DefaultAuthority\": \"https://login.microsoftonline.com/common\",");
+            sb.AppendLine("    \"AllowedAudiences\": [");
+            sb.AppendLine("      \"api://YOUR-AZURE-APP-ID\"");
+            sb.AppendLine("    ],");
+            sb.AppendLine();
+            sb.AppendLine("    // Optional: For portal analytics and tracking");
+            sb.AppendLine($"    \"PrimusTrackingId\": \"{primusClientId}\"");
+            sb.AppendLine("  }");
+            sb.AppendLine("}");
         }
+        else
+        {
+            // Generic module configuration
+            sb.AppendLine("{");
+            sb.AppendLine($"  \"Primus{moduleName}\": {{");
+            sb.AppendLine($"    \"PrimusTrackingId\": \"{primusClientId}\",");
 
-        sb.AppendLine("  }");
-        sb.AppendLine("}");
+            foreach (var (key, value) in config)
+            {
+                sb.AppendLine($"    \"{key}\": \"{value}\",");
+            }
+
+            sb.AppendLine("  }");
+            sb.AppendLine("}");
+        }
 
         return sb.ToString();
     }
 
     private string GenerateDotNetProgramCs(string moduleName)
     {
-        return $@"using Primus.SaaS.{moduleName};
+        if (moduleName == "IdentityValidator")
+        {
+            return @"using PrimusSaaS.Identity.Validator;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add Primus IdentityValidator middleware
+builder.Services.AddPrimusIdentityValidator(options =>
+{
+    // Required: Azure AD configuration
+    options.DefaultAuthority = builder.Configuration[""PrimusIdentityValidator:DefaultAuthority""];
+    options.AllowedAudiences = builder.Configuration.GetSection(""PrimusIdentityValidator:AllowedAudiences"")
+        .Get<string[]>();
+    
+    // Optional: For portal analytics
+    options.PrimusTrackingId = builder.Configuration[""PrimusIdentityValidator:PrimusTrackingId""];
+});
+
+var app = builder.Build();
+
+// Use Primus IdentityValidator (must run before UseAuthorization)
+app.UsePrimusIdentityValidator();
+app.UseAuthorization();
+
+app.MapControllers();
+app.Run();";
+        }
+        else
+        {
+            return $@"using Primus.SaaS.{moduleName};
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -155,6 +205,7 @@ var app = builder.Build();
 app.UsePrimus{moduleName}();
 
 app.Run();";
+        }
     }
 
     private string GenerateNodePackageJson(string moduleName)
@@ -171,23 +222,49 @@ app.Run();";
         var config = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(configJson) ?? new();
 
         var sb = new StringBuilder();
-        sb.AppendLine($"const {{ {moduleName} }} = require('@primus-saas/{moduleName.ToLower()}');");
-        sb.AppendLine();
-        sb.AppendLine($"const {moduleName.ToLower()}Config = {{");
-        sb.AppendLine($"  clientId: '{primusClientId}',");
-
-        foreach (var (key, value) in config)
+        
+        // For IdentityValidator module, generate Azure AD configuration
+        if (moduleName == "IdentityValidator")
         {
-            sb.AppendLine($"  {key}: '{value}',");
+            sb.AppendLine($"const {{ primusIdentityValidator }} = require('primus-identity-validator');");
+            sb.AppendLine();
+            sb.AppendLine("// Azure AD Configuration");
+            sb.AppendLine("// Get these values from Azure Portal → App registrations → Your app");
+            sb.AppendLine("const primusAuth = primusIdentityValidator({");
+            sb.AppendLine("  // Required: Azure AD configuration");
+            sb.AppendLine("  defaultAuthority: process.env.AZURE_AD_AUTHORITY || 'https://login.microsoftonline.com/common',");
+            sb.AppendLine("  allowedAudiences: [process.env.AZURE_AD_AUDIENCE || 'api://YOUR-AZURE-APP-ID'],");
+            sb.AppendLine();
+            sb.AppendLine("  // Optional: For portal analytics and tracking");
+            sb.AppendLine($"  primusTrackingId: '{primusClientId}'");
+            sb.AppendLine("});");
+            sb.AppendLine();
+            sb.AppendLine("// Use in Express app");
+            sb.AppendLine("app.get('/api/protected', primusAuth, (req, res) => {");
+            sb.AppendLine("  res.json({ user: req.primusUser });");
+            sb.AppendLine("});");
         }
+        else
+        {
+            // Generic module configuration (for future modules)
+            sb.AppendLine($"const {{ {moduleName} }} = require('@primus-saas/{moduleName.ToLower()}');");
+            sb.AppendLine();
+            sb.AppendLine($"const {moduleName.ToLower()}Config = {{");
+            sb.AppendLine($"  primusTrackingId: '{primusClientId}',");
 
-        sb.AppendLine("};");
-        sb.AppendLine();
-        sb.AppendLine($"// Initialize {moduleName}");
-        sb.AppendLine($"const {moduleName.ToLower()}Middleware = {moduleName}.initialize({moduleName.ToLower()}Config);");
-        sb.AppendLine();
-        sb.AppendLine("// Use in Express app");
-        sb.AppendLine($"app.use({moduleName.ToLower()}Middleware);");
+            foreach (var (key, value) in config)
+            {
+                sb.AppendLine($"  {key}: '{value}',");
+            }
+
+            sb.AppendLine("};");
+            sb.AppendLine();
+            sb.AppendLine($"// Initialize {moduleName}");
+            sb.AppendLine($"const {moduleName.ToLower()}Middleware = {moduleName}.initialize({moduleName.ToLower()}Config);");
+            sb.AppendLine();
+            sb.AppendLine("// Use in Express app");
+            sb.AppendLine($"app.use({moduleName.ToLower()}Middleware);");
+        }
 
         return sb.ToString();
     }

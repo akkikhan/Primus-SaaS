@@ -13,8 +13,8 @@ console.log("⚠️  Demo App Starting...");
 
 const primusAuth = primusIdentityMiddleware({
     portalUrl: 'http://localhost:5267',
-    clientId: 'REPLACE_WITH_CLIENT_ID',     // <--- PASTE HERE
-    clientSecret: 'REPLACE_WITH_SECRET',    // <--- PASTE HERE
+    clientId: 'PSP-CLT-121545',     // <--- PASTE HERE
+    clientSecret: 'psp_GUE8QFWMCcQNLGEZf4b2ugpBaEa3E6Ny_i1AEETt4acY',    // <--- PASTE HERE
     mode: 'Local'
 });
 
