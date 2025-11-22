@@ -5,6 +5,8 @@ using PrimusSaaS.Portal.Api.Data;
 using PrimusSaaS.Portal.Api.Models;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using PrimusSaaS.Portal.Api.Services;
+
 
 namespace PrimusSaaS.Portal.Api.Controllers;
 
@@ -14,10 +16,12 @@ namespace PrimusSaaS.Portal.Api.Controllers;
 public class ApplicationsController : ControllerBase
 {
     private readonly PortalDbContext _context;
+        private readonly IEmailService _emailService;
 
-    public ApplicationsController(PortalDbContext context)
+    public ApplicationsController(PortalDbContext context, IEmailService emailService)
     {
         _context = context;
+        _emailService = emailService;
     }
 
     // GET: api/applications
@@ -136,6 +140,9 @@ public class ApplicationsController : ControllerBase
             HasClientSecret = true
         };
 
+        // Send email notification to client about new application creation
+        var recipientEmail = !string.IsNullOrWhiteSpace(request.ClientEmail) ? request.ClientEmail : User.FindFirst(ClaimTypes.Email)?.Value ?? "";
+        await _emailService.SendApplicationCreatedAsync(application, clientSecret, recipientEmail);
         return CreatedAtAction(nameof(GetApplication), new { id = application.Id }, dto);
     }
 
@@ -180,10 +187,18 @@ public class ApplicationsController : ControllerBase
                 ModuleVersionId = request.ModuleVersionId,
                 ConfigJson = configJson
             };
+
             _context.ApplicationModules.Add(appModule);
+            await _context.SaveChangesAsync();
+            
+            // Send email notification
+            await _emailService.SendModuleAssignedAsync(application, moduleVersion);
         }
 
-        await _context.SaveChangesAsync();
+        if (existing != null)
+        {
+             await _context.SaveChangesAsync();
+        }
 
         return Ok(new { message = "Module integrated successfully" });
     }
@@ -406,7 +421,7 @@ public record IntegratedModuleDto
     public DateTime IntegratedAt { get; init; }
 }
 
-public record CreateApplicationRequest(string Name, string Stack, string? Description = null);
+public record CreateApplicationRequest(string Name, string Stack, string? Description = null, string? ClientEmail = null);
 public record UpdateApplicationRequest(string? Name = null, string? Stack = null, string? Description = null);
     public record IntegrateModuleRequest(int ModuleId, int ModuleVersionId, string ConfigJson = "{}");
 public record ChangeVersionRequest(string Version);

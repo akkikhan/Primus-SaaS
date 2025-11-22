@@ -14,6 +14,8 @@ builder.Services.AddDbContext<PortalDbContext>(options =>
 
 // Register services
 builder.Services.AddScoped<IWebhookSignatureValidator, WebhookSignatureValidator>();
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Add rate limiting
 builder.Services.AddMemoryCache();

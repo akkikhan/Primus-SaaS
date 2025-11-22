@@ -17,6 +17,7 @@ public class PortalDbContext : DbContext
     public DbSet<PackageRegistryMapping> PackageRegistryMappings { get; set; } = null!;
     public DbSet<WebhookRequest> WebhookRequests { get; set; } = null!;
     public DbSet<AppUser> AppUsers { get; set; } = null!;
+    public DbSet<NotificationPreference> NotificationPreferences { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -43,6 +44,19 @@ public class PortalDbContext : DbContext
             entity.HasOne(e => e.Application)
                 .WithMany() // No navigation property back needed for now
                 .HasForeignKey(e => e.ApplicationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // NotificationPreference entity
+        modelBuilder.Entity<NotificationPreference>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId).IsUnique(); // One preference per user
+            entity.Property(e => e.AdditionalEmails).HasMaxLength(500);
+            
+            entity.HasOne(e => e.User)
+                .WithOne() // 1:1 relationship
+                .HasForeignKey<NotificationPreference>(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

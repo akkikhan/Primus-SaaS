@@ -46,7 +46,7 @@ interface ApplicationsState {
   error: string | null;
   fetchApplications: () => Promise<void>;
   fetchApplication: (id: number) => Promise<void>;
-  createApplication: (application: Omit<Application, 'id' | 'primusClientId' | 'createdAt' | 'ownerEmail' | 'moduleCount' | 'integratedModules'>) => Promise<Application>;
+  createApplication: (application: Omit<Application, 'id' | 'primusClientId' | 'createdAt' | 'ownerEmail' | 'moduleCount' | 'integratedModules'> & { clientEmail?: string }) => Promise<Application>;
   updateApplication: (id: number, application: Partial<Application>) => Promise<void>;
   deleteApplication: (id: number) => Promise<void>;
   addModule: (applicationId: number, moduleId: number, moduleVersionId: number) => Promise<void>;

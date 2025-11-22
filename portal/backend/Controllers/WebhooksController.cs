@@ -17,17 +17,20 @@ public class WebhooksController : ControllerBase
     private readonly IWebhookSignatureValidator _signatureValidator;
     private readonly IConfiguration _configuration;
     private readonly ILogger<WebhooksController> _logger;
+    private readonly IEmailService _emailService;
 
     public WebhooksController(
         PortalDbContext context,
         IWebhookSignatureValidator signatureValidator,
         IConfiguration configuration,
-        ILogger<WebhooksController> logger)
+        ILogger<WebhooksController> logger,
+        IEmailService emailService)
     {
         _context = context;
         _signatureValidator = signatureValidator;
         _configuration = configuration;
         _logger = logger;
+        _emailService = emailService;
     }
 
     [HttpPost("npm-registry")]
@@ -144,6 +147,16 @@ public class WebhooksController : ControllerBase
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Created module version {Version} for module {ModuleId}", payload.Version, mapping.ModuleId);
+            // Notify applications that have this module integrated
+            var apps = await _context.ApplicationModules
+                .Where(am => am.ModuleId == mapping.ModuleId)
+                .Select(am => am.Application)
+                .Distinct()
+                .ToListAsync();
+            foreach (var app in apps)
+            {
+                await _emailService.SendVersionPublishedAsync(app, moduleVersion);
+            }
 
             var response = new
             {

@@ -8,6 +8,7 @@ interface ApplicationFormData {
   name: string;
   stack: string;
   description: string;
+  clientEmail: string;
 }
 
 export const ApplicationsPage = () => {
@@ -18,6 +19,7 @@ export const ApplicationsPage = () => {
     name: '',
     stack: '',
     description: '',
+    clientEmail: '',
   });
   const stackInfo: Record<string, { label: string; tone: string }> = {
     DotNet: { label: '.NET', tone: 'tone-dotnet' },
@@ -47,6 +49,7 @@ export const ApplicationsPage = () => {
         name: '',
         stack: '',
         description: '',
+        clientEmail: '',
       });
     } catch {
       // Error handled by store
@@ -77,50 +80,50 @@ export const ApplicationsPage = () => {
           <SkeletonCard />
         </div>
       ) : (
-      <div className="apps__grid">
-        {applications.map(app => (
-          <div key={app.id} className="apps__card">
-            <Link to={`/applications/${app.id}`} className="apps__card-link">
-              <div className="apps__card-header">
-                <div>
-                  <p className="apps__eyebrow">Registered app</p>
-                  <h3>{app.name}</h3>
+        <div className="apps__grid">
+          {applications.map(app => (
+            <div key={app.id} className="apps__card">
+              <Link to={`/applications/${app.id}`} className="apps__card-link">
+                <div className="apps__card-header">
+                  <div>
+                    <p className="apps__eyebrow">Registered app</p>
+                    <h3>{app.name}</h3>
+                  </div>
+                  <span className={`stack-chip ${stackInfo[app.stack]?.tone ?? 'tone-neutral'}`}>
+                    <span className="stack-dot" />
+                    {stackInfo[app.stack]?.label ?? app.stack}
+                  </span>
                 </div>
-                <span className={`stack-chip ${stackInfo[app.stack]?.tone ?? 'tone-neutral'}`}>
-                  <span className="stack-dot" />
-                  {stackInfo[app.stack]?.label ?? app.stack}
-                </span>
+                <p className="apps__card-desc">
+                  {app.description?.trim() || 'No description added yet.'}
+                </p>
+                <div className="apps__card-meta">
+                  <div className="meta-block">
+                    <span className="meta-label">Modules</span>
+                    <span className="meta-value">{app.moduleCount || 0}</span>
+                  </div>
+                  <div className="meta-block">
+                    <span className="meta-label">Primus ID</span>
+                    <span className="meta-value code">{app.primusClientId}</span>
+                  </div>
+                </div>
+              </Link>
+              <div className="apps__card-actions">
+                <button
+                  type="button"
+                  className="apps__delete"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleDelete(app.id, app.name);
+                  }}
+                >
+                  Delete
+                </button>
+                <span className="apps__secondary-action">View details</span>
               </div>
-              <p className="apps__card-desc">
-                {app.description?.trim() || 'No description added yet.'}
-              </p>
-              <div className="apps__card-meta">
-                <div className="meta-block">
-                  <span className="meta-label">Modules</span>
-                  <span className="meta-value">{app.moduleCount || 0}</span>
-                </div>
-                <div className="meta-block">
-                  <span className="meta-label">Primus ID</span>
-                  <span className="meta-value code">{app.primusClientId}</span>
-                </div>
-              </div>
-            </Link>
-            <div className="apps__card-actions">
-              <button 
-                type="button" 
-                className="apps__delete"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleDelete(app.id, app.name);
-                }}
-              >
-                Delete
-              </button>
-              <span className="apps__secondary-action">View details</span>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
       )}
 
       {showModal && (
@@ -139,7 +142,7 @@ export const ApplicationsPage = () => {
                   required
                 />
               </div>
-            <div className="form-group">
+              <div className="form-group">
                 <label htmlFor="stack">Technology Stack</label>
                 <select
                   id="stack"
@@ -164,6 +167,19 @@ export const ApplicationsPage = () => {
                   placeholder="Brief description of your application"
                   rows={3}
                 />
+              </div>
+              <div className="form-group">
+                <label htmlFor="clientEmail">Client Email (for credentials & docs)</label>
+                <input
+                  id="clientEmail"
+                  type="email"
+                  value={formData.clientEmail}
+                  onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
+                  placeholder="client@example.com"
+                />
+                <small className="form-help">
+                  We'll send the Client ID, Secret, and documentation link to this address.
+                </small>
               </div>
               <div className="modal-actions">
                 <button type="button" onClick={() => setShowModal(false)}>Cancel</button>

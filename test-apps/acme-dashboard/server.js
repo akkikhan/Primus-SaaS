@@ -86,6 +86,19 @@ app.get('/api/revenue-stats', primusAuth, (req, res) => {
     });
 });
 
+// Protected Data Endpoint
+// app.get('/api/revenue-stats', (req, res) => {
+//     // This code only runs if the user is authenticated
+//     res.json({
+//         company: "Acme Corp",
+//         revenue: "$4,250,000",
+//         growth: "+125%",
+//         activeUsers: 14500,
+//         lastUpdated: new Date().toISOString(),
+//         user: req.primusUser // The user who requested this
+//     });
+// });
+
 // Health check endpoint (no auth required)
 app.get('/api/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
