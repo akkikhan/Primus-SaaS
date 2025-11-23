@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "+gNgeyhInqLHN9IARQ6CWKva2jfhlw6MjssEFgW7azOrvwmqEdx98E17U/e64yFlzNPnBFncsEOSYYW9qorrFQ==",
+  "dgSpecHash": "DLU9Wr4qXDqGYqUjbX1yFhEETqEUbRBp0EbAAU/0DEQIb16VFj3pkOSF5p64FiEgv75yRCLTbe76u3Pj+7nPHw==",
   "success": true,
   "projectFilePath": "C:\\Users\\aakib\\Primus SaaS\\examples\\dotnet-api\\PrimusSaaS.Example.Api\\PrimusSaaS.Example.Api.csproj",
   "expectedPackageFiles": [

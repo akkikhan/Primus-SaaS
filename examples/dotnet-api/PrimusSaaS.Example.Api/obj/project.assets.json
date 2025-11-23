@@ -381,7 +381,7 @@
           "buildTransitive/net6.0/_._": {}
         }
       },
-      "PrimusSaaS.Identity.Validator/1.1.0": {
+      "PrimusSaaS.Identity.Validator/1.2.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v7.0",
         "dependencies": {
@@ -1273,7 +1273,7 @@
         "system.runtime.compilerservices.unsafe.nuspec"
       ]
     },
-    "PrimusSaaS.Identity.Validator/1.1.0": {
+    "PrimusSaaS.Identity.Validator/1.2.0": {
       "type": "project",
       "path": "../../../sdk/dotnet/PrimusSaaS.Identity.Validator/PrimusSaaS.Identity.Validator.csproj",
       "msbuildProject": "../../../sdk/dotnet/PrimusSaaS.Identity.Validator/PrimusSaaS.Identity.Validator.csproj"
@@ -1282,7 +1282,7 @@
   "projectFileDependencyGroups": {
     "net7.0": [
       "Microsoft.AspNetCore.OpenApi >= 7.0.20",
-      "PrimusSaaS.Identity.Validator >= 1.1.0",
+      "PrimusSaaS.Identity.Validator >= 1.2.0",
       "Swashbuckle.AspNetCore >= 6.5.0"
     ]
   },
