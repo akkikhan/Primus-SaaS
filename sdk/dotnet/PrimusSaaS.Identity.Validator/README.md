@@ -179,12 +179,80 @@ if (primusUser != null)
 }
 ```
 
+## Generating Tokens for Local JWT Issuer
+
+> [!IMPORTANT]
+> The `Secret`, `Issuer`, and `Audience` values used when generating tokens **MUST EXACTLY MATCH** your validator configuration.
+
+### Quick Example
+
 ```csharp
-builder.Services.AddPrimusIdentity(options =>
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+
+public string GenerateLocalJwtToken(string userId, string email, string name)
 {
-    builder.Configuration.GetSection("PrimusIdentity").Bind(options);
-});
+    // ⚠️ CRITICAL: Load from same configuration source
+    var secret = _config["PrimusIdentity:Issuers:1:Secret"];
+    var issuer = _config["PrimusIdentity:Issuers:1:Issuer"];
+    var audience = _config["PrimusIdentity:Issuers:1:Audiences:0"];
+    
+    var tokenHandler = new JwtSecurityTokenHandler();
+    var key = Encoding.UTF8.GetBytes(secret);
+    
+    var tokenDescriptor = new SecurityTokenDescriptor
+    {
+        Subject = new ClaimsIdentity(new[]
+        {
+            new Claim("sub", userId),
+            new Claim("email", email),
+            new Claim("name", name)
+        }),
+        Expires = DateTime.UtcNow.AddHours(1),
+        Issuer = issuer,
+        Audience = audience,
+        SigningCredentials = new SigningCredentials(
+            new SymmetricSecurityKey(key),
+            SecurityAlgorithms.HmacSha256Signature
+        )
+    };
+
+    var token = tokenHandler.CreateToken(tokenDescriptor);
+    return tokenHandler.WriteToken(token);
+}
 ```
+
+**📚 For complete token generation examples, see [TOKEN_GENERATION_GUIDE.md](./TOKEN_GENERATION_GUIDE.md)**
+
+## Troubleshooting
+
+### Common Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `Invalid signature` | Secret key mismatch | Ensure token generation and validation use the same secret |
+| `Untrusted issuer` | Issuer format incorrect | Use full URL format (e.g., `https://localhost:5265`) not name |
+| `Invalid audience` | Audience mismatch | Use API identifier format (e.g., `api://your-app-id`) |
+| `Token expired` | Token past expiration | Generate new token or increase `ClockSkew` |
+
+**📚 For detailed troubleshooting, see [ERROR_REFERENCE.md](./ERROR_REFERENCE.md)**
+
+## Production Deployment
+
+> [!CAUTION]
+> Never commit secrets to source control! Use Azure Key Vault or environment variables.
+
+### Quick Checklist
+
+- [ ] Secrets stored in Azure Key Vault
+- [ ] `RequireHttpsMetadata: true` in production
+- [ ] HTTPS redirection enabled
+- [ ] CORS configured for production domains
+- [ ] Logging and monitoring configured
+
+**📚 For complete deployment guide, see [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md)**
 
 ## Client Usage Example
 
@@ -192,6 +260,7 @@ To call your protected API from a client application:
 
 ```csharp
 using System.Net.Http.Headers;
+
 
 var httpClient = new HttpClient();
 var jwtToken = "your-jwt-token-from-primus-portal";
@@ -236,6 +305,15 @@ The SDK automatically logs authentication events to the console. For more detail
 - .NET 7.0 or later
 - ASP.NET Core 7.0 or later
 
+## Documentation
+
+- **[TOKEN_GENERATION_GUIDE.md](./TOKEN_GENERATION_GUIDE.md)** - Complete guide to generating JWT tokens
+- **[ERROR_REFERENCE.md](./ERROR_REFERENCE.md)** - Troubleshooting validation errors
+- **[PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md)** - Production deployment best practices
+- **[SECRET_MANAGEMENT.md](./SECRET_MANAGEMENT.md)** - Securely managing secrets (Key Vault, User Secrets)
+- **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** - Testing guide with Postman & Integration Tests
+- **[CLAIMS_MAPPING.md](./CLAIMS_MAPPING.md)** - Reference for required and optional claims
+
 ## Support
 
 For issues, questions, or contributions, visit:
@@ -245,3 +323,4 @@ For issues, questions, or contributions, visit:
 ## License
 
 MIT License - see LICENSE file for details
+

@@ -297,7 +297,55 @@ The configuration structure has changed from single-mode to multi-issuer:
 5. Map `clientId` → `audiences[0]`
 6. Map `tenantId` → extract from `issuer` URL
 
+## Generating Tokens for Local JWT Issuer
+
+> [!IMPORTANT]
+> The `secret`, `issuer`, and `audiences` values used when generating tokens **MUST EXACTLY MATCH** your validator configuration.
+
+### Quick Example
+
+```javascript
+const jwt = require('jsonwebtoken');
+
+function generateLocalJwtToken(userId, email, name) {
+  // ⚠️ CRITICAL: Load from same environment variables
+  const secret = process.env.JWT_SECRET;
+  const issuer = process.env.JWT_ISSUER;
+  const audience = process.env.JWT_AUDIENCE;
+  
+  const payload = {
+    sub: userId,
+    email: email,
+    name: name,
+    aud: audience,
+    iss: issuer
+  };
+  
+  const options = {
+    expiresIn: '1h',
+    issuer: issuer,
+    audience: audience,
+    algorithm: 'HS256'
+  };
+  
+  return jwt.sign(payload, secret, options);
+}
+```
+
+**📚 For complete token generation examples including frontend integration, see [TOKEN_GENERATION_GUIDE.md](./TOKEN_GENERATION_GUIDE.md)**
+
 ## Troubleshooting
+
+### Common Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `invalid signature` | Secret key mismatch | Ensure token generation and validation use the same secret |
+| `Untrusted issuer` | Issuer format incorrect | Use full URL format (e.g., `https://localhost:4000`) not name |
+| `jwt audience invalid` | Audience mismatch | Use API identifier format (e.g., `api://your-app-id`) |
+| `jwt expired` | Token past expiration | Generate new token or increase `clockSkew` |
+
+
 
 ### "Untrusted issuer: {url}"
 
@@ -355,6 +403,23 @@ issuers: [
 }
 ```
 
+**📚 For detailed troubleshooting, see [ERROR_REFERENCE.md](./ERROR_REFERENCE.md)**
+
+## Production Deployment
+
+> [!CAUTION]
+> Never commit secrets to source control! Use environment variables or secret management services.
+
+### Quick Checklist
+
+- [ ] All secrets in environment variables or vault
+- [ ] HTTPS enforced in production
+- [ ] CORS configured for production domains
+- [ ] Rate limiting enabled
+- [ ] Logging and monitoring configured
+
+**📚 For complete deployment guide, see [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md)**
+
 ## Development
 
 ### Build
@@ -378,6 +443,12 @@ npm run format
 
 - Node.js 16.0.0+
 - Express 4.18.0+ (for middleware usage)
+
+## Documentation
+
+- **[TOKEN_GENERATION_GUIDE.md](./TOKEN_GENERATION_GUIDE.md)** - Complete guide to generating JWT tokens
+- **[ERROR_REFERENCE.md](./ERROR_REFERENCE.md)** - Troubleshooting validation errors
+- **[PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md)** - Production deployment best practices
 
 ## License
 

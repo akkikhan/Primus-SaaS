@@ -1,0 +1,174 @@
+{
+    "info": {
+        "_postman_id": "d8f3c2a1-7b4e-4d5f-9e6a-1c2b3d4e5f6g",
+        "name": "Primus SaaS Identity Validator Tests",
+        "description": "Collection for testing PrimusSaaS.Identity.Validator integration with both Azure AD and Local JWT issuers.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Local Auth",
+            "item": [
+                {
+                    "name": "Login (Get Token)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.token) {",
+                                    "    pm.environment.set(\"local_token\", jsonData.token);",
+                                    "    console.log(\"Local token set successfully\");",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"{{test_email}}\",\n    \"password\": \"{{test_password}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/local-login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "local-login"
+                            ]
+                        },
+                        "description": "Authenticates with local credentials and retrieves a JWT token. The token is automatically saved to the 'local_token' environment variable."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Protected Endpoint (Local Token)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{local_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/protected",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "protected"
+                            ]
+                        },
+                        "description": "Accesses a protected endpoint using the Local JWT token."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Azure AD",
+            "item": [
+                {
+                    "name": "Protected Endpoint (Azure AD Token)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{azure_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/protected",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "protected"
+                            ]
+                        },
+                        "description": "Accesses a protected endpoint using an Azure AD token. You must manually paste a valid Azure AD token into the 'azure_token' environment variable."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Debug",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/health",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "health"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Config Debug (If Enabled)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{local_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/debug/config",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "debug",
+                                "config"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:5265",
+            "type": "string"
+        },
+        {
+            "key": "test_email",
+            "value": "user@example.com",
+            "type": "string"
+        },
+        {
+            "key": "test_password",
+            "value": "password123",
+            "type": "string"
+        }
+    ]
+}

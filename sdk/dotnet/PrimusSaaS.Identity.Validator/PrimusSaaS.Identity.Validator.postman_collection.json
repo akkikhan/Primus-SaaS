@@ -1,0 +1,130 @@
+{
+    "info": {
+        "_postman_id": "b8b2-47a7208be405",
+        "name": "PrimusSaaS.Identity.Validator Tests",
+        "description": "Collection to test PrimusSaaS.Identity.Validator integration.\n\n## Setup\n1. Set `baseUrl` variable to your API URL.\n2. Set `localSecret` to your configured secret.\n3. Set `localIssuer` to your configured issuer.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Local Auth Request",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "exec": [
+                            "// Generate JWT for Local Auth",
+                            "var secret = pm.environment.get('localSecret') || pm.collectionVariables.get('localSecret');",
+                            "var issuer = pm.environment.get('localIssuer') || pm.collectionVariables.get('localIssuer');",
+                            "var audience = pm.environment.get('audience') || pm.collectionVariables.get('audience');",
+                            "",
+                            "var header = {",
+                            "    'alg': 'HS256',",
+                            "    'typ': 'JWT'",
+                            "};",
+                            "",
+                            "var currentTimestamp = Math.floor(Date.now() / 1000);",
+                            "",
+                            "var payload = {",
+                            "    'sub': 'test-user-123',",
+                            "    'name': 'Test User',",
+                            "    'email': 'test@example.com',",
+                            "    'iss': issuer,",
+                            "    'aud': audience,",
+                            "    'exp': currentTimestamp + 3600, // 1 hour",
+                            "    'iat': currentTimestamp,",
+                            "    'roles': ['User', 'Admin']",
+                            "};",
+                            "",
+                            "function base64url(source) {",
+                            "    encodedSource = CryptoJS.enc.Base64.stringify(source);",
+                            "    encodedSource = encodedSource.replace(/=+$/, '');",
+                            "    encodedSource = encodedSource.replace(/\\+/g, '-');",
+                            "    encodedSource = encodedSource.replace(/\\//g, '_');",
+                            "    return encodedSource;",
+                            "}",
+                            "",
+                            "var stringifiedHeader = CryptoJS.enc.Utf8.parse(JSON.stringify(header));",
+                            "var encodedHeader = base64url(stringifiedHeader);",
+                            "",
+                            "var stringifiedPayload = CryptoJS.enc.Utf8.parse(JSON.stringify(payload));",
+                            "var encodedPayload = base64url(stringifiedPayload);",
+                            "",
+                            "var signature = encodedHeader + '.' + encodedPayload;",
+                            "signature = CryptoJS.HmacSHA256(signature, secret);",
+                            "signature = base64url(signature);",
+                            "",
+                            "var token = encodedHeader + '.' + encodedPayload + '.' + signature;",
+                            "pm.environment.set('generatedToken', token);",
+                            "console.log('Generated Token:', token);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{generatedToken}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/secure",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "secure"
+                    ]
+                },
+                "description": "Sends a request with a locally generated JWT signed with the shared secret."
+            },
+            "response": []
+        },
+        {
+            "name": "Anonymous Request (Should Fail)",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/secure",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "secure"
+                    ]
+                },
+                "description": "Tests that the endpoint is actually protected."
+            },
+            "response": []
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "https://localhost:7001",
+            "type": "string"
+        },
+        {
+            "key": "localSecret",
+            "value": "your-super-secret-key-at-least-32-characters-long!",
+            "type": "string"
+        },
+        {
+            "key": "localIssuer",
+            "value": "https://localhost:5265",
+            "type": "string"
+        },
+        {
+            "key": "audience",
+            "value": "api://your-app-id",
+            "type": "string"
+        }
+    ]
+}
