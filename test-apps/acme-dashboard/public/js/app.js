@@ -174,9 +174,18 @@ logoutButton.addEventListener('click', async () => {
 
 // Get access token for API calls
 async function getAccessToken() {
+    console.log("🔑 getAccessToken() called");
+
     if (!currentAccount) {
+        console.error("❌ No user logged in");
         throw new Error("No user logged in");
     }
+
+    console.log("👤 Current account:", {
+        username: currentAccount.username,
+        name: currentAccount.name,
+        hasLocalToken: !!currentAccount.localToken
+    });
 
     // Return local token if available
     if (currentAccount.localToken) {
@@ -185,6 +194,12 @@ async function getAccessToken() {
     }
 
     try {
+        console.log("🔄 Attempting silent token acquisition...");
+        console.log("📋 Token request config:", {
+            scopes: tokenRequest.scopes,
+            account: currentAccount.username
+        });
+
         // Try to get token silently (from cache)
         const response = await msalInstance.acquireTokenSilent({
             ...tokenRequest,
@@ -192,6 +207,12 @@ async function getAccessToken() {
         });
 
         console.log("✅ Token acquired (silent)");
+        console.log("📦 Token response:", {
+            hasAccessToken: !!response.accessToken,
+            hasIdToken: !!response.idToken,
+            scopes: response.scopes,
+            expiresOn: response.expiresOn
+        });
 
         // WORKAROUND: Use ID token instead of access token
         // The access token from Azure AD might have wrong audience (Microsoft Graph)
@@ -199,9 +220,27 @@ async function getAccessToken() {
         const token = response.idToken || response.accessToken;
         console.log("🎫 Using token type:", response.idToken ? "ID Token" : "Access Token");
 
+        // Decode and log token claims
+        try {
+            const parts = token.split('.');
+            if (parts.length === 3) {
+                const payload = JSON.parse(atob(parts[1]));
+                console.log("🔍 Token claims:", {
+                    iss: payload.iss,
+                    aud: payload.aud,
+                    sub: payload.sub,
+                    email: payload.email || payload.preferred_username,
+                    exp: payload.exp ? new Date(payload.exp * 1000).toISOString() : 'N/A'
+                });
+            }
+        } catch (e) {
+            console.warn("⚠️ Could not decode token for logging");
+        }
+
         return token;
     } catch (error) {
-        console.warn("⚠️ Silent token acquisition failed, trying popup...");
+        console.warn("⚠️ Silent token acquisition failed:", error.message);
+        console.log("🔄 Trying popup method...");
 
         // If silent fails, use popup
         try {
@@ -211,9 +250,26 @@ async function getAccessToken() {
             const token = response.idToken || response.accessToken;
             console.log("🎫 Using token type:", response.idToken ? "ID Token" : "Access Token");
 
+            // Decode and log token claims
+            try {
+                const parts = token.split('.');
+                if (parts.length === 3) {
+                    const payload = JSON.parse(atob(parts[1]));
+                    console.log("🔍 Token claims:", {
+                        iss: payload.iss,
+                        aud: payload.aud,
+                        sub: payload.sub,
+                        email: payload.email || payload.preferred_username,
+                        exp: payload.exp ? new Date(payload.exp * 1000).toISOString() : 'N/A'
+                    });
+                }
+            } catch (e) {
+                console.warn("⚠️ Could not decode token for logging");
+            }
+
             return token;
         } catch (popupError) {
-            console.error("❌ Token acquisition failed:", popupError);
+            console.error("❌ Token acquisition failed (popup):", popupError);
             throw new Error("Failed to get access token");
         }
     }
@@ -221,14 +277,22 @@ async function getAccessToken() {
 
 // Fetch dashboard data from API
 async function fetchDashboardData() {
+    console.log("📊 fetchDashboardData() called");
     console.log("📊 Fetching dashboard data...");
 
     try {
         // Get access token
         const accessToken = await getAccessToken();
         console.log("🔑 Access token obtained");
+        console.log("📏 Token length:", accessToken.length);
 
         // Call protected API endpoint
+        console.log("🌐 Calling API: /api/revenue-stats");
+        console.log("📤 Request headers:", {
+            Authorization: `Bearer ${accessToken.substring(0, 20)}...`,
+            ContentType: 'application/json'
+        });
+
         const response = await fetch('/api/revenue-stats', {
             method: 'GET',
             headers: {
@@ -237,8 +301,18 @@ async function fetchDashboardData() {
             }
         });
 
+        console.log("📥 Response received:", {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
+            headers: {
+                contentType: response.headers.get('content-type')
+            }
+        });
+
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
+            console.error("❌ API Error Response:", errorData);
             throw new Error(errorData.message || `API returned ${response.status}`);
         }
 
@@ -249,7 +323,10 @@ async function fetchDashboardData() {
         updateDashboard(data);
 
     } catch (error) {
-        console.error("❌ Failed to fetch dashboard data:", error);
+        console.error("❌ Failed to fetch dashboard data:");
+        console.error("   Error type:", error.constructor.name);
+        console.error("   Error message:", error.message);
+        console.error("   Error stack:", error.stack);
         throw error;
     }
 }

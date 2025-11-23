@@ -150,3 +150,9 @@ public class DemoController {
 - Ensure `issuer-uri` matches Azure AD `iss` exactly; the custom resolver routes LocalAuth tokens by `iss=http://localhost:4000`.
 - Replace the hardcoded local secret with an env/`application.yml` property in real deployments.
 - Keep `clockSkew` small by default; Nimbus respects JWT `exp`/`nbf` automatically.
+
+## Update steps
+
+1. Update your Spring Boot starter version to the latest compatible release (e.g., `spring-boot-starter-oauth2-resource-server`).
+2. If issuer endpoints or audiences change, update `AZURE_ISSUER`, `LOCAL_ISSUER`, and `AUDIENCE` constants (or their config equivalents).
+3. Re-test `/api/protected` and `/api/admin` with both Azure AD and LocalAuth tokens to ensure routing and roles still work.

@@ -17,8 +17,7 @@
             },
             {
               "id": "integrations/java-spring-boot",
-              "path": "/docs/integrations/java-spring-boot",
-              "sidebar": "docs"
+              "path": "/docs/integrations/java-spring-boot"
             },
             {
               "id": "integrations/node-express",
@@ -34,6 +33,10 @@
               "id": "intro",
               "path": "/docs/",
               "sidebar": "docs"
+            },
+            {
+              "id": "module-mapping",
+              "path": "/docs/module-mapping"
             }
           ],
           "draftIds": [],

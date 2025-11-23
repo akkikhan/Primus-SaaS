@@ -14,12 +14,14 @@ public class EmailService : IEmailService
     private readonly EmailSettings _settings;
     private readonly ILogger<EmailService> _logger;
     private readonly PortalDbContext _context;
+    private readonly string _docsBaseUrl;
 
     public EmailService(IOptions<EmailSettings> options, ILogger<EmailService> logger, PortalDbContext context)
     {
         _settings = options.Value;
         _logger = logger;
         _context = context;
+        _docsBaseUrl = (_settings.DocsBaseUrl ?? "http://localhost:3001").TrimEnd('/');
     }
 
     private async Task SendEmailAsync(string to, string subject, string body)
@@ -63,14 +65,19 @@ public class EmailService : IEmailService
         var body = $@"<p>Hello,</p>
 <p>Your application <strong>{app.Name}</strong> has been created.</p>
 <p>Client ID: <code>{app.PrimusClientId}</code></p>
-{GetIntegrationInstructions(app)}
+<p>Modules are not assigned yet. We will send integration steps as soon as your module(s) are added.</p>
 <p>Best regards,<br/>Primus SaaS Team</p>";
         await SendEmailAsync(to, subject, body);
     }
 
     public async Task SendModuleAssignedAsync(Application app, ModuleVersion version)
     {
-        var to = app.Owner.Email;
+        var to = await ResolveOwnerEmailAsync(app);
+        if (string.IsNullOrEmpty(to))
+        {
+            _logger.LogWarning("No email address found for module assignment notification for application {AppId}", app.Id);
+            return;
+        }
         var subject = $"Module {version.Module.Name} assigned to {app.Name}";
         
         var npmMapping = await _context.PackageRegistryMappings
@@ -80,6 +87,7 @@ public class EmailService : IEmailService
 
         var npmPackageName = npmMapping?.PackageName ?? "unknown-package";
         var nugetPackageName = nugetMapping?.PackageName ?? "Unknown.Package";
+        var docsLink = $"{_docsBaseUrl}{ModuleDocsMapper.GetIntegrationPath(app.Stack)}";
 
         var body = $@"<p>Hello,</p>
 <p>The module <strong>{version.Module.Name}</strong> (v{version.Version}) has been assigned to your application <strong>{app.Name}</strong>.</p>
@@ -88,12 +96,16 @@ public class EmailService : IEmailService
 <li>npm: <code>npm install {npmPackageName}@{version.Version}</code></li>
 <li>NuGet: <code>Install-Package {nugetPackageName} -Version {version.Version}</code></li>
 </ul>
+<p>Integration guide: <a href=""{docsLink}"">{docsLink}</a></p>
 <p>Best regards,<br/>Primus SaaS Team</p>";
         await SendEmailAsync(to, subject, body);
     }
 
     public async Task SendVersionPublishedAsync(Application app, ModuleVersion version)
     {
+        if (!await ShouldSendForVersionAsync(version))
+        {
+            _logger.LogInformation("Skipping version email for module {ModuleId} version {Version} (non-major policy)", version.ModuleId, version.Version);
         // Check user preferences
         var pref = await _context.NotificationPreferences
             .FirstOrDefaultAsync(p => p.UserId == app.OwnerUserId);
@@ -130,19 +142,35 @@ public class EmailService : IEmailService
 
         var body = $@"<p>Hello,</p>
 <p>A new version <strong>{version.Version}</strong> of the module <strong>{version.Module.Name}</strong> has been published.</p>
-<p>Release notes: {version.ReleaseNotes}</p>
-<p>Changelog: {version.Changelog}</p>
-<p>Installation commands:</p>
+
+<h3>📦 Installation</h3>
 <ul>
-<li>npm: <code>npm install {npmPackageName}@{version.Version}</code></li>
-<li>NuGet: <code>Install-Package {nugetPackageName} -Version {version.Version}</code></li>
+<li><strong>npm:</strong> <code>npm install {npmPackageName}@{version.Version}</code></li>
+<li><strong>NuGet:</strong> <code>Install-Package {nugetPackageName} -Version {version.Version}</code></li>
 </ul>
+
+<h3>📝 Release Information</h3>
+<p><strong>Release notes:</strong> {version.ReleaseNotes}</p>
+<p><strong>Changelog:</strong> {version.Changelog}</p>
+{(version.IsBreakingChange ? "<p><strong>⚠️ BREAKING CHANGE:</strong> This version contains breaking changes. Please review the changelog carefully before upgrading.</p>" : "")}
+
+<h3>⚠️ Important: Azure AD Configuration</h3>
+<p>If you're using Azure AD, remember to configure the <code>audiences</code> array with your <strong>Azure AD Client ID</strong>, not the Primus App ID.</p>
+<p><a href=""https://github.com/akkikhan/Primus-SaaS/blob/main/sdk/nodejs/primus-identity-validator/README.md#%EF%B8%8F-critical-azure-ad-audience-configuration"">View Azure AD Configuration Guide →</a></p>
+
+<h3>📚 Resources</h3>
+<ul>
+<li><a href=""https://github.com/akkikhan/Primus-SaaS/blob/main/sdk/nodejs/primus-identity-validator/README.md"">Full Documentation</a></li>
+<li><a href=""http://localhost:5173/applications"">Portal Dashboard</a></li>
+<li><a href=""https://github.com/akkikhan/Primus-SaaS/tree/main/test-apps/acme-dashboard"">Example Project</a></li>
+</ul>
+
+<p>Need help? Reply to this email or visit our <a href=""https://github.com/akkikhan/Primus-SaaS/issues"">support portal</a>.</p>
+
 <p>Best regards,<br/>Primus SaaS Team</p>";
         await SendEmailAsync(to, subject, body);
 
         // Send to additional emails if configured
-        if (pref?.AdditionalEmails != null)
-        {
             var emails = pref.AdditionalEmails.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             foreach (var email in emails)
             {
@@ -151,36 +179,75 @@ public class EmailService : IEmailService
         }
     }
 
-    private string GetIntegrationInstructions(Application app)
+    private async Task<string?> ResolveOwnerEmailAsync(Application app)
     {
-        var docsUrl = $"http://localhost:3000/docs/{app.Id}";
-        var sb = new System.Text.StringBuilder();
-        sb.Append($"<p><strong>Integration Guide:</strong></p>");
-        sb.Append($"<p>View your full documentation here: <a href='{docsUrl}'>{docsUrl}</a></p>");
-
-        switch (app.Stack)
+        if (app.Owner != null && !string.IsNullOrWhiteSpace(app.Owner.Email))
         {
-            case AppStack.NodeJS:
-            case AppStack.NodeJSNest:
-            case AppStack.TypeScriptLib:
-                sb.Append("<p>To get started with Node.js/TypeScript:</p>");
-                sb.Append("<pre>npm install @primus/sdk</pre>");
-                sb.Append("<p>Initialize the client with your Client ID and Secret.</p>");
-                break;
-            case AppStack.DotNet:
-                sb.Append("<p>To get started with .NET:</p>");
-                sb.Append("<pre>dotnet add package Primus.Sdk</pre>");
-                sb.Append("<p>Add the Primus service in your Program.cs.</p>");
-                break;
-            case AppStack.Python:
-                sb.Append("<p>To get started with Python:</p>");
-                sb.Append("<pre>pip install primus-sdk</pre>");
-                break;
-            default:
-                sb.Append("<p>Please refer to the documentation portal for integration steps.</p>");
-                break;
+            return app.Owner.Email;
         }
 
-        return sb.ToString();
+        return await _context.Users
+            .Where(u => u.Id == app.OwnerUserId)
+            .Select(u => u.Email)
+            .FirstOrDefaultAsync();
+    }
+
+    private async Task<bool> ShouldSendForVersionAsync(ModuleVersion version)
+    {
+        // Major-only policy: send if new major is greater than previous major for this module.
+        if (!TryParseSemVer(version.Version, out var newSemVer))
+        {
+            // If parsing fails, err on the side of sending to avoid missing critical updates.
+            return true;
+        }
+
+        var previous = await _context.ModuleVersions
+            .Where(mv => mv.ModuleId == version.ModuleId && mv.Id != version.Id)
+            .OrderByDescending(mv => mv.Id)
+            .Select(mv => mv.Version)
+            .ToListAsync();
+
+        if (previous.Count == 0)
+        {
+            return true;
+        }
+
+        var latestParsed = previous
+            .Select(v => 
+            {
+                if (TryParseSemVer(v, out var semVer))
+                {
+                    return ((int Major, int Minor, int Patch)?)semVer;
+                }
+                return null;
+            })
+            .Where(v => v.HasValue)
+            .OrderByDescending(v => v!.Value.Major)
+            .ThenByDescending(v => v!.Value.Minor)
+            .ThenByDescending(v => v!.Value.Patch)
+            .FirstOrDefault();
+
+        if (!latestParsed.HasValue)
+        {
+            return true;
+        }
+
+        return newSemVer.Major > latestParsed.Value.Major;
+    }
+
+    private static bool TryParseSemVer(string version, out (int Major, int Minor, int Patch) semVer)
+    {
+        semVer = (0, 0, 0);
+        var parts = version.Split('.', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 1 || parts.Length > 3)
+        {
+            return false;
+        }
+
+        if (!int.TryParse(parts[0], out var major)) return false;
+        var minor = parts.Length > 1 && int.TryParse(parts[1], out var m) ? m : 0;
+        var patch = parts.Length > 2 && int.TryParse(parts[2], out var p) ? p : 0;
+        semVer = (major, minor, patch);
+        return true;
     }
 }

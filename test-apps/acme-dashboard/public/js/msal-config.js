@@ -15,17 +15,20 @@ const msalConfig = {
     }
 };
 
-// Scopes for token request
+// Scopes for login request
 // This tells Azure AD what permissions we need
 const loginRequest = {
-    scopes: ["User.Read"] // Basic profile information
+    scopes: ["openid", "profile", "email"] // Basic profile information
 };
 
 // Scopes for API access
-// Request access token for THIS application (Client ID)
+// IMPORTANT: Use OpenID Connect scopes to get ID token
+// The ID token will be validated by Primus Identity Validator
 const tokenRequest = {
     scopes: [
-        "acc675f1-e32f-40b9-a0c6-716066cc6890/.default"
+        "openid",
+        "profile",
+        "email"
     ]
 };
 
@@ -37,7 +40,6 @@ msalInstance.handleRedirectPromise()
     .then(response => {
         if (response) {
             console.log("✅ Login successful via redirect");
-            handleLoginSuccess(response.account);
         }
     })
     .catch(error => {

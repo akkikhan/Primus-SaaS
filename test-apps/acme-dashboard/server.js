@@ -11,23 +11,32 @@ app.use(express.json());
 console.log("🏦 ACME Financial Dashboard Server Starting...");
 
 // ==================================================================
-// 🔐 PRIMUS IDENTITY VALIDATOR CONFIGURATION
+// 🔐 PRIMUS IDENTITY VALIDATOR CONFIGURATION (App ID Only Model)
 // ==================================================================
+// Load environment variables (optional - falls back to defaults)
+require('dotenv').config();
+
+// Primus App ID from portal - used as the audience claim in all tokens
+const API_AUDIENCE = process.env.API_AUDIENCE || 'PSP-CLI-711224';
+
 const PRIMUS_CONFIG = {
     issuers: [
         {
             name: 'AzureAD',
             type: 'oidc',
-            issuer: 'https://login.microsoftonline.com/cbd15a9b-cd52-4ccc-916a-00e2edb13043/v2.0',
-            authority: 'https://login.microsoftonline.com/cbd15a9b-cd52-4ccc-916a-00e2edb13043/v2.0',
-            audiences: ['acc675f1-e32f-40b9-a0c6-716066cc6890']
+            issuer: process.env.AZURE_AD_ISSUER || 'https://login.microsoftonline.com/cbd15a9b-cd52-4ccc-916a-00e2edb13043/v2.0',
+            authority: process.env.AZURE_AD_AUTHORITY || 'https://login.microsoftonline.com/cbd15a9b-cd52-4ccc-916a-00e2edb13043/v2.0',
+            audiences: [
+                'acc675f1-e32f-40b9-a0c6-716066cc6890',  // ✅ Azure AD client ID (actual audience in ID token)
+                API_AUDIENCE  // Also accept Primus App ID for compatibility
+            ]
         },
         {
             name: 'LocalAuth',
             type: 'jwt',
-            issuer: 'http://localhost:4000',
-            secret: 'local-dev-secret-123',
-            audiences: ['acc675f1-e32f-40b9-a0c6-716066cc6890']
+            issuer: process.env.LOCAL_ISSUER || 'http://localhost:4000',
+            secret: process.env.LOCAL_SECRET || 'local-dev-secret-123',
+            audiences: [API_AUDIENCE]  // ✅ Primus App ID (not Azure client ID)
         }
     ],
     clockSkew: 300
@@ -37,6 +46,7 @@ const PRIMUS_CONFIG = {
 const primusAuth = primusIdentityMiddleware(PRIMUS_CONFIG);
 
 console.log("✅ Primus Identity Validator configured");
+console.log("   - Primus App ID (Audience):", API_AUDIENCE);
 console.log("   - Issuers:", PRIMUS_CONFIG.issuers.map(i => i.name).join(', '));
 
 

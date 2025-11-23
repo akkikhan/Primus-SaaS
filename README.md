@@ -192,6 +192,96 @@ See individual README files in each component directory:
 
 ---
 
+## Azure AD Configuration
+
+The Identity Validator SDKs support **dual-mode authentication**:
+- **Local Mode**: Symmetric key validation using JwtSecret (HS256)
+- **Azure AD Mode**: JWKS-based validation using Azure AD public keys (RS256)
+
+### Configuring Azure AD Mode
+
+#### For .NET Applications
+
+Update your `appsettings.json`:
+
+```json
+{
+  "PrimusIdentity": {
+    "PortalUrl": "https://your-portal-url.com",
+    "ClientId": "your-client-id",
+    "ClientSecret": "your-client-secret",
+    "Mode": "AzureAd",  // Options: "Local", "AzureAd", or "Hybrid"
+    "TenantId": "<YOUR_AZURE_AD_TENANT_ID>",  // Required for Azure AD mode
+    "JwksCacheTtl": 24  // Optional: Cache TTL in hours (default: 24)
+  }
+}
+```
+
+#### For Node.js Applications
+
+```javascript
+const { IdentityValidator } = require('primus-identity-validator');
+
+const config = {
+  portalUrl: 'https://your-portal-url.com',
+  clientId: 'your-client-id',
+  clientSecret: 'your-client-secret',
+  mode: 'AzureAd',  // Options: 'Local', 'AzureAd', or 'Hybrid'
+  tenantId: process.env.AZURE_TENANT_ID,  // Required for Azure AD mode
+  jwksCacheTtl: 24  // Optional: Cache TTL in hours
+};
+
+const validator = new IdentityValidator(config);
+app.use(validator.middleware());
+```
+
+### Setting Up Azure AD App Registration
+
+1. **Navigate to Azure Portal**: [https://portal.azure.com](https://portal.azure.com)
+2. Go to **Azure Active Directory** → **App registrations** → **New registration**
+3. **Register Application**:
+   - **Name**: Your application name
+   - **Supported account types**: Choose based on requirements (single/multi-tenant)
+   - **Redirect URI**: Configure as needed for your auth flow
+4. **Obtain Tenant ID**:
+   - Go to **Overview** tab after registration
+   - Copy the **Directory (tenant) ID** (GUID format)
+   - Use this value in your SDK configuration
+5. **Configure API Permissions** (if needed):
+   - Add required permissions for your application
+   - Grant admin consent if necessary
+
+### Configuration Options
+
+- **Mode**: Authentication mode
+  - `Local`: JWT validation with symmetric keys (HS256)
+  - `AzureAd`: JWKS validation with Azure AD public keys (RS256)
+  - `Hybrid`: Support both modes simultaneously
+- **TenantId**: Your Azure AD tenant ID (GUID or domain name) - **REQUIRED** for Azure AD mode
+- **JwksCacheTtl**: JWKS cache duration in hours - **OPTIONAL** (default: 24 hours)
+
+### Testing Azure AD Integration
+
+Use Azure CLI to get a test token:
+
+```powershell
+# Login to Azure
+az login
+
+# Get access token
+$token = az account get-access-token --query accessToken -o tsv
+
+# Use the token in your API requests
+curl -H "Authorization: Bearer $token" https://your-api.com/api/protected
+```
+
+For more details, see:
+- [.NET Example with Azure AD](./examples/dotnet-api/README.md)
+- [Node.js Example with Azure AD](./examples/nodejs-express/README.md)
+- [Test Apps README](./test-apps/README.md)
+
+---
+
 ## Terminology & Naming Standards
 
 **⚠️ Important**: This project uses consistent terminology to avoid confusion.

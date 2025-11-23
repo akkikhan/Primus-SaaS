@@ -74,3 +74,9 @@ app.listen(3000, () => {
 - Keep `clockSkew` small (`<=300s`) and enforce `https` for issuers.
 - Store secrets in env vars or a secret manager; never commit them.
 - Use multiple audiences when serving mobile/web clients that share the same API.
+
+## Update steps
+
+1. Upgrade the package: `npm install primus-identity-validator@latest`.
+2. Confirm your `issuers` still match the `iss` values in tokens (Azure tenant URLs, LocalAuth URL).
+3. Re-run smoke tests on `/api/protected` and any role-gated routes.

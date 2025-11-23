@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PrimusSaaS.Portal.Api.Data;
 using PrimusSaaS.Portal.Api.Models;
+using PrimusSaaS.Portal.Api.Services;
 
 namespace PrimusSaaS.Portal.Api.Controllers;
 
@@ -12,10 +13,17 @@ namespace PrimusSaaS.Portal.Api.Controllers;
 public class ModulesController : ControllerBase
 {
     private readonly PortalDbContext _context;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<ModulesController> _logger;
 
-    public ModulesController(PortalDbContext context)
+    public ModulesController(
+        PortalDbContext context, 
+        IEmailService emailService,
+        ILogger<ModulesController> logger)
     {
         _context = context;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     // GET: api/modules
@@ -148,7 +156,12 @@ public class ModulesController : ControllerBase
     [HttpPost("{moduleId}/versions")]
     public async Task<ActionResult<ModuleVersion>> CreateVersion(int moduleId, [FromBody] CreateVersionRequest request)
     {
-        var module = await _context.Modules.FindAsync(moduleId);
+        var module = await _context.Modules
+            .Include(m => m.ApplicationModules)
+                .ThenInclude(am => am.Application)
+                    .ThenInclude(a => a.Owner)
+            .FirstOrDefaultAsync(m => m.Id == moduleId);
+            
         if (module == null)
         {
             return NotFound();
@@ -174,8 +187,42 @@ public class ModulesController : ControllerBase
             ReleasedAt = request.ReleasedAt ?? DateTime.UtcNow
         };
 
+        // Set navigation property for email service
+        version.Module = module;
+
         _context.ModuleVersions.Add(version);
         await _context.SaveChangesAsync();
+
+        // Send notifications if requested
+        if (request.NotifyClients)
+        {
+            _logger.LogInformation(
+                "Sending notifications for module {ModuleName} version {Version} to {AppCount} applications",
+                module.Name, version.Version, module.ApplicationModules.Count);
+
+            var apps = module.ApplicationModules
+                .Select(am => am.Application)
+                .Distinct()
+                .ToList();
+
+            foreach (var app in apps)
+            {
+                try
+                {
+                    await _emailService.SendVersionPublishedAsync(app, version);
+                    _logger.LogInformation(
+                        "Notification sent to {AppName} ({Email})",
+                        app.Name, app.Owner.Email);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, 
+                        "Failed to send notification to {AppName} ({Email})",
+                        app.Name, app.Owner.Email);
+                    // Continue sending to other apps even if one fails
+                }
+            }
+        }
 
         return CreatedAtAction(nameof(GetModule), new { id = moduleId }, version);
     }
@@ -279,4 +326,12 @@ public record VersionDto
 
 public record CreateModuleRequest(string Name, string ModuleKey, string Description);
 public record UpdateModuleRequest(string Name, string ModuleKey, string Description);
-public record CreateVersionRequest(string Version, bool IsBreakingChange, string ReleaseNotes, string Changelog, string DemoCode, string[] SupportedStacks, DateTime? ReleasedAt = null);
+public record CreateVersionRequest(
+    string Version, 
+    bool IsBreakingChange, 
+    string ReleaseNotes, 
+    string Changelog, 
+    string DemoCode, 
+    string[] SupportedStacks, 
+    DateTime? ReleasedAt = null,
+    bool NotifyClients = false);

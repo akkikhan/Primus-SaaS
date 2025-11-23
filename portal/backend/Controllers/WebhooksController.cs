@@ -18,19 +18,22 @@ public class WebhooksController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly ILogger<WebhooksController> _logger;
     private readonly IEmailService _emailService;
+    private readonly IModuleOwnershipService _moduleOwnershipService;
 
     public WebhooksController(
         PortalDbContext context,
         IWebhookSignatureValidator signatureValidator,
         IConfiguration configuration,
         ILogger<WebhooksController> logger,
-        IEmailService emailService)
+        IEmailService emailService,
+        IModuleOwnershipService moduleOwnershipService)
     {
         _context = context;
         _signatureValidator = signatureValidator;
         _configuration = configuration;
         _logger = logger;
         _emailService = emailService;
+        _moduleOwnershipService = moduleOwnershipService;
     }
 
     [HttpPost("npm-registry")]
@@ -140,7 +143,8 @@ public class WebhooksController : ControllerBase
                 IsBreakingChange = IsBreakingChange(payload.Version),
                 Changelog = payload.Change?.Dist?.Tarball ?? "",
                 DemoCode = "",
-                SupportedStacksJson = "[]"
+                SupportedStacksJson = "[]",
+                Module = mapping.Module
             };
 
             _context.ModuleVersions.Add(moduleVersion);
@@ -148,11 +152,7 @@ public class WebhooksController : ControllerBase
 
             _logger.LogInformation("Created module version {Version} for module {ModuleId}", payload.Version, mapping.ModuleId);
             // Notify applications that have this module integrated
-            var apps = await _context.ApplicationModules
-                .Where(am => am.ModuleId == mapping.ModuleId)
-                .Select(am => am.Application)
-                .Distinct()
-                .ToListAsync();
+            var apps = await _moduleOwnershipService.GetApplicationsForModuleAsync(mapping.ModuleId);
             foreach (var app in apps)
             {
                 await _emailService.SendVersionPublishedAsync(app, moduleVersion);

@@ -2,6 +2,7 @@
 const sidebars = {
   docs: [
     'intro',
+    'module-mapping',
     {
       type: 'category',
       label: 'Integration Guides',

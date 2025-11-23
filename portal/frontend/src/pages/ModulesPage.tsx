@@ -8,12 +8,13 @@ export const ModulesPage = () => {
   const [showModuleModal, setShowModuleModal] = useState(false);
   const [showVersionModal, setShowVersionModal] = useState<number | null>(null);
   const [moduleForm, setModuleForm] = useState({ name: '', description: '', moduleKey: '' });
-  const [versionForm, setVersionForm] = useState({ 
-    version: '', 
-    releaseNotes: '', 
+  const [versionForm, setVersionForm] = useState({
+    version: '',
+    releaseNotes: '',
     changelog: '',
     demoCode: '',
-    isBreakingChange: false 
+    isBreakingChange: false,
+    notifyClients: false
   });
 
   useEffect(() => {
@@ -37,11 +38,12 @@ export const ModulesPage = () => {
       try {
         const versionPayload = {
           ...versionForm,
+          supportedStacks: [],
           releasedAt: new Date().toISOString(),
         };
         await addVersion(showVersionModal, versionPayload);
         setShowVersionModal(null);
-        setVersionForm({ version: '', releaseNotes: '', changelog: '', demoCode: '', isBreakingChange: false });
+        setVersionForm({ version: '', releaseNotes: '', changelog: '', demoCode: '', isBreakingChange: false, notifyClients: false });
       } catch {
         // Error handled by store
       }
@@ -72,31 +74,31 @@ export const ModulesPage = () => {
       {isLoading ? (
         <SkeletonTable rows={5} />
       ) : (
-      <div className="modules__table">
-        <div className="modules__table-head">
-          <span>Name</span>
-          <span>Description</span>
-          <span>Latest Version</span>
-          <span>Published</span>
-          <span>Status</span>
-          <span>Apps Using</span>
-          <span>Actions</span>
-        </div>
-        {modules.map(module => (
-          <div key={module.id} className="modules__row">
-            <span>{module.name}</span>
-            <span>{module.description}</span>
-            <span>{module.latestVersion || 'N/A'}</span>
-            <span>{formatDate(module.latestReleasedAt)}</span>
-            <span>{module.status || 'Active'}</span>
-            <span>{module.usageCount ?? 0}</span>
-            <span className="modules__actions">
-              <button type="button" onClick={() => setShowVersionModal(module.id)}>+ Version</button>
-              <button type="button" onClick={() => handleDelete(module.id, module.name)}>Delete</button>
-            </span>
+        <div className="modules__table">
+          <div className="modules__table-head">
+            <span>Name</span>
+            <span>Description</span>
+            <span>Latest Version</span>
+            <span>Published</span>
+            <span>Status</span>
+            <span>Apps Using</span>
+            <span>Actions</span>
           </div>
-        ))}
-      </div>
+          {modules.map(module => (
+            <div key={module.id} className="modules__row">
+              <span>{module.name}</span>
+              <span>{module.description}</span>
+              <span>{module.latestVersion || 'N/A'}</span>
+              <span>{formatDate(module.latestReleasedAt)}</span>
+              <span>{module.status || 'Active'}</span>
+              <span>{module.usageCount ?? 0}</span>
+              <span className="modules__actions">
+                <button type="button" onClick={() => setShowVersionModal(module.id)}>+ Version</button>
+                <button type="button" onClick={() => handleDelete(module.id, module.name)}>Delete</button>
+              </span>
+            </div>
+          ))}
+        </div>
       )}
 
       {showModuleModal && (
@@ -197,6 +199,17 @@ export const ModulesPage = () => {
                     onChange={(e) => setVersionForm({ ...versionForm, isBreakingChange: e.target.checked })}
                   />
                   Breaking Change
+                </label>
+              </div>
+              <div className="form-group form-group--checkbox">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={versionForm.notifyClients}
+                    onChange={(e) => setVersionForm({ ...versionForm, notifyClients: e.target.checked })}
+                  />
+                  Notify Clients
+                  <span className="hint"> (Send email notifications to all apps using this module)</span>
                 </label>
               </div>
               <div className="modal-actions">

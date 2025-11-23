@@ -8,4 +8,5 @@ public class EmailSettings
     public string SmtpPass { get; set; } = string.Empty;
     public string FromAddress { get; set; } = string.Empty;
     public bool EnableSsl { get; set; } = true;
+    public string DocsBaseUrl { get; set; } = "http://localhost:3001";
 }

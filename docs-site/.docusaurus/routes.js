@@ -39,15 +39,15 @@ export default [
   },
   {
     path: '/docs',
-    component: ComponentCreator('/docs', 'cdb'),
+    component: ComponentCreator('/docs', '1cb'),
     routes: [
       {
         path: '/docs',
-        component: ComponentCreator('/docs', '201'),
+        component: ComponentCreator('/docs', '5fb'),
         routes: [
           {
             path: '/docs',
-            component: ComponentCreator('/docs', 'a18'),
+            component: ComponentCreator('/docs', '6f6'),
             routes: [
               {
                 path: '/docs/',
@@ -63,9 +63,8 @@ export default [
               },
               {
                 path: '/docs/integrations/java-spring-boot',
-                component: ComponentCreator('/docs/integrations/java-spring-boot', '758'),
-                exact: true,
-                sidebar: "docs"
+                component: ComponentCreator('/docs/integrations/java-spring-boot', 'aa1'),
+                exact: true
               },
               {
                 path: '/docs/integrations/node-express',
@@ -78,6 +77,11 @@ export default [
                 component: ComponentCreator('/docs/integrations/overview', 'ac0'),
                 exact: true,
                 sidebar: "docs"
+              },
+              {
+                path: '/docs/module-mapping',
+                component: ComponentCreator('/docs/module-mapping', '8aa'),
+                exact: true
               }
             ]
           }

@@ -90,3 +90,9 @@ app.Run();
 - `RequireHttpsMetadata` should be `true` in cloud environments; only disable for local HTTP issuers.
 - Audiences must exactly match the `aud` claim in your tokens; list multiple if needed.
 - Inspect `HttpContext.GetPrimusUser()` in middleware/controllers to trace claim mapping during debugging.
+
+## Update steps
+
+1. Upgrade the NuGet package: `dotnet add package PrimusSaaS.Identity.Validator -v <latest>` (or update in csproj).
+2. Validate `Issuer`/`Authority` values against your tenant(s) and `Audiences` against your API IDs.
+3. Run integration tests on protected and role-gated endpoints; watch logs for issuer/audience mismatches.

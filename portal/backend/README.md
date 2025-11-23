@@ -9,6 +9,7 @@ ASP.NET Core 7.0 Web API for the Primus SaaS Platform portal.
 - **Application Registry**: Manage client applications and their integrated modules
 - **Documentation Generation**: Auto-generate integration docs with code snippets
 - **Database**: Entity Framework Core with SQL Server
+- **Notifications**: Email on app creation, module assignment, and version updates (major-only)
 
 ## Prerequisites
 
@@ -49,6 +50,21 @@ The API will start at:
 
 Swagger UI available at: `https://localhost:7001/swagger`
 
+### 4. Email/Docs configuration
+
+- Set SMTP and docs host in `appsettings.json`:
+  ```json
+  "EmailSettings": {
+    "SmtpHost": "...",
+    "SmtpPort": 587,
+    "SmtpUser": "...",
+    "SmtpPass": "...",
+    "EnableSsl": true,
+    "FromAddress": "...",
+    "DocsBaseUrl": "http://localhost:3001" // update when docs are hosted
+  }
+  ```
+
 ## Default Credentials
 
 - **Email**: `admin@primussaas.com`
@@ -77,6 +93,7 @@ Swagger UI available at: `https://localhost:7001/swagger`
 - `GET /api/applications/{id}` - Get application details
 - `POST /api/applications` - Register new application
 - `POST /api/applications/{id}/modules` - Integrate module into application
+- `POST /api/applications/{id}/modules/{moduleId}/version` - Change module version
 - `DELETE /api/applications/{id}` - Delete application
 
 ### Documentation
