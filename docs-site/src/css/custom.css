@@ -8,6 +8,10 @@
   --ifm-code-font-size: 95%;
   --ifm-background-color: #0b1520;
   --ifm-hero-background-color: transparent;
+  --ifm-navbar-background-color: rgba(11, 21, 32, 0.9);
+  --ifm-navbar-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --ifm-code-background: rgba(16, 42, 56, 0.7);
+  --ifm-pre-background: #0f1c2b;
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
@@ -23,6 +27,10 @@ body {
   color: #e5f5f0;
 }
 
+.navbar {
+  backdrop-filter: blur(10px);
+}
+
 .hero__title,
 .hero__subtitle {
   color: #e5f5f0;
@@ -30,6 +38,15 @@ body {
 
 .button--primary {
   box-shadow: 0 12px 30px rgba(15, 118, 110, 0.25);
+}
+
+.theme-doc-markdown code {
+  background: rgba(16, 42, 56, 0.7);
+  color: #f1fbf8;
+  border-radius: 6px;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid #143449;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .codeFrame {

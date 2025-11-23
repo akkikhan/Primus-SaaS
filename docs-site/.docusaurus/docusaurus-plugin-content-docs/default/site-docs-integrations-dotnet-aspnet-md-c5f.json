@@ -18,5 +18,9 @@
   "previous": {
     "title": "Node.js (Express)",
     "permalink": "/docs/integrations/node-express"
+  },
+  "next": {
+    "title": "Java (Spring Boot Resource Server)",
+    "permalink": "/docs/integrations/java-spring-boot"
   }
 }

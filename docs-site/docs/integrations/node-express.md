@@ -71,6 +71,6 @@ app.listen(3000, () => {
 
 ## Harden for production
 
-- Keep `clockSkew` small (<=300s) and enforce `https` for issuers.
+- Keep `clockSkew` small (`<=300s`) and enforce `https` for issuers.
 - Store secrets in env vars or a secret manager; never commit them.
 - Use multiple audiences when serving mobile/web clients that share the same API.

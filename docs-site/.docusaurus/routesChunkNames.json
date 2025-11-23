@@ -42,17 +42,17 @@
       "plugin": "plugin---docusaurus-debugb-38-ad3"
     }
   },
-  "/docs-613": {
+  "/docs-cdb": {
     "__comp": "__comp---theme-docs-root-5-e-9-0b6",
     "__context": {
       "plugin": "plugin---docsaba-d7c"
     }
   },
-  "/docs-bba": {
+  "/docs-201": {
     "__comp": "__comp---theme-doc-version-roota-7-b-5de",
     "__props": "__props---docs-005-788"
   },
-  "/docs-027": {
+  "/docs-a18": {
     "__comp": "__comp---theme-doc-roota-94-67a"
   },
   "/docs/-be8": {
@@ -62,6 +62,10 @@
   "/docs/integrations/dotnet-aspnet-c73": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---docs-integrations-dotnet-aspnetc-5-f-e84"
+  },
+  "/docs/integrations/java-spring-boot-758": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-integrations-java-spring-boot-688-158"
   },
   "/docs/integrations/node-express-86a": {
     "__comp": "__comp---theme-doc-item-178-a40",

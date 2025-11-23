@@ -16,6 +16,11 @@
               "sidebar": "docs"
             },
             {
+              "id": "integrations/java-spring-boot",
+              "path": "/docs/integrations/java-spring-boot",
+              "sidebar": "docs"
+            },
+            {
               "id": "integrations/node-express",
               "path": "/docs/integrations/node-express",
               "sidebar": "docs"

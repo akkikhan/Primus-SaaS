@@ -9,7 +9,8 @@ const sidebars = {
       items: [
         'integrations/overview',
         'integrations/node-express',
-        'integrations/dotnet-aspnet'
+        'integrations/dotnet-aspnet',
+        'integrations/java-spring-boot'
       ]
     }
   ]

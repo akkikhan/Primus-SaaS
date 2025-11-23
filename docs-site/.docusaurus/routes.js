@@ -39,15 +39,15 @@ export default [
   },
   {
     path: '/docs',
-    component: ComponentCreator('/docs', '613'),
+    component: ComponentCreator('/docs', 'cdb'),
     routes: [
       {
         path: '/docs',
-        component: ComponentCreator('/docs', 'bba'),
+        component: ComponentCreator('/docs', '201'),
         routes: [
           {
             path: '/docs',
-            component: ComponentCreator('/docs', '027'),
+            component: ComponentCreator('/docs', 'a18'),
             routes: [
               {
                 path: '/docs/',
@@ -58,6 +58,12 @@ export default [
               {
                 path: '/docs/integrations/dotnet-aspnet',
                 component: ComponentCreator('/docs/integrations/dotnet-aspnet', 'c73'),
+                exact: true,
+                sidebar: "docs"
+              },
+              {
+                path: '/docs/integrations/java-spring-boot',
+                component: ComponentCreator('/docs/integrations/java-spring-boot', '758'),
                 exact: true,
                 sidebar: "docs"
               },

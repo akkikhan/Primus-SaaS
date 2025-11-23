@@ -1,0 +1,22 @@
+{
+  "id": "integrations/java-spring-boot",
+  "title": "Java (Spring Boot Resource Server)",
+  "description": "Secure Spring Boot APIs with Azure AD and LocalAuth using the built-in OAuth2 resource server plus an AuthenticationManagerResolver to route tokens by issuer.",
+  "source": "@site/docs/integrations/java-spring-boot.md",
+  "sourceDirName": "integrations",
+  "slug": "/integrations/java-spring-boot",
+  "permalink": "/docs/integrations/java-spring-boot",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "java-spring-boot",
+    "title": "Java (Spring Boot Resource Server)"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": ".NET 8 (ASP.NET Core Minimal API)",
+    "permalink": "/docs/integrations/dotnet-aspnet"
+  }
+}
