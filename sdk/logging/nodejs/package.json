@@ -31,7 +31,9 @@
         "ts-jest": "^29.1.0",
         "typescript": "^5.0.0"
     },
-    "dependencies": {},
+    "dependencies": {
+        "express": "^5.1.0"
+    },
     "files": [
         "dist",
         "README.md"

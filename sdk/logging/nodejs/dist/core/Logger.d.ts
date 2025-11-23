@@ -11,7 +11,21 @@ export interface Timer {
 export declare class Logger {
     private options;
     private minLevelValue;
+    private contextManager;
+    private currentRequest?;
+    private targets;
     constructor(options: LoggerOptions);
+    private initializeTargets;
+    private createTarget;
+    /**
+     * Set the current request for context enrichment
+     * This should be called by middleware in web frameworks
+     */
+    setRequest(request: any): void;
+    /**
+     * Clear the current request
+     */
+    clearRequest(): void;
     /**
      * Log a DEBUG message
      */

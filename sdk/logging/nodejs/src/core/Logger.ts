@@ -1,6 +1,10 @@
 import { LogLevel, LogLevelValue } from './LogLevel';
 import { LogEntry, createLogEntry } from './LogEntry';
-import { LoggerOptions } from './LoggerOptions';
+import { LoggerOptions, TargetConfig } from './LoggerOptions';
+import { Context } from './Context';
+import { Target } from '../targets/Target';
+import { ConsoleTarget } from '../targets/ConsoleTarget';
+import { FileTarget } from '../targets/FileTarget';
 
 /**
  * Timer for performance tracking
@@ -15,6 +19,9 @@ export interface Timer {
 export class Logger {
     private options: LoggerOptions;
     private minLevelValue: number;
+    private contextManager: Context;
+    private currentRequest?: any;
+    private targets: Target[] = [];
 
     constructor(options: LoggerOptions) {
         this.options = {
@@ -24,6 +31,47 @@ export class Logger {
         };
 
         this.minLevelValue = LogLevelValue[this.options.minLevel!];
+        this.contextManager = new Context();
+
+        this.initializeTargets();
+    }
+
+    private initializeTargets(): void {
+        if (!this.options.targets) return;
+
+        for (const config of this.options.targets) {
+            const target = this.createTarget(config);
+            if (target) {
+                this.targets.push(target);
+            }
+        }
+    }
+
+    private createTarget(config: TargetConfig): Target | null {
+        switch (config.type) {
+            case 'console':
+                return new ConsoleTarget({ pretty: config.pretty });
+            case 'file':
+                return new FileTarget({ path: config.path });
+            default:
+                console.warn(`Unknown target type: ${config.type}`);
+                return null;
+        }
+    }
+
+    /**
+     * Set the current request for context enrichment
+     * This should be called by middleware in web frameworks
+     */
+    setRequest(request: any): void {
+        this.currentRequest = request;
+    }
+
+    /**
+     * Clear the current request
+     */
+    clearRequest(): void {
+        this.currentRequest = undefined;
     }
 
     /**
@@ -91,13 +139,19 @@ export class Logger {
             return;
         }
 
-        // Create log entry
-        const logEntry = createLogEntry(level, message, {
-            ...this.getBaseContext(),
-            ...context
-        });
+        // Get base context
+        const baseContext = this.getBaseContext();
 
-        // Write to targets (for now, just console)
+        // Enrich with request context (if available)
+        const enrichedContext = this.contextManager.enrich(
+            { ...baseContext, ...context },
+            this.currentRequest
+        );
+
+        // Create log entry
+        const logEntry = createLogEntry(level, message, enrichedContext);
+
+        // Write to all targets
         this.writeToTargets(logEntry);
     }
 
@@ -115,8 +169,12 @@ export class Logger {
      * Write log entry to all targets
      */
     private writeToTargets(logEntry: LogEntry): void {
-        // For now, just write to console
-        // We'll implement proper targets in Day 4
-        console.log(JSON.stringify(logEntry));
+        for (const target of this.targets) {
+            try {
+                target.write(logEntry);
+            } catch (error) {
+                console.error('Failed to write to log target:', error);
+            }
+        }
     }
 }

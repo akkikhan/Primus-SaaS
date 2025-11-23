@@ -1,0 +1,40 @@
+
+> @primus-saas/logging@1.0.0 test
+> jest
+
+PASS src/enrichers/__tests__/enrichers.test.ts (5.48 s)
+PASS src/core/__tests__/Logger.test.ts (5.636 s)
+FAIL src/__tests__/integration.test.ts
+  ΓùÅ Test suite failed to run
+
+    src/__tests__/integration.test.ts:39:13 - error TS2322: Type '"test"' is not assignable to type '"development" | "testing" | "production"'.
+
+    39             environment: 'test',
+                   ~~~~~~~~~~~
+
+      src/core/LoggerOptions.ts:48:5
+        48     environment: 'development' | 'testing' | 'production';
+               ~~~~~~~~~~~
+        The expected type comes from property 'environment' which is declared here on type 'LoggerOptions'
+
+FAIL src/targets/__tests__/targets.test.ts
+  ΓùÅ Test suite failed to run
+
+    src/targets/__tests__/targets.test.ts:71:27 - error TS18048: 'activeTarget' is possibly 'undefined'.
+
+    71                     await activeTarget.close();
+                                 ~~~~~~~~~~~~
+    src/targets/__tests__/targets.test.ts:75:62 - error TS2304: Cannot find name 'entry'.
+
+    75                     expect(content).toContain(JSON.stringify(entry));
+                                                                    ~~~~~
+    src/targets/__tests__/targets.test.ts:76:18 - error TS1472: 'catch' or 'finally' expected.
+
+    76                 });
+                        ~
+
+Test Suites: 2 failed, 2 passed, 4 total
+Tests:       25 passed, 25 total
+Snapshots:   0 total
+Time:        7.725 s, estimated 8 s
+Ran all test suites.
