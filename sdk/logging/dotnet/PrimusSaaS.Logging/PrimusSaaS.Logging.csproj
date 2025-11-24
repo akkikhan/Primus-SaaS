@@ -7,7 +7,7 @@
     
     <!-- Package Metadata -->
     <PackageId>PrimusSaaS.Logging</PackageId>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <Authors>Primus SaaS</Authors>
     <Company>Primus SaaS</Company>
     <Product>PrimusSaaS Logging SDK</Product>

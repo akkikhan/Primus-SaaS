@@ -9,10 +9,11 @@ import { TenantEnricher } from './enrichers/TenantEnricher';
 import { Target } from './targets/Target';
 import { ConsoleTarget } from './targets/ConsoleTarget';
 import { FileTarget } from './targets/FileTarget';
+import { primusLoggingMiddleware } from './middleware/express';
 /**
  * Creates a new logger instance
  */
 export declare function createLogger(options: LoggerOptions): Logger;
-export { Logger, LogLevel, LoggerOptions, LogEntry, Context, RequestEnricher, UserEnricher, TenantEnricher, Target, ConsoleTarget, FileTarget };
+export { Logger, LogLevel, LoggerOptions, LogEntry, Context, RequestEnricher, UserEnricher, TenantEnricher, Target, ConsoleTarget, FileTarget, primusLoggingMiddleware };
 export type { Timer } from './core/Logger';
 //# sourceMappingURL=index.d.ts.map

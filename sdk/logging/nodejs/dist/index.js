@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.FileTarget = exports.ConsoleTarget = exports.TenantEnricher = exports.UserEnricher = exports.RequestEnricher = exports.Context = exports.LogLevel = exports.Logger = void 0;
+exports.primusLoggingMiddleware = exports.FileTarget = exports.ConsoleTarget = exports.TenantEnricher = exports.UserEnricher = exports.RequestEnricher = exports.Context = exports.LogLevel = exports.Logger = void 0;
 exports.createLogger = createLogger;
 const Logger_1 = require("./core/Logger");
 Object.defineProperty(exports, "Logger", { enumerable: true, get: function () { return Logger_1.Logger; } });
@@ -18,6 +18,8 @@ const ConsoleTarget_1 = require("./targets/ConsoleTarget");
 Object.defineProperty(exports, "ConsoleTarget", { enumerable: true, get: function () { return ConsoleTarget_1.ConsoleTarget; } });
 const FileTarget_1 = require("./targets/FileTarget");
 Object.defineProperty(exports, "FileTarget", { enumerable: true, get: function () { return FileTarget_1.FileTarget; } });
+const express_1 = require("./middleware/express");
+Object.defineProperty(exports, "primusLoggingMiddleware", { enumerable: true, get: function () { return express_1.primusLoggingMiddleware; } });
 /**
  * Creates a new logger instance
  */
