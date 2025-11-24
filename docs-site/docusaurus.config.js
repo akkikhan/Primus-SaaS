@@ -3,8 +3,8 @@
 const config = {
   title: 'Primus Integration Docs',
   tagline: 'Public integration recipes for Node.js and .NET 8',
-  url: 'https://primus-saas-docs.com',
-  baseUrl: '/',
+  url: 'https://akkikhan.github.io',
+  baseUrl: '/Primus-SaaS/',
   onBrokenLinks: 'throw',
   markdown: {
     hooks: {
@@ -12,8 +12,8 @@ const config = {
     }
   },
   favicon: 'img/favicon.ico',
-  organizationName: 'Primus',
-  projectName: 'primus-integration-docs',
+  organizationName: 'akkikhan',
+  projectName: 'Primus-SaaS',
   i18n: {
     defaultLocale: 'en',
     locales: ['en']
