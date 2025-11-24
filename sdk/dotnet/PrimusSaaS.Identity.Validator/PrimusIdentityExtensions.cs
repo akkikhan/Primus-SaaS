@@ -173,47 +173,6 @@ public static class PrimusIdentityExtensions
 
                 options.Events = new JwtBearerEvents
                 {
-                    OnTokenValidated = async context =>
-                    {
-                        var logger = context.HttpContext.RequestServices.GetService<ILoggerFactory>()?.CreateLogger("PrimusSaaS.Identity.Validator");
-                        try
-                        {
-                            var principal = context.Principal;
-                            if (principal == null) return;
-
-                            // Resolve Tenant Context
-                            var tenantResolver = context.HttpContext.RequestServices.GetService<ITenantResolver>();
-                            if (tenantResolver != null)
-                            {
-                                var claimsDict = principal.Claims.ToDictionary(c => c.Type, c => (object)c.Value);
-                                var tokenClaims = new TokenClaims(claimsDict);
-                                var tenantContext = await tenantResolver.ResolveAsync(tokenClaims);
-                                
-                                if (tenantContext != null)
-                                {
-                                    context.HttpContext.Items["TenantContext"] = tenantContext;
-                                }
-                            }
-                            else if (primusOptions.TenantResolver != null)
-                            {
-                                var claimsDict = principal.Claims.ToDictionary(c => c.Type, c => (object)c.Value);
-                                var tokenClaims = new TokenClaims(claimsDict);
-                                var tenantContext = primusOptions.TenantResolver(tokenClaims);
-                                
-                                if (tenantContext != null)
-                                {
-                                    context.HttpContext.Items["TenantContext"] = tenantContext;
-                                }
-                            }
-
-                            logger?.LogInformation("Primus Identity: Token validated for user - {UserName}", principal.Identity?.Name);
-                        }
-                        catch (Exception ex)
-                        {
-                            logger?.LogWarning("Primus Identity: Post-validation logic failed: {Reason}", ex.Message);
-                            context.Fail(ex);
-                        }
-                    },
                     OnAuthenticationFailed = context =>
                     {
                         var logger = context.HttpContext.RequestServices.GetService<ILoggerFactory>()?.CreateLogger("PrimusSaaS.Identity.Validator");
