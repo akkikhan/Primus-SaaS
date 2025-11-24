@@ -1,6 +1,6 @@
 # Primus SaaS Identity Validator - Node.js SDK
 
-**Version:** 1.1.0
+**Version:** 1.3.0
 
 Library-only validator for JWT/OIDC tokens from your configured issuers (Azure AD, local, or any JWT provider). No Primus-hosted login or Primus-issued tokens.
 
@@ -17,7 +17,7 @@ Library-only validator for JWT/OIDC tokens from your configured issuers (Azure A
 ## Installation
 
 ```bash
-npm install primus-identity-validator
+npm install @primus-saas/identity-validator
 ```
 
 ## Quick Start
@@ -26,7 +26,7 @@ npm install primus-identity-validator
 
 ```typescript
 import express from 'express';
-import { primusIdentityMiddleware } from 'primus-identity-validator';
+import { primusIdentityMiddleware } from '@primus-saas/identity-validator';
 
 const app = express();
 
@@ -150,7 +150,7 @@ const primusAuth = primusIdentityMiddleware({
 ### Role-Based Access Control
 
 ```typescript
-import { primusIdentityMiddleware, requireRoles } from 'primus-identity-validator';
+import { primusIdentityMiddleware, requireRoles } from '@primus-saas/identity-validator';
 
 // Multiple roles (user needs at least one)
 app.get('/api/admin', primusAuth, requireRoles('Admin', 'SuperAdmin'), (req, res) => {
@@ -166,7 +166,7 @@ app.get('/api/manager', primusAuth, requireRoles('Manager'), (req, res) => {
 ### Using the Validator Directly
 
 ```typescript
-import { PrimusIdentityValidator } from 'primus-identity-validator';
+import { PrimusIdentityValidator } from '@primus-saas/identity-validator';
 
 const validator = new PrimusIdentityValidator({
   issuers: [
