@@ -10,13 +10,13 @@ dotnet add package PrimusSaaS.Identity.Validator
 
 Or via NuGet Package Manager:
 
-```
+```powershell
 Install-Package PrimusSaaS.Identity.Validator
 ```
 
 ## Quick Start
 
-### 1. Configure in `Program.cs` or `Startup.cs`
+### 1. Configure in Program.cs or Startup.cs
 
 ```csharp
 using PrimusSaaS.Identity.Validator;
@@ -134,24 +134,24 @@ if (primusUser != null)
 
 | Option | Required | Description | Default |
 |--------|----------|-------------|---------|
-| `Issuers` | Yes | List of issuer configs (Oidc or Jwt) | - |
-| `ValidateLifetime` | No | Validate token expiration | `true` |
-| `RequireHttpsMetadata` | No | Require HTTPS for metadata | `true` |
-| `ClockSkew` | No | Allowed time difference | 5 minutes |
-| `JwksCacheTtl` | No | JWKS cache TTL (OIDC) | 24 hours |
-| `TenantResolver` | No | Map claims → `TenantContext` | `null` |
+| Issuers | Yes | List of issuer configs (Oidc or Jwt) | - |
+| ValidateLifetime | No | Validate token expiration | true |
+| RequireHttpsMetadata | No | Require HTTPS for metadata | true |
+| ClockSkew | No | Allowed time difference | 5 minutes |
+| JwksCacheTtl | No | JWKS cache TTL (OIDC) | 24 hours |
+| TenantResolver | No | Map claims to TenantContext | null |
 
 ### IssuerConfig
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `Name` | Yes | Friendly name (e.g., AzureAD, LocalAuth) |
-| `Type` | Yes | `Oidc` or `Jwt` |
-| `Issuer` | Yes | Expected `iss` value to route tokens |
-| `Authority` | OIDC only | Authority URL for discovery/JWKS |
-| `JwksUrl` | JWT optional | JWKS endpoint (if not using `Secret`) |
-| `Secret` | JWT optional | Symmetric key for HMAC tokens |
-| `Audiences` | Yes | Allowed audience values |
+| Name | Yes | Friendly name (e.g., AzureAD, LocalAuth) |
+| Type | Yes | Oidc or Jwt |
+| Issuer | Yes | Expected iss value to route tokens |
+| Authority | OIDC only | Authority URL for discovery/JWKS |
+| JwksUrl | JWT optional | JWKS endpoint (if not using Secret) |
+| Secret | JWT optional | Symmetric key for HMAC tokens |
+| Audiences | Yes | Allowed audience values |
 
 ## Configuration from appsettings.json
 
@@ -181,8 +181,7 @@ if (primusUser != null)
 
 ## Generating Tokens for Local JWT Issuer
 
-> [!IMPORTANT]
-> The `Secret`, `Issuer`, and `Audience` values used when generating tokens **MUST EXACTLY MATCH** your validator configuration.
+> **Important:** The Secret, Issuer, and Audience values used when generating tokens MUST EXACTLY MATCH your validator configuration.
 
 ### Quick Example
 
@@ -194,7 +193,7 @@ using Microsoft.IdentityModel.Tokens;
 
 public string GenerateLocalJwtToken(string userId, string email, string name)
 {
-    // ⚠️ CRITICAL: Load from same configuration source
+    // Critical: Load from same configuration source
     var secret = _config["PrimusIdentity:Issuers:1:Secret"];
     var issuer = _config["PrimusIdentity:Issuers:1:Issuer"];
     var audience = _config["PrimusIdentity:Issuers:1:Audiences:0"];
@@ -224,7 +223,7 @@ public string GenerateLocalJwtToken(string userId, string email, string name)
 }
 ```
 
-**📚 For complete token generation examples, see [TOKEN_GENERATION_GUIDE.md](./TOKEN_GENERATION_GUIDE.md)**
+For complete token generation examples, see [TOKEN_GENERATION_GUIDE.md](./TOKEN_GENERATION_GUIDE.md)
 
 ## Troubleshooting
 
@@ -232,27 +231,26 @@ public string GenerateLocalJwtToken(string userId, string email, string name)
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| `Invalid signature` | Secret key mismatch | Ensure token generation and validation use the same secret |
-| `Untrusted issuer` | Issuer format incorrect | Use full URL format (e.g., `https://localhost:5265`) not name |
-| `Invalid audience` | Audience mismatch | Use API identifier format (e.g., `api://your-app-id`) |
-| `Token expired` | Token past expiration | Generate new token or increase `ClockSkew` |
+| Invalid signature | Secret key mismatch | Ensure token generation and validation use the same secret |
+| Untrusted issuer | Issuer format incorrect | Use full URL format (e.g., https://localhost:5265) not name |
+| Invalid audience | Audience mismatch | Use API identifier format (e.g., api://your-app-id) |
+| Token expired | Token past expiration | Generate new token or increase ClockSkew |
 
-**📚 For detailed troubleshooting, see [ERROR_REFERENCE.md](./ERROR_REFERENCE.md)**
+For detailed troubleshooting, see [ERROR_REFERENCE.md](./ERROR_REFERENCE.md)
 
 ## Production Deployment
 
-> [!CAUTION]
-> Never commit secrets to source control! Use Azure Key Vault or environment variables.
+> **Caution:** Never commit secrets to source control! Use Azure Key Vault or environment variables.
 
 ### Quick Checklist
 
 - [ ] Secrets stored in Azure Key Vault
-- [ ] `RequireHttpsMetadata: true` in production
+- [ ] RequireHttpsMetadata: true in production
 - [ ] HTTPS redirection enabled
 - [ ] CORS configured for production domains
 - [ ] Logging and monitoring configured
 
-**📚 For complete deployment guide, see [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md)**
+For complete deployment guide, see [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md)
 
 ## Client Usage Example
 
@@ -263,7 +261,8 @@ using System.Net.Http.Headers;
 
 
 var httpClient = new HttpClient();
-var jwtToken = "your-jwt-token-from-primus-portal";
+var jwtToken = "your-jwt-token-here"; // From your auth system or token generator
+
 
 // Add token to Authorization header
 httpClient.DefaultRequestHeaders.Authorization = 
@@ -280,7 +279,6 @@ var data = await response.Content.ReadAsStringAsync();
 ```csharp
 builder.Services.AddPrimusIdentity(options =>
 {
-    options.PortalUrl = "http://localhost:5000";
     options.RequireHttpsMetadata = false; // Allow HTTP in development
     // ... other options
 });
@@ -307,20 +305,20 @@ The SDK automatically logs authentication events to the console. For more detail
 
 ## Documentation
 
-- **[TOKEN_GENERATION_GUIDE.md](./TOKEN_GENERATION_GUIDE.md)** - Complete guide to generating JWT tokens
-- **[ERROR_REFERENCE.md](./ERROR_REFERENCE.md)** - Troubleshooting validation errors
-- **[PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md)** - Production deployment best practices
-- **[SECRET_MANAGEMENT.md](./SECRET_MANAGEMENT.md)** - Securely managing secrets (Key Vault, User Secrets)
-- **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** - Testing guide with Postman & Integration Tests
-- **[CLAIMS_MAPPING.md](./CLAIMS_MAPPING.md)** - Reference for required and optional claims
+- [TOKEN_GENERATION_GUIDE.md](./TOKEN_GENERATION_GUIDE.md) - Complete guide to generating JWT tokens
+- [ERROR_REFERENCE.md](./ERROR_REFERENCE.md) - Troubleshooting validation errors
+- [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md) - Production deployment best practices
+- [SECRET_MANAGEMENT.md](./SECRET_MANAGEMENT.md) - Securely managing secrets (Key Vault, User Secrets)
+- [TESTING_GUIDE.md](./TESTING_GUIDE.md) - Testing guide with Postman & Integration Tests
+- [CLAIMS_MAPPING.md](./CLAIMS_MAPPING.md) - Reference for required and optional claims
+- [ANGULAR_INTEGRATION.md](./ANGULAR_INTEGRATION.md) - Integration guide for Angular applications
 
 ## Support
 
 For issues, questions, or contributions, visit:
-- GitHub: https://github.com/akkikhan/Primus-SaaS
-- Documentation: https://portal.primus-saas.com/docs
+- GitHub: https://github.com/primus-saas/identity-validator
+- Documentation: https://docs.primus-saas.com
 
 ## License
 
 MIT License - see LICENSE file for details
-

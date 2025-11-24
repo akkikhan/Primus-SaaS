@@ -24,6 +24,16 @@ public class LoggerOptions
     /// Output targets configuration
     /// </summary>
     public List<TargetConfig> Targets { get; set; } = new() { new TargetConfig { Type = "console" } };
+
+    /// <summary>
+    /// PII Masking configuration
+    /// </summary>
+    public PiiOptions Pii { get; set; } = new();
+
+    /// <summary>
+    /// Custom enrichers to apply to every log entry
+    /// </summary>
+    public List<IEnricher> Enrichers { get; set; } = new();
 }
 
 /// <summary>
@@ -50,4 +60,31 @@ public class TargetConfig
     /// Application Insights connection string
     /// </summary>
     public string? ConnectionString { get; set; }
+
+    /// <summary>
+    /// Max file size in bytes before rotation (default: 10MB)
+    /// </summary>
+    public long MaxFileSize { get; set; } = 10 * 1024 * 1024;
+
+    /// <summary>
+    /// Max number of rotated files to keep (default: 5)
+    /// </summary>
+    public int MaxRetainedFiles { get; set; } = 5;
+
+    /// <summary>
+    /// Whether to compress rotated files (gzip)
+    /// </summary>
+    public bool CompressRotatedFiles { get; set; } = false;
+
+    /// <summary>
+    /// Enable asynchronous logging with buffering
+    /// </summary>
+    public bool Async { get; set; } = false;
+
+    /// <summary>
+    /// Buffer size for async logging (default: 1000)
+    /// </summary>
+    public int BufferSize { get; set; } = 1000;
+
+
 }

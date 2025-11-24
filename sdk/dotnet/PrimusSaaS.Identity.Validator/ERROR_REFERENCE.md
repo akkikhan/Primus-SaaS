@@ -494,4 +494,4 @@ When you encounter a validation error:
 - See [TOKEN_GENERATION_GUIDE.md](./TOKEN_GENERATION_GUIDE.md) for token generation examples
 - See [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md) for production best practices
 - GitHub Issues: https://github.com/akkikhan/Primus-SaaS/issues
-- Documentation: https://portal.primus-saas.com/docs
+- Documentation: https://docs.primus-saas.com

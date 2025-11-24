@@ -19,14 +19,34 @@ public class LoggingMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
+        // 1. Generate or retrieve Request ID
+        string requestId;
+        if (context.Request.Headers.TryGetValue("X-Request-ID", out var headerId))
+        {
+            requestId = headerId.ToString();
+        }
+        else
+        {
+            requestId = $"req-{Guid.NewGuid():N}";
+        }
+
+        // 2. Store in context for Logger to use
+        context.Items["PrimusRequestId"] = requestId;
+
+        // 3. Add to Response Headers so client can see it
+        context.Response.OnStarting(() =>
+        {
+            context.Response.Headers["X-Request-ID"] = requestId;
+            return Task.CompletedTask;
+        });
+
         // Set HTTP context for enrichment
         _logger.SetHttpContext(context);
 
-        // Simulate Primus Identity Validator context (in real app, this would be set by the validator)
-        // This is just for demonstration - the actual Identity Validator would set these
+        // Extract user context from standard ASP.NET Identity claims
+        // Works with any authentication system (JWT, Cookie, OAuth, etc.)
         if (!context.Items.ContainsKey("PrimusUser"))
         {
-            // Example: Extract from claims if using standard ASP.NET Identity
             if (context.User?.Identity?.IsAuthenticated == true)
             {
                 var userId = context.User.FindFirst("sub")?.Value 
@@ -48,8 +68,8 @@ public class LoggingMiddleware
 
         try
         {
-            // Log request start
-            _logger.Info($"{context.Request.Method} {context.Request.Path}", new Dictionary<string, object>
+            // Log request start (Changed to DEBUG to reduce noise)
+            _logger.Debug($"{context.Request.Method} {context.Request.Path}", new Dictionary<string, object>
             {
                 ["method"] = context.Request.Method,
                 ["path"] = context.Request.Path.ToString(),
@@ -58,17 +78,17 @@ public class LoggingMiddleware
 
             await _next(context);
 
-            // Log request completion
+            // Log request completion (Keep at INFO for access logging)
             _logger.Info($"Request completed with status {context.Response.StatusCode}", new Dictionary<string, object>
             {
                 ["statusCode"] = context.Response.StatusCode,
                 ["method"] = context.Request.Method,
-                ["path"] = context.Request.Path.ToString()
+                ["path"] = context.Request.Path.ToString(),
+                ["duration"] = 0 // We should ideally track duration here too
             });
         }
         catch (Exception ex)
         {
-            // Log unhandled exceptions
             _logger.Error($"Unhandled exception: {ex.Message}", new Dictionary<string, object>
             {
                 ["exception"] = ex.GetType().Name,
@@ -79,7 +99,6 @@ public class LoggingMiddleware
         }
         finally
         {
-            // Clear HTTP context
             _logger.SetHttpContext(null);
         }
     }

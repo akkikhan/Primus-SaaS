@@ -4,11 +4,32 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    
+    <!-- Package Metadata -->
+    <PackageId>PrimusSaaS.Logging</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Primus SaaS</Authors>
+    <Company>Primus SaaS</Company>
+    <Product>PrimusSaaS Logging SDK</Product>
+    <Description>Enterprise-grade structured logging library for .NET with PII masking, file rotation, async buffering, and Azure Application Insights integration. Fully compatible with Microsoft.Extensions.Logging.</Description>
+    <PackageTags>logging;structured-logging;aspnetcore;pii-masking;azure-insights;enterprise</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/primus-saas/logging</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/primus-saas/logging</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
     <PackageReference Include="Microsoft.AspNetCore.App" Version="2.2.8" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
   </ItemGroup>
 
 </Project>

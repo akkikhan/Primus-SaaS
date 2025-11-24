@@ -1,7 +1,7 @@
 {
   "name": "primus-identity-validator",
   "version": "1.2.0",
-  "description": "Official Node.js SDK for validating JWT tokens issued by Primus SaaS Portal. Supports Express and NestJS.",
+  "description": "Multi-issuer JWT/OIDC token validator for Node.js. Supports Azure AD, custom JWT issuers, and any OIDC-compliant identity provider. Works with Express and NestJS.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -14,24 +14,29 @@
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\""
   },
   "keywords": [
-    "primus-saas",
     "jwt",
+    "oidc",
     "authentication",
     "identity",
     "validator",
     "express",
     "nestjs",
-    "middleware"
+    "azure-ad",
+    "multi-tenant"
   ],
   "author": "Primus SaaS",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/akkikhan/Primus-SaaS"
+    "url": "https://github.com/primus-saas/identity-validator"
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "TOKEN_GENERATION_GUIDE.md",
+    "ERROR_REFERENCE.md",
+    "PRODUCTION_DEPLOYMENT.md",
+    "CHANGELOG.md"
   ],
   "engines": {
     "node": ">=16.0.0"

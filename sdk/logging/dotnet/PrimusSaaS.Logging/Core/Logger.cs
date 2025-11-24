@@ -10,11 +10,13 @@ public class Logger
 {
     private readonly LoggerOptions _options;
     private readonly List<ITarget> _targets = new();
+    private readonly PiiMasker _piiMasker;
     private HttpContext? _currentHttpContext;
 
     public Logger(LoggerOptions options)
     {
         _options = options;
+        _piiMasker = new PiiMasker(options.Pii);
         InitializeTargets();
     }
 
@@ -32,12 +34,25 @@ public class Logger
 
     private ITarget? CreateTarget(TargetConfig config)
     {
-        return config.Type.ToLowerInvariant() switch
+        ITarget? target = config.Type.ToLowerInvariant() switch
         {
             "console" => new ConsoleTarget(config.Pretty),
-            "file" => new FileTarget(config.Path ?? "logs/app.log"),
+            "file" => new FileTarget(
+                config.Path ?? "logs/app.log", 
+                config.MaxFileSize, 
+                config.MaxRetainedFiles, 
+                config.CompressRotatedFiles
+            ),
+            "applicationinsights" => new ApplicationInsightsTarget(config.ConnectionString),
             _ => null
         };
+
+        if (target != null && config.Async)
+        {
+            return new AsyncTargetWrapper(target, config.BufferSize);
+        }
+
+        return target;
     }
 
     /// <summary>
@@ -130,8 +145,26 @@ public class Logger
             EnrichWithHttpContext(enrichedContext);
         }
 
+        // Apply custom enrichers
+        foreach (var enricher in _options.Enrichers)
+        {
+            try
+            {
+                enricher.Enrich(enrichedContext);
+            }
+            catch (Exception ex)
+            {
+                // Don't let enrichers crash logging
+                Console.Error.WriteLine($"Enricher failed: {ex.Message}");
+            }
+        }
+
+        // Mask PII
+        var maskedMessage = _piiMasker.MaskMessage(message);
+        var maskedContext = _piiMasker.MaskContext(enrichedContext);
+
         // Create log entry
-        var logEntry = LogEntry.Create(level, message, enrichedContext);
+        var logEntry = LogEntry.Create(level, maskedMessage, maskedContext);
 
         // Write to all targets
         WriteToTargets(logEntry);
@@ -151,9 +184,13 @@ public class Logger
         if (_currentHttpContext == null) return;
 
         // Add request ID
-        if (_currentHttpContext.Request.Headers.TryGetValue("X-Request-ID", out var requestId))
+        if (_currentHttpContext.Items.TryGetValue("PrimusRequestId", out var requestId))
         {
-            context["requestId"] = requestId.ToString();
+            context["requestId"] = requestId;
+        }
+        else if (_currentHttpContext.Request.Headers.TryGetValue("X-Request-ID", out var headerId))
+        {
+            context["requestId"] = headerId.ToString();
         }
         else
         {

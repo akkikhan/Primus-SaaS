@@ -1,17 +1,18 @@
 # Primus SaaS Identity Validator - Node.js SDK
 
-**Version:** 1.1.0  
+**Version:** 1.1.0
+
 Library-only validator for JWT/OIDC tokens from your configured issuers (Azure AD, local, or any JWT provider). No Primus-hosted login or Primus-issued tokens.
 
 ## Features
 
-- 🔐 **Multi-Issuer Support**: Configure multiple identity providers (Azure AD, Local, Custom)
-- ⚡ Express middleware for seamless integration
-- 🎯 Role-based access control
-- 🔑 **Azure AD/OIDC**: JWKS fetching, RS256 validation, tenant verification
-- 📝 Full TypeScript support with type definitions
-- ✅ 74 tests passing (100% core logic covered)
-- 🚀 Intelligent JWKS caching (24-hour TTL)
+- **Multi-Issuer Support**: Configure multiple identity providers (Azure AD, Local, Custom)
+- Express middleware for seamless integration
+- Role-based access control
+- **Azure AD/OIDC**: JWKS fetching, RS256 validation, tenant verification
+- Full TypeScript support with type definitions
+- 74 tests passing (100% core logic covered)
+- Intelligent JWKS caching (24-hour TTL)
 
 ## Installation
 
@@ -61,25 +62,25 @@ app.listen(3000);
 
 ### IssuerConfig Options
 
-Each issuer in the `issuers` array accepts:
+Each issuer in the issuers array accepts:
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
-| `name` | string | Yes | Friendly name for this issuer |
-| `type` | `'oidc' \| 'jwt'` | Yes | Type of identity provider |
-| `issuer` | string | Yes | Expected `iss` claim value (used for routing) |
-| `authority` | string | OIDC only | Authority URL for OIDC discovery |
-| `audiences` | string[] | Yes | Valid audience values (`aud` claim) |
-| `secret` | string | JWT only | Shared secret for HMAC validation |
-| `jwksUrl` | string | Optional | JWKS endpoint (alternative to `secret`) |
+| name | string | Yes | Friendly name for this issuer |
+| type | 'oidc' \| 'jwt' | Yes | Type of identity provider |
+| issuer | string | Yes | Expected iss claim value (used for routing) |
+| authority | string | OIDC only | Authority URL for OIDC discovery |
+| audiences | string[] | Yes | Valid audience values (aud claim) |
+| secret | string | JWT only | Shared secret for HMAC validation |
+| jwksUrl | string | Optional | JWKS endpoint (alternative to secret) |
 
 ### Global Options
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `clockSkew` | number | 300 | Clock tolerance in seconds |
-| `validateLifetime` | boolean | true | Validate token expiration |
-| `jwksCacheTtl` | number | 24 | JWKS cache TTL in hours |
+| clockSkew | number | 300 | Clock tolerance in seconds |
+| validateLifetime | boolean | true | Validate token expiration |
+| jwksCacheTtl | number | 24 | JWKS cache TTL in hours |
 
 ## Usage Examples
 
@@ -195,56 +196,56 @@ if (result.isValid) {
 
 ### Token Routing
 
-1. **Extract `iss` claim** from JWT (without verifying signature)
-2. **Match issuer** against configured `issuers` array
+1. **Extract iss claim** from JWT (without verifying signature)
+2. **Match issuer** against configured issuers array
 3. **Route to appropriate validator**:
-   - `type: 'oidc'` → Fetch JWKS, validate with RS256
-   - `type: 'jwt'` → Validate with shared secret (HS256)
+   - type: 'oidc' -> Fetch JWKS, validate with RS256
+   - type: 'jwt' -> Validate with shared secret (HS256)
 4. **Verify signature**, issuer, audience, expiration
 5. **Return result** with claims or error
 
 ### OIDC Validation Flow
 
-For `type: 'oidc'` issuers:
+For type: 'oidc' issuers:
 
-1. Fetch OpenID configuration from `{authority}/.well-known/openid-configuration`
-2. Retrieve JWKS from `jwks_uri`
-3. Find public key matching token's `kid` (Key ID)
+1. Fetch OpenID configuration from {authority}/.well-known/openid-configuration
+2. Retrieve JWKS from jwks_uri
+3. Find public key matching token's kid (Key ID)
 4. Verify RS256 signature
 5. Validate issuer, audience, tenant, expiration
 6. Cache JWKS for 24 hours
 
 ### JWT Validation Flow
 
-For `type: 'jwt'` issuers:
+For type: 'jwt' issuers:
 
-1. Verify HMAC signature using shared `secret`
-2. Validate issuer matches configured `issuer`
-3. Validate audience is in `audiences` array
+1. Verify HMAC signature using shared secret
+2. Validate issuer matches configured issuer
+3. Validate audience is in audiences array
 4. Verify token expiration
 
 ## API Reference
 
-### `primusIdentityMiddleware(options)`
+### primusIdentityMiddleware(options)
 
-Creates Express middleware that validates tokens and attaches user to `req.primusUser`.
+Creates Express middleware that validates tokens and attaches user to req.primusUser.
 
 **Behavior:**
-- Extracts token from `Authorization: Bearer <token>` header
-- Routes to correct validator based on `iss` claim
+- Extracts token from Authorization: Bearer <token> header
+- Routes to correct validator based on iss claim
 - Returns 401 if validation fails
-- Attaches `PrimusUser` to `req.primusUser` on success
+- Attaches PrimusUser to req.primusUser on success
 
-### `requireRoles(...roles: string[])`
+### requireRoles(...roles: string[])
 
 Middleware that enforces role-based access control.
 
 **Returns:**
 - 401 if user not authenticated
 - 403 if user lacks required role
-- Calls `next()` if user has at least one required role
+- Calls next() if user has at least one required role
 
-### `PrimusUser` Interface
+### PrimusUser Interface
 
 ```typescript
 interface PrimusUser {
@@ -264,7 +265,8 @@ The configuration structure has changed from single-mode to multi-issuer:
 
 **OLD (v1.0.0):**
 ```typescript
-❌ const primusAuth = primusIdentityMiddleware({
+// Legacy configuration (Removed)
+const primusAuth = primusIdentityMiddleware({
   portalUrl: '...',
   clientId: '...',
   clientSecret: '...',
@@ -275,7 +277,8 @@ The configuration structure has changed from single-mode to multi-issuer:
 
 **NEW (v1.1.0):**
 ```typescript
-✅ const primusAuth = primusIdentityMiddleware({
+// New configuration
+const primusAuth = primusIdentityMiddleware({
   issuers: [
     {
       name: 'AzureAD',
@@ -290,17 +293,16 @@ The configuration structure has changed from single-mode to multi-issuer:
 
 ### Migration Steps
 
-1. Remove `ValidationMode` imports (no longer exported)
-2. Replace single config object with `issuers` array
-3. For Azure AD: Use `type: 'oidc'` with `authority`
-4. For Local: Use `type: 'jwt'` with `secret`
-5. Map `clientId` → `audiences[0]`
-6. Map `tenantId` → extract from `issuer` URL
+1. Remove ValidationMode imports (no longer exported)
+2. Replace single config object with issuers array
+3. For Azure AD: Use type: 'oidc' with authority
+4. For Local: Use type: 'jwt' with secret
+5. Map clientId -> audiences[0]
+6. Map tenantId -> extract from issuer URL
 
 ## Generating Tokens for Local JWT Issuer
 
-> [!IMPORTANT]
-> The `secret`, `issuer`, and `audiences` values used when generating tokens **MUST EXACTLY MATCH** your validator configuration.
+> **Important:** The secret, issuer, and audiences values used when generating tokens MUST EXACTLY MATCH your validator configuration.
 
 ### Quick Example
 
@@ -308,7 +310,7 @@ The configuration structure has changed from single-mode to multi-issuer:
 const jwt = require('jsonwebtoken');
 
 function generateLocalJwtToken(userId, email, name) {
-  // ⚠️ CRITICAL: Load from same environment variables
+  // Critical: Load from same environment variables
   const secret = process.env.JWT_SECRET;
   const issuer = process.env.JWT_ISSUER;
   const audience = process.env.JWT_AUDIENCE;
@@ -332,7 +334,7 @@ function generateLocalJwtToken(userId, email, name) {
 }
 ```
 
-**📚 For complete token generation examples including frontend integration, see [TOKEN_GENERATION_GUIDE.md](./TOKEN_GENERATION_GUIDE.md)**
+For complete token generation examples including frontend integration, see [TOKEN_GENERATION_GUIDE.md](./TOKEN_GENERATION_GUIDE.md)
 
 ## Troubleshooting
 
@@ -340,18 +342,16 @@ function generateLocalJwtToken(userId, email, name) {
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| `invalid signature` | Secret key mismatch | Ensure token generation and validation use the same secret |
-| `Untrusted issuer` | Issuer format incorrect | Use full URL format (e.g., `https://localhost:4000`) not name |
-| `jwt audience invalid` | Audience mismatch | Use API identifier format (e.g., `api://your-app-id`) |
-| `jwt expired` | Token past expiration | Generate new token or increase `clockSkew` |
-
-
+| invalid signature | Secret key mismatch | Ensure token generation and validation use the same secret |
+| Untrusted issuer | Issuer format incorrect | Use full URL format (e.g., https://localhost:4000) not name |
+| jwt audience invalid | Audience mismatch | Use API identifier format (e.g., api://your-app-id) |
+| jwt expired | Token past expiration | Generate new token or increase clockSkew |
 
 ### "Untrusted issuer: {url}"
 
-**Cause:** Token's `iss` claim doesn't match any configured issuer.
+**Cause:** Token's iss claim doesn't match any configured issuer.
 
-**Solution:** Add issuer to `issuers` array with exact `iss` value:
+**Solution:** Add issuer to issuers array with exact iss value:
 ```typescript
 issuers: [
   {
@@ -365,9 +365,9 @@ issuers: [
 
 ### "Authority URL required for OIDC issuer"
 
-**Cause:** OIDC issuer missing `authority` property.
+**Cause:** OIDC issuer missing authority property.
 
-**Solution:** Add `authority` URL:
+**Solution:** Add authority URL:
 ```typescript
 {
   type: 'oidc',
@@ -379,7 +379,7 @@ issuers: [
 
 ### "Shared secret required for JWT issuer"
 
-**Cause:** JWT issuer missing `secret` property.
+**Cause:** JWT issuer missing secret property.
 
 **Solution:** Provide shared secret:
 ```typescript
@@ -393,9 +393,9 @@ issuers: [
 
 ### Token Expired
 
-**Cause:** Token's `exp` claim is in the past.
+**Cause:** Token's exp claim is in the past.
 
-**Solution:** Increase `clockSkew` for clock drift tolerance:
+**Solution:** Increase clockSkew for clock drift tolerance:
 ```typescript
 {
   issuers: [...],
@@ -403,12 +403,11 @@ issuers: [
 }
 ```
 
-**📚 For detailed troubleshooting, see [ERROR_REFERENCE.md](./ERROR_REFERENCE.md)**
+For detailed troubleshooting, see [ERROR_REFERENCE.md](./ERROR_REFERENCE.md)
 
 ## Production Deployment
 
-> [!CAUTION]
-> Never commit secrets to source control! Use environment variables or secret management services.
+> **Caution:** Never commit secrets to source control! Use environment variables or secret management services.
 
 ### Quick Checklist
 
@@ -418,7 +417,7 @@ issuers: [
 - [ ] Rate limiting enabled
 - [ ] Logging and monitoring configured
 
-**📚 For complete deployment guide, see [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md)**
+For complete deployment guide, see [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md)
 
 ## Development
 
@@ -446,9 +445,9 @@ npm run format
 
 ## Documentation
 
-- **[TOKEN_GENERATION_GUIDE.md](./TOKEN_GENERATION_GUIDE.md)** - Complete guide to generating JWT tokens
-- **[ERROR_REFERENCE.md](./ERROR_REFERENCE.md)** - Troubleshooting validation errors
-- **[PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md)** - Production deployment best practices
+- [TOKEN_GENERATION_GUIDE.md](./TOKEN_GENERATION_GUIDE.md) - Complete guide to generating JWT tokens
+- [ERROR_REFERENCE.md](./ERROR_REFERENCE.md) - Troubleshooting validation errors
+- [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md) - Production deployment best practices
 
 ## License
 
@@ -456,6 +455,6 @@ MIT
 
 ## Support
 
-- Documentation: [https://docs.primus-saas.com](https://docs.primus-saas.com)
-- Issues: [https://github.com/akkikhan/Primus-SaaS/issues](https://github.com/akkikhan/Primus-SaaS/issues)
+- Documentation: https://docs.primus-saas.com
+- Issues: https://github.com/akkikhan/Primus-SaaS/issues
 - Email: support@primus-saas.com

@@ -11,10 +11,10 @@
     <Authors>Primus SaaS</Authors>
     <Company>Primus SaaS</Company>
     <Product>Primus SaaS Identity Validator</Product>
-    <Description>Official .NET SDK for validating JWT tokens issued by Primus SaaS Portal. Provides middleware and extensions for ASP.NET Core applications to authenticate users.</Description>
-    <PackageTags>primus-saas;jwt;authentication;identity;validator;asp-net-core;middleware</PackageTags>
+    <Description>Multi-issuer JWT/OIDC token validator for .NET. Supports Azure AD, custom JWT issuers, and any OIDC-compliant identity provider. Provides middleware and extensions for ASP.NET Core applications.</Description>
+    <PackageTags>jwt;oidc;authentication;identity;validator;asp-net-core;azure-ad;multi-tenant</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/akkikhan/Primus-SaaS</RepositoryUrl>
+    <RepositoryUrl>https://github.com/primus-saas/identity-validator</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
@@ -31,6 +31,13 @@
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="TOKEN_GENERATION_GUIDE.md" Pack="true" PackagePath="\" />
+    <None Include="ERROR_REFERENCE.md" Pack="true" PackagePath="\" />
+    <None Include="PRODUCTION_DEPLOYMENT.md" Pack="true" PackagePath="\" />
+    <None Include="SECRET_MANAGEMENT.md" Pack="true" PackagePath="\" />
+    <None Include="TESTING_GUIDE.md" Pack="true" PackagePath="\" />
+    <None Include="CLAIMS_MAPPING.md" Pack="true" PackagePath="\" />
+    <None Include="ANGULAR_INTEGRATION.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

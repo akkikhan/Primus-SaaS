@@ -410,4 +410,4 @@ Before deploying your token generation code:
 
 **Need Help?**
 - GitHub Issues: https://github.com/akkikhan/Primus-SaaS/issues
-- Documentation: https://portal.primus-saas.com/docs
+- Documentation: https://docs.primus-saas.com

@@ -1,7 +1,7 @@
 {
     "name": "@primus-saas/logging",
     "version": "1.0.0",
-    "description": "Enterprise-ready structured logging with PII masking and context enrichment",
+    "description": "Enterprise-ready structured logging with PII masking, file rotation, and context enrichment for Node.js applications",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
@@ -17,10 +17,16 @@
         "structured-logging",
         "pii-masking",
         "enterprise",
-        "primus-saas"
+        "express",
+        "nodejs",
+        "file-rotation"
     ],
     "author": "Primus SaaS",
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/primus-saas/logging"
+    },
     "devDependencies": {
         "@types/jest": "^29.5.0",
         "@types/node": "^20.0.0",
@@ -37,5 +43,8 @@
     "files": [
         "dist",
         "README.md"
-    ]
+    ],
+    "engines": {
+        "node": ">=16.0.0"
+    }
 }
