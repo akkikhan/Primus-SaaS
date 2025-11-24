@@ -7,11 +7,11 @@
 
 ### Node.js SDK Package
 - **Package Name**: `@primus-saas/identity-validator`
-- **Version**: 1.0.0
-- **Package Size**: 18.9 KB (tarball)
-- **Unpacked Size**: 80.7 KB
-- **Files**: 38 files (dist/, README.md)
-- **Tarball**: `primus-saas-identity-validator-1.0.0.tgz`
+- **Version**: 1.3.0
+- **Package Size**: 33.4 KB (tarball)
+- **Unpacked Size**: 138.5 KB
+- **Files**: 46 files (dist/, README.md)
+- **Tarball**: `primus-saas-identity-validator-1.3.0.tgz`
 - **Location**: `sdk/nodejs/primus-identity-validator/`
 
 ### Build Status
@@ -54,7 +54,7 @@ npm view @primus-saas/identity-validator
 npm install @primus-saas/identity-validator
 
 # Or install specific version
-npm install @primus-saas/identity-validator@1.0.0
+npm install @primus-saas/identity-validator@1.3.0
 ```
 
 ## 🧪 Test Application

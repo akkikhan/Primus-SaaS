@@ -17,7 +17,7 @@
     "permalink": "/docs/modules/logging-dotnet"
   },
   "next": {
-    "title": "Integration Overview",
-    "permalink": "/docs/integrations/overview"
+    "title": "Logging SDK Configuration",
+    "permalink": "/docs/modules/logging-configuration"
   }
 }

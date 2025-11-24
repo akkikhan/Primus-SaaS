@@ -83,12 +83,12 @@ if (context.User?.Identity?.IsAuthenticated == true)
 
 ### NuGet.org (Public)
 ```bash
-dotnet nuget push sdk/logging/dotnet/packages/PrimusSaaS.Logging.1.0.0.nupkg --api-key YOUR_API_KEY --source https://api.nuget.org/v3/index.json
+dotnet nuget push sdk/logging/dotnet/PrimusSaaS.Logging/bin/Release/PrimusSaaS.Logging.1.0.0.nupkg --api-key YOUR_API_KEY --source https://api.nuget.org/v3/index.json
 ```
 
 ### Private Feed (Internal)
 ```bash
-dotnet nuget push sdk/logging/dotnet/packages/PrimusSaaS.Logging.1.0.0.nupkg --source https://your-private-feed.com
+dotnet nuget push sdk/logging/dotnet/PrimusSaaS.Logging/bin/Release/PrimusSaaS.Logging.1.0.0.nupkg --source https://your-private-feed.com
 ```
 
 ### Local Testing

@@ -280,7 +280,7 @@ The Primus SaaS Platform is a developer-focused platform providing reusable back
 - ✅ **Package Size**: 18.9 KB (tarball), 80.7 kB unpacked
 - ✅ **Files**: 38 (dist/, types, source maps, documentation)
 - ✅ **Status**: ✅ **LIVE ON NPM REGISTRY**
-- ✅ **Installation**: `npm install primus-identity-validator`
+- ✅ **Installation**: `npm install @primus-saas/identity-validator`
 
 #### 5.2 Core Features Implemented
 - ✅ Express.js middleware for JWT authentication

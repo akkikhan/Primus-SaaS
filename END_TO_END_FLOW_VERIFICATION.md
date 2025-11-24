@@ -301,7 +301,7 @@ Portal should provide:
 ```
 From Portal:
 ✅ PrimusClientId: PSP-CLI-711224
-✅ Install command: npm install primus-identity-validator
+✅ Install command: npm install @primus-saas/identity-validator
 ✅ Code snippet with configuration
 
 From Azure Portal (NOT Primus Portal):
@@ -329,7 +329,7 @@ From Azure Portal (NOT Primus Portal):
 
 ```
 1. Developer runs install command
-   npm install primus-identity-validator
+   npm install @primus-saas/identity-validator
 
 2. NPM downloads package
    ✅ From npm registry

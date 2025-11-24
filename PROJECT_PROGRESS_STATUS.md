@@ -555,7 +555,7 @@ The Primus SaaS Platform is a developer-focused SaaS solution providing reusable
 - ✅ **Package Size**: 18.9 KB (tarball), 80.7 kB unpacked
 - ✅ **Files**: 38 (dist/, types, source maps, documentation)
 - ✅ **Status**: ✅ **LIVE ON NPM REGISTRY**
-- ✅ **Installation**: `npm install primus-identity-validator`
+- ✅ **Installation**: `npm install @primus-saas/identity-validator`
 - ✅ **Dependencies**: jsonwebtoken ^9.0.2, axios ^1.6.0
 
 #### 5.2 Core Features Implemented
@@ -705,7 +705,7 @@ The Primus SaaS Platform is a developer-focused SaaS solution providing reusable
 
 **Package Verification** ✅
 - Tarball integrity: SHA verified
-- Package installable: `npm install primus-identity-validator` works
+- Package installable: `npm install @primus-saas/identity-validator` works
 - Build succeeds with published package
 - Example app runs with npm package
 - All imports resolve correctly
@@ -797,7 +797,7 @@ The Primus SaaS Platform is a developer-focused SaaS solution providing reusable
 - **Package**: `primus-identity-validator@1.0.0`
 - **URL**: https://www.npmjs.com/package/primus-identity-validator
 - **Registry**: Live on npmjs.org
-- **Installation**: `npm install primus-identity-validator`
+- **Installation**: `npm install @primus-saas/identity-validator`
 - **Verification**: Package tested and working
 - **Documentation**: All references updated
 - **GitHub Tag**: `sdk-nodejs-v1.0.0` created and pushed

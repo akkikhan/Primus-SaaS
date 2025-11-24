@@ -115,10 +115,10 @@ For detailed integration guides, see the [SDK documentation](sdk/) and [example 
 
    ```bash
    # .NET
-   dotnet add package PrimusSaaS.Identity.Validator --version 1.0.0
+   dotnet add package PrimusSaaS.Identity.Validator --version 1.2.0
    
    # Node.js
-   npm install @primus-saas/identity-validator@1.0.0
+   npm install @primus-saas/identity-validator@1.3.0
    ```
 
 4. Configure authentication using provided Portal URL, ClientId, and JwtSecret

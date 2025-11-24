@@ -46,7 +46,7 @@ git push --tags
 ### What Happens Automatically
 - `package.json` includes a `prepublishOnly` script that runs `build` and `test`
 - NPM registry validates your credentials
-- Package becomes available at `npm install primus-identity-validator@<version>`
+- Package becomes available at `npm install @primus-saas/identity-validator@<version>`
 
 ---
 

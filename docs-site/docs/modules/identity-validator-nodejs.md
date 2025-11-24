@@ -5,14 +5,14 @@ Multi-issuer JWT/OIDC token validator for Express and NestJS applications.
 ## Installation
 
 ```bash
-npm install primus-identity-validator
+npm install @primus-saas/identity-validator
 ```
 
 ## Express Integration
 
 ```javascript
 const express = require('express');
-const { PrimusIdentityValidator } = require('primus-identity-validator');
+const { PrimusIdentityValidator } = require('@primus-saas/identity-validator');
 
 const app = express();
 
@@ -46,7 +46,7 @@ app.listen(3000);
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { PrimusIdentityModule } from 'primus-identity-validator/nestjs';
+import { PrimusIdentityModule } from '@primus-saas/identity-validator/nestjs';
 
 @Module({
   imports: [
@@ -71,4 +71,3 @@ export class AppModule {}
 - [Full Configuration Guide](./identity-configuration)
 - [Token Generation](./identity-token-generation)
 - [Error Reference](./identity-error-reference)
-- [Production Deployment](./identity-production-deployment)

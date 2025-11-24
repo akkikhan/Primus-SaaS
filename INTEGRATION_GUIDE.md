@@ -75,7 +75,7 @@
 #### For Node.js / Express
 
 ```bash
-npm install primus-identity-validator
+npm install @primus-saas/identity-validator
 ```
 
 #### For .NET / ASP.NET Core
@@ -91,7 +91,7 @@ dotnet add package PrimusSaaS.Identity.Validator
 ### Installation
 
 ```bash
-npm install primus-identity-validator express
+npm install @primus-saas/identity-validator express
 ```
 
 ### Basic Implementation

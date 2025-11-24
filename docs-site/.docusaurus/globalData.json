@@ -17,8 +17,7 @@
             },
             {
               "id": "integrations/java-spring-boot",
-              "path": "/docs/integrations/java-spring-boot",
-              "sidebar": "docs"
+              "path": "/docs/integrations/java-spring-boot"
             },
             {
               "id": "integrations/node-express",
@@ -41,6 +40,26 @@
               "sidebar": "docs"
             },
             {
+              "id": "modules/identity-configuration",
+              "path": "/docs/modules/identity-configuration",
+              "sidebar": "docs"
+            },
+            {
+              "id": "modules/identity-error-reference",
+              "path": "/docs/modules/identity-error-reference",
+              "sidebar": "docs"
+            },
+            {
+              "id": "modules/identity-production-deployment",
+              "path": "/docs/modules/identity-production-deployment",
+              "sidebar": "docs"
+            },
+            {
+              "id": "modules/identity-token-generation",
+              "path": "/docs/modules/identity-token-generation",
+              "sidebar": "docs"
+            },
+            {
               "id": "modules/identity-validator-dotnet",
               "path": "/docs/modules/identity-validator-dotnet",
               "sidebar": "docs"
@@ -51,13 +70,28 @@
               "sidebar": "docs"
             },
             {
+              "id": "modules/logging-configuration",
+              "path": "/docs/modules/logging-configuration",
+              "sidebar": "docs"
+            },
+            {
               "id": "modules/logging-dotnet",
               "path": "/docs/modules/logging-dotnet",
               "sidebar": "docs"
             },
             {
+              "id": "modules/logging-enterprise-features",
+              "path": "/docs/modules/logging-enterprise-features",
+              "sidebar": "docs"
+            },
+            {
               "id": "modules/logging-nodejs",
               "path": "/docs/modules/logging-nodejs",
+              "sidebar": "docs"
+            },
+            {
+              "id": "modules/logging-targets",
+              "path": "/docs/modules/logging-targets",
               "sidebar": "docs"
             }
           ],

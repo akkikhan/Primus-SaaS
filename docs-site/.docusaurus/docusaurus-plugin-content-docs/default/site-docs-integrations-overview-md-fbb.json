@@ -16,8 +16,8 @@
   },
   "sidebar": "docs",
   "previous": {
-    "title": "Logging SDK - Node.js Quick Start",
-    "permalink": "/docs/modules/logging-nodejs"
+    "title": "Targets & Outputs",
+    "permalink": "/docs/modules/logging-targets"
   },
   "next": {
     "title": "Node.js (Express) Integration",

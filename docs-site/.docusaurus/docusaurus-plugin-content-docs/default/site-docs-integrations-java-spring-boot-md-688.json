@@ -13,10 +13,5 @@
   "frontMatter": {
     "id": "java-spring-boot",
     "title": "Java (Spring Boot Resource Server)"
-  },
-  "sidebar": "docs",
-  "previous": {
-    "title": ".NET 8 (ASP.NET Core Minimal API)",
-    "permalink": "/docs/integrations/dotnet-aspnet"
   }
 }

@@ -86,7 +86,7 @@ The Node.js SDK package has been **successfully published to npm**! The package 
 The package is now live on npm! Install it in your Node.js project:
 
 ```bash
-npm install primus-identity-validator
+npm install @primus-saas/identity-validator
 ```
 
 ### Quick Start

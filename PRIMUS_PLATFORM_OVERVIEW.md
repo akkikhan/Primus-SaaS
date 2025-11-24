@@ -217,7 +217,7 @@ public class ModuleVersion {
 
 ### Step 1: Update Package
 ```bash
-npm install primus-identity-validator@2.0.0
+npm install @primus-saas/identity-validator@2.0.0
 ```
 
 ### Step 2: Update Configuration
@@ -258,18 +258,18 @@ const primusAuth = primusIdentityValidator({
 
 **Application ID**: PSP-CLI-711224  
 **Stack**: Node.js  
-**Module**: IdentityValidator v1.0.0
+**Module**: IdentityValidator v1.3.0
 
 ## Installation
 
 ```bash
-npm install primus-identity-validator@1.0.0
+npm install @primus-saas/identity-validator@1.3.0
 ```
 
 ## Configuration
 
 ```javascript
-const { primusIdentityValidator } = require('primus-identity-validator');
+const { primusIdentityValidator } = require('@primus-saas/identity-validator');
 
 const primusAuth = primusIdentityValidator({
     environment: "production",
@@ -429,7 +429,7 @@ A **reusable authentication middleware** that validates Azure AD (and other IdP)
    └─ Code examples
    ↓
 5. Developer integrates into app
-   ├─ npm install primus-identity-validator
+   ├─ npm install @primus-saas/identity-validator
    ├─ Copy configuration from portal
    └─ Add middleware to app
    ↓

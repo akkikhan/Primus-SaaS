@@ -590,7 +590,7 @@ cd "C:\Users\aakib\Primus SaaS\test-apps\react-express-integration\frontend"
 **Demo Actions**:
 1. Open: `sdk/nodejs/README.md` (or show online docs)
 2. Point out:
-   - Installation: `npm install primus-identity-validator`
+   - Installation: `npm install @primus-saas/identity-validator`
    - Basic setup: 3-line code example
    - Available functions: `primusIdentityMiddleware()`, `requireRoles()`, etc.
 3. (Optional) Show .NET SDK: `sdk/dotnet/README.md`

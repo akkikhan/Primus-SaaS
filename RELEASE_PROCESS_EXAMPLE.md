@@ -58,7 +58,7 @@ Create a changelog and release notes:
 - Existing Azure AD and LocalAuth validation unchanged
 
 ### 📦 Installation
-npm install primus-identity-validator@1.2.0
+npm install @primus-saas/identity-validator@1.3.0
 
 ### 🚀 Migration Guide
 **Existing clients**: No changes needed! Your code continues to work.
@@ -403,10 +403,11 @@ Your platform supports multiple versions simultaneously:
 **NPM supports this automatically**:
 ```bash
 # Clients can install any version
-npm install primus-identity-validator@1.0.0  # Still works
-npm install primus-identity-validator@1.1.0  # Still works
-npm install primus-identity-validator@1.2.0  # Latest
-npm install primus-identity-validator        # Gets latest (1.2.0)
+npm install @primus-saas/identity-validator@1.0.0  # Still works
+npm install @primus-saas/identity-validator@1.1.0  # Still works
+npm install @primus-saas/identity-validator@1.2.0  # Still works
+npm install @primus-saas/identity-validator@1.3.0  # Latest
+npm install @primus-saas/identity-validator        # Gets latest (1.3.0)
 ```
 
 **NuGet supports this automatically**:

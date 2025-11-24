@@ -21,6 +21,7 @@ export const ApplicationDetailsPage = () => {
   const [changelogModule, setChangelogModule] = useState<IntegratedModule | null>(null);
   const [showEditApp, setShowEditApp] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', stack: '', description: '' });
+  const [activeTab, setActiveTab] = useState<'overview' | 'integration'>('overview');
   const stackInfo: Record<string, { label: string; tone: string }> = {
     DotNet: { label: '.NET', tone: 'tone-dotnet' },
     NodeJS: { label: 'Node.js', tone: 'tone-node' },
@@ -134,6 +135,11 @@ ${getCodeSnippet()}
 
   const selectedModule = modules.find(m => m.id === selectedModuleId);
   const changingModule = currentApplication?.integratedModules?.find(m => m.moduleId === changingModuleId);
+
+  // Filter out already assigned modules
+  const availableModules = modules.filter(m =>
+    !currentApplication?.integratedModules?.some(im => im.moduleId === m.id)
+  );
 
   const openEditModal = () => {
     setEditForm({
@@ -411,211 +417,224 @@ async def get_user(user=Depends(auth.require_auth)):
         </div>
       </header>
 
-      <div className="app-detail__grid">
-        {/* Section 1: Application Information */}
-        <div className="app-detail__panel app-detail__info-panel">
-          <h2>Application Information</h2>
-          <div className="info-grid">
-            <div className="info-item">
-              <label>Application Name</label>
-              <div className="info-value">{currentApplication.name}</div>
-            </div>
-            <div className="info-item">
-              <label>Technology Stack</label>
-              <div className="info-value">
-                <span className={`stack-chip ${stackInfo[currentApplication.stack]?.tone ?? 'tone-neutral'}`}>
-                  <span className="stack-dot" />
-                  {stackInfo[currentApplication.stack]?.label ?? currentApplication.stack}
-                </span>
+      {/* Tabs Navigation */}
+      <div className="app-tabs">
+        <button
+          className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+          onClick={() => setActiveTab('overview')}
+        >
+          Overview
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'integration' ? 'active' : ''}`}
+          onClick={() => setActiveTab('integration')}
+        >
+          Integration Guide
+        </button>
+      </div>
+
+      <div className="app-detail__content">
+        {activeTab === 'overview' ? (
+          <div className="app-detail__grid">
+            {/* Section 1: Application Information */}
+            <div className="app-detail__panel app-detail__info-panel">
+              <h2>Application Information</h2>
+              <div className="info-grid">
+                <div className="info-item">
+                  <label>Application Name</label>
+                  <div className="info-value">{currentApplication.name}</div>
+                </div>
+                <div className="info-item">
+                  <label>Technology Stack</label>
+                  <div className="info-value">
+                    <span className={`stack-chip ${stackInfo[currentApplication.stack]?.tone ?? 'tone-neutral'}`}>
+                      <span className="stack-dot" />
+                      {stackInfo[currentApplication.stack]?.label ?? currentApplication.stack}
+                    </span>
+                  </div>
+                </div>
+                <div className="info-item">
+                  <label>Primus App ID</label>
+                  <div className="info-value copy-container">
+                    <code className="code-inline">{currentApplication.primusClientId}</code>
+                    <button
+                      type="button"
+                      className="copy-btn"
+                      onClick={() => handleCopy(currentApplication.primusClientId, 'primusClientId')}
+                      title="Copy to clipboard"
+                    >
+                      {copiedText === 'primusClientId' ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+                </div>
+                <div className="info-item">
+                  <label>Description</label>
+                  <div className="info-value">{currentApplication.description || 'No description provided'}</div>
+                </div>
+                <div className="info-item">
+                  <label>Created</label>
+                  <div className="info-value">{new Date(currentApplication.createdAt).toLocaleString()}</div>
+                </div>
+                {currentApplication.updatedAt && (
+                  <div className="info-item">
+                    <label>Last Updated</label>
+                    <div className="info-value">{new Date(currentApplication.updatedAt).toLocaleString()}</div>
+                  </div>
+                )}
+                <div className="info-item">
+                  <label>Integrated Modules</label>
+                  <div className="info-value">{currentApplication.integratedModules?.length || 0}</div>
+                </div>
               </div>
             </div>
-            <div className="info-item">
-              <label>Primus App ID</label>
-              <div className="info-value copy-container">
-                <code className="code-inline">{currentApplication.primusClientId}</code>
+
+            {/* Section 2: Integrated Modules */}
+            <div className="app-detail__panel">
+              <div className="panel-heading">
+                <h2>Integrated Modules & Versions</h2>
+                <button type="button" onClick={() => setShowAddModule(true)}>
+                  + Assign Module
+                </button>
+              </div>
+              {!currentApplication.integratedModules || currentApplication.integratedModules.length === 0 ? (
+                <div className="empty-state">
+                  <p>No modules integrated yet.</p>
+                  <button type="button" onClick={() => setShowAddModule(true)}>
+                    + Integrate Your First Module
+                  </button>
+                </div>
+              ) : (
+                <div className="modules-list">
+                  {currentApplication.integratedModules!.map(appModule => (
+                    <div key={appModule.moduleId} className="module-card">
+                      <div className="module-header">
+                        <div className="module-title-area">
+                          <h3>{appModule.moduleName}</h3>
+                        </div>
+                      </div>
+
+                      <div className="module-version-info">
+                        <div className="version-row">
+                          <label>Current Version:</label>
+                          <span className="version-text">v{appModule.version}</span>
+                        </div>
+                        <div className="version-row">
+                          <label>Latest Available:</label>
+                          <span className="version-text">v{appModule.latestVersion}</span>
+                        </div>
+                        <div className="version-row">
+                          <label>Status:</label>
+                          <span className={`status-badge ${appModule.versionStatus === 'UpToDate' ? 'status-uptodate' : 'status-update-available'}`}>
+                            {appModule.versionStatus === 'UpToDate' ? 'Up to date' : 'New version available'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="module-actions">
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => handleOpenChangeVersion(appModule.moduleId, appModule.version)}
+                        >
+                          Change Version
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => handleViewChangelog(appModule)}
+                        >
+                          View Changelog
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-danger"
+                          onClick={() => handleRemoveModule(appModule.moduleId, appModule.moduleName)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+
+                      <p className="text-muted module-integrated-date">
+                        Integrated on {new Date(appModule.integratedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Integration Tab Content */
+          <div className="app-detail__panel app-detail__docs-panel">
+            <div className="docs-hero">
+              <div className="docs-hero__text">
+                <p className="eyebrow">Integration playbook</p>
+                <h2>Integration Documentation</h2>
+                <p className="docs-subtitle">
+                  Ship-ready steps tuned for {stackInfo[currentApplication.stack]?.label ?? currentApplication.stack} teams.
+                </p>
+                <div className="docs-links">
+                  <a href="http://localhost:3001" target="_blank" rel="noopener noreferrer" className="docs-link-primary">
+                    View Full Documentation ↗
+                  </a>
+                </div>
+              </div>
+              <div className="docs-hero__actions">
                 <button
                   type="button"
-                  className="copy-btn"
-                  onClick={() => handleCopy(currentApplication.primusClientId, 'primusClientId')}
-                  title="Copy to clipboard"
+                  className="btn-ghost"
+                  onClick={handleCopyAll}
                 >
-                  {copiedText === 'primusClientId' ? 'Copied' : 'Copy'}
+                  {copiedText === 'all-docs' ? 'All content copied' : 'Copy all'}
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={handleDownloadPdf}
+                  title="Download PDF with integration steps"
+                >
+                  {copiedText === 'pdf' ? 'PDF downloaded' : 'Export PDF'}
                 </button>
               </div>
             </div>
-            <div className="info-item">
-              <label>Description</label>
-              <div className="info-value">{currentApplication.description || 'No description provided'}</div>
-            </div>
-            <div className="info-item">
-              <label>Created</label>
-              <div className="info-value">{new Date(currentApplication.createdAt).toLocaleString()}</div>
-            </div>
-            {currentApplication.updatedAt && (
-              <div className="info-item">
-                <label>Last Updated</label>
-                <div className="info-value">{new Date(currentApplication.updatedAt).toLocaleString()}</div>
-              </div>
-            )}
-            <div className="info-item">
-              <label>Integrated Modules</label>
-              <div className="info-value">{currentApplication.integratedModules?.length || 0}</div>
-            </div>
-          </div>
-        </div>
 
-        {/* Section 2: Integrated Modules */}
-        <div className="app-detail__panel">
-          <div className="panel-heading">
-            <h2>Integrated Modules & Versions</h2>
-            <button type="button" onClick={() => setShowAddModule(true)}>
-              + Assign Module
-            </button>
-          </div>
-          {!currentApplication.integratedModules || currentApplication.integratedModules.length === 0 ? (
-            <div className="empty-state">
-              <p>No modules integrated yet.</p>
-              <button type="button" onClick={() => setShowAddModule(true)}>
-                + Integrate Your First Module
-              </button>
-            </div>
-          ) : (
-            <div className="modules-list">
-              {currentApplication.integratedModules!.map(appModule => (
-                <div key={appModule.moduleId} className="module-card">
-                  <div className="module-header">
-                    <div className="module-title-area">
-                      <h3>{appModule.moduleName}</h3>
-                    </div>
-                  </div>
-
-                  <div className="module-version-info">
-                    <div className="version-row">
-                      <label>Current Version:</label>
-                      <span className="version-text">v{appModule.version}</span>
-                    </div>
-                    <div className="version-row">
-                      <label>Latest Available:</label>
-                      <span className="version-text">v{appModule.latestVersion}</span>
-                    </div>
-                    <div className="version-row">
-                      <label>Status:</label>
-                      <span className={`status-badge ${appModule.versionStatus === 'UpToDate' ? 'status-uptodate' : 'status-update-available'}`}>
-                        {appModule.versionStatus === 'UpToDate' ? 'Up to date' : 'New version available'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="module-actions">
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => handleOpenChangeVersion(appModule.moduleId, appModule.version)}
-                    >
-                      Change Version
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => handleViewChangelog(appModule)}
-                    >
-                      View Changelog
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-danger"
-                      onClick={() => handleRemoveModule(appModule.moduleId, appModule.moduleName)}
-                    >
-                      Remove
-                    </button>
-                  </div>
-
-                  <p className="text-muted module-integrated-date">
-                    Integrated on {new Date(appModule.integratedAt).toLocaleDateString()}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Section 3: Integration Documentation */}
-        <div className="app-detail__panel app-detail__docs-panel">
-          <div className="docs-hero">
-            <div className="docs-hero__text">
-              <p className="eyebrow">Integration playbook</p>
-              <h2>Integration Documentation</h2>
-              <p className="docs-subtitle">
-                Ship-ready steps tuned for {stackInfo[currentApplication.stack]?.label ?? currentApplication.stack} teams. Copy,
-                export, or hand off without losing context.
-              </p>
-              <div className="docs-meta">
-                <span className="meta-chip">Stack • {stackInfo[currentApplication.stack]?.label ?? currentApplication.stack}</span>
-                <span className="meta-chip">Client ID • {currentApplication.primusClientId}</span>
-                <span className="meta-chip">
-                  Updated • {new Date(currentApplication.updatedAt ?? currentApplication.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-            <div className="docs-hero__actions">
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={handleCopyAll}
-              >
-                {copiedText === 'all-docs' ? 'All content copied' : 'Copy all'}
-              </button>
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={handleDownloadPdf}
-                title="Download PDF with integration steps"
-              >
-                {copiedText === 'pdf' ? 'PDF downloaded' : 'Export PDF'}
-              </button>
-            </div>
-          </div>
-
-          <div className="docs-grid">
-            <div className="doc-card">
-              <div className="doc-card__header">
-                <span className="step-badge">Step 1</span>
-                <div>
+            <div className="stepper-container">
+              {/* Step 1 */}
+              <div className="step-item">
+                <div className="step-number">1</div>
+                <div className="step-content">
                   <h3>Install the SDK</h3>
-                  <p className="muted">Add the Primus Identity Validator SDK to your {currentApplication.stack} project.</p>
+                  <p>Add the Primus Identity Validator SDK to your {currentApplication.stack} project.</p>
+                  <div className="code-block-shell">
+                    <div className="code-block-toolbar">
+                      <span className="pill">CLI</span>
+                      <button
+                        type="button"
+                        className="copy-btn copy-btn--solid"
+                        onClick={() => handleCopy(getInstallCommand(), 'install')}
+                      >
+                        {copiedText === 'install' ? 'Copied' : 'Copy'}
+                      </button>
+                    </div>
+                    <pre className="code-block">
+                      <code>{getInstallCommand()}</code>
+                    </pre>
+                  </div>
                 </div>
               </div>
-              <div className="code-block-shell">
-                <div className="code-block-toolbar">
-                  <span className="pill">CLI</span>
-                  <button
-                    type="button"
-                    className="copy-btn copy-btn--solid"
-                    onClick={() => handleCopy(getInstallCommand(), 'install')}
-                  >
-                    {copiedText === 'install' ? 'Copied' : 'Copy command'}
-                  </button>
-                </div>
-                <pre className="code-block">
-                  <code>{getInstallCommand()}</code>
-                </pre>
-              </div>
-            </div>
 
-            <div className="doc-card doc-card--split">
-              <div className="doc-card__header">
-                <span className="step-badge">Step 2</span>
-                <div>
+              {/* Step 2 */}
+              <div className="step-item">
+                <div className="step-number">2</div>
+                <div className="step-content">
                   <h3>Configure your application</h3>
-                  <p className="muted">Wire your Primus portal credentials and Azure AD tenant settings.</p>
-                </div>
-              </div>
-              <div className="doc-card__body doc-card__body--split">
-                <div>
+                  <p>Wire your Primus portal credentials and Azure AD tenant settings.</p>
+
                   <div className="inline-callout">
                     <strong>Note:</strong> The <code>PrimusClientId</code> is pre-filled with your application's ID. Replace the
                     placeholders with your portal secret and Azure AD tenant details.
                   </div>
+
                   <div className="code-block-shell">
                     <div className="code-block-toolbar">
                       <span className="pill">Config template</span>
@@ -624,156 +643,92 @@ async def get_user(user=Depends(auth.require_auth)):
                         className="copy-btn copy-btn--solid"
                         onClick={() => handleCopy(getConfigTemplate(), 'config')}
                       >
-                        {copiedText === 'config' ? 'Copied' : 'Copy config'}
+                        {copiedText === 'config' ? 'Copied' : 'Copy'}
                       </button>
                     </div>
                     <pre className="code-block">
                       <code>{getConfigTemplate()}</code>
                     </pre>
                   </div>
-                </div>
-                <div className="config-help">
-                  <h4>Configuration guide</h4>
-                  <ul>
-                    <li>
-                      <strong>API_AUDIENCE</strong>: Use the Primus App ID as the audience for your API.
-                    </li>
-                    <li>
-                      <strong>Azure AD</strong>: Tenant ID/authority for OIDC validation (AzureAD issuer).
-                    </li>
-                    <li>
-                      <strong>Local</strong>: Local issuer URL and secret (only if you run a local issuer).
-                    </li>
-                  </ul>
-                  <p className="help-link">
-                    <a href="https://docs.microsoft.com/azure/active-directory/develop/quickstart-register-app" target="_blank" rel="noopener noreferrer">
-                      Learn how to find these values in Azure Portal
-                    </a>
-                  </p>
+
+                  <div className="config-help">
+                    <h4>Configuration guide</h4>
+                    <ul>
+                      <li><strong>API_AUDIENCE</strong>: Use the Primus App ID as the audience for your API.</li>
+                      <li><strong>Azure AD</strong>: Tenant ID/authority for OIDC validation.</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="doc-card">
-              <div className="doc-card__header">
-                <span className="step-badge badge-soft">Env</span>
-                <div>
+              {/* Step 3 */}
+              <div className="step-item">
+                <div className="step-number">3</div>
+                <div className="step-content">
                   <h3>Environment baseline</h3>
-                  <p className="muted">Pin these secrets in your CI/CD or vault before deploying.</p>
+                  <p>Pin these secrets in your CI/CD or vault before deploying.</p>
+                  <div className="env-pill-grid">
+                    <div className="env-pill">
+                      <span className="env-key">API_AUDIENCE</span>
+                      <span className="env-value">{currentApplication.primusClientId}</span>
+                    </div>
+                    <div className="env-pill">
+                      <span className="env-key">AZURE_AD_ISSUER</span>
+                      <span className="env-value">https://login.microsoftonline.com/&lt;TENANT_ID&gt;/v2.0</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="env-pill-grid">
-                <div className="env-pill">
-                  <span className="env-key">API_AUDIENCE</span>
-                  <span className="env-value">{currentApplication.primusClientId}</span>
-                </div>
-                <div className="env-pill">
-                  <span className="env-key">AZURE_AD_ISSUER</span>
-                  <span className="env-value">https://login.microsoftonline.com/&lt;TENANT_ID&gt;/v2.0</span>
-                </div>
-                <div className="env-pill">
-                  <span className="env-key">AZURE_AD_AUTHORITY</span>
-                  <span className="env-value">https://login.microsoftonline.com/&lt;TENANT_ID&gt;/v2.0</span>
-                </div>
-                <div className="env-pill">
-                  <span className="env-key">LOCAL_ISSUER</span>
-                  <span className="env-value">http://localhost:4000</span>
-                </div>
-                <div className="env-pill">
-                  <span className="env-key">LOCAL_SECRET</span>
-                  <span className="env-value">&lt;LOCAL_DEV_SECRET&gt;</span>
-                </div>
-              </div>
-              <p className="muted tip">Tip: store these in your deployment secrets manager and reference them in your config templates above.</p>
-            </div>
 
-            <div className="doc-card">
-              <div className="doc-card__header">
-                <span className="step-badge">Step 3</span>
-                <div>
+              {/* Step 4 */}
+              <div className="step-item">
+                <div className="step-number">4</div>
+                <div className="step-content">
                   <h3>Initialize in your code</h3>
-                  <p className="muted">Add the Primus Identity Validator to your application startup.</p>
+                  <p>Add the Primus Identity Validator to your application startup.</p>
+                  <div className="code-block-shell">
+                    <div className="code-block-toolbar">
+                      <span className="pill">Starter snippet</span>
+                      <button
+                        type="button"
+                        className="copy-btn copy-btn--solid"
+                        onClick={() => handleCopy(getCodeSnippet(), 'code')}
+                      >
+                        {copiedText === 'code' ? 'Copied' : 'Copy'}
+                      </button>
+                    </div>
+                    <pre className="code-block">
+                      <code>{getCodeSnippet()}</code>
+                    </pre>
+                  </div>
                 </div>
               </div>
-              <div className="code-block-shell">
-                <div className="code-block-toolbar">
-                  <span className="pill">Starter snippet</span>
-                  <button
-                    type="button"
-                    className="copy-btn copy-btn--solid"
-                    onClick={() => handleCopy(getCodeSnippet(), 'code')}
-                  >
-                    {copiedText === 'code' ? 'Copied' : 'Copy snippet'}
-                  </button>
-                </div>
-                <pre className="code-block">
-                  <code>{getCodeSnippet()}</code>
-                </pre>
-              </div>
-            </div>
 
-            <div className="doc-card doc-card--compact">
-              <div className="doc-card__header">
-                <span className="step-badge">Step 4</span>
-                <div>
+              {/* Step 5 */}
+              <div className="step-item">
+                <div className="step-number">5</div>
+                <div className="step-content">
                   <h3>Protect your routes</h3>
-                  <p className="muted">Apply authentication to your API endpoints.</p>
+                  <p>Apply authentication to your API endpoints.</p>
+                  {currentApplication.stack === 'NodeJS' && (
+                    <div className="code-block-shell">
+                      <pre className="code-block">
+                        <code>{`app.get("/api/me", primusAuth, handler);`}</code>
+                      </pre>
+                    </div>
+                  )}
+                  {currentApplication.stack === 'DotNet' && (
+                    <div className="code-block-shell">
+                      <pre className="code-block">
+                        <code>{`[Authorize]\npublic class MyController : ControllerBase { ... }`}</code>
+                      </pre>
+                    </div>
+                  )}
                 </div>
               </div>
-              {currentApplication.stack === 'NodeJS' && (
-                <div className="code-block-shell">
-                  <div className="code-block-toolbar">
-                    <span className="pill">Express</span>
-                  </div>
-                  <pre className="code-block">
-                    <code>{`app.get("/api/me", primusAuth, handler);`}</code>
-                  </pre>
-                </div>
-              )}
-              {currentApplication.stack === 'DotNet' && (
-                <div className="code-block-shell">
-                  <div className="code-block-toolbar">
-                    <span className="pill">ASP.NET</span>
-                  </div>
-                  <pre className="code-block">
-                    <code>{`[Authorize]
-public class MyController : ControllerBase
-{
-    // Your protected endpoints here
-}`}</code>
-                  </pre>
-                </div>
-              )}
-            </div>
-
-            <div className="doc-card doc-card--resources">
-              <div className="doc-card__header">
-                <span className="step-badge badge-soft">Resources</span>
-                <div>
-                  <h3>More examples</h3>
-                  <p className="muted">Keep handy references for your team.</p>
-                </div>
-              </div>
-              <ul className="resources-list">
-                <li>
-                  <a href="https://docs.microsoft.com/azure/active-directory/develop/quickstart-register-app" target="_blank" rel="noopener noreferrer">
-                    How to register an Azure AD Application
-                  </a>
-                </li>
-                <li>
-                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/modules'); }}>
-                    View all available Primus modules
-                  </a>
-                </li>
-                <li>
-                  <a href="https://github.com/akkikhan/Primus-SaaS" target="_blank" rel="noopener noreferrer">
-                    GitHub Repository & Examples
-                  </a>
-                </li>
-              </ul>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {showAddModule && (
@@ -791,7 +746,7 @@ public class MyController : ControllerBase
                 }}
               >
                 <option value="">Choose a module...</option>
-                {modules.map(module => (
+                {availableModules.map(module => (
                   <option key={module.id} value={module.id}>{module.name}</option>
                 ))}
               </select>

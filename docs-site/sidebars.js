@@ -2,7 +2,6 @@
 const sidebars = {
   docs: [
     'intro',
-    'module-mapping',
     {
       type: 'category',
       label: 'Modules',
@@ -16,8 +15,7 @@ const sidebars = {
             'modules/identity-validator-nodejs',
             'modules/identity-configuration',
             'modules/identity-token-generation',
-            'modules/identity-error-reference',
-            'modules/identity-production-deployment'
+            'modules/identity-error-reference'
           ]
         },
         {
@@ -31,16 +29,6 @@ const sidebars = {
             'modules/logging-targets'
           ]
         }
-      ]
-    },
-    {
-      type: 'category',
-      label: 'Integration Guides',
-      collapsible: false,
-      items: [
-        'integrations/overview',
-        'integrations/node-express',
-        'integrations/dotnet-aspnet'
       ]
     }
   ]

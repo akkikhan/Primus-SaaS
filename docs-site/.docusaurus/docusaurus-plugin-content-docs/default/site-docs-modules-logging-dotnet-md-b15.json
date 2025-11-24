@@ -13,8 +13,8 @@
   "frontMatter": {},
   "sidebar": "docs",
   "previous": {
-    "title": "Identity Validator - Node.js Quick Start",
-    "permalink": "/docs/modules/identity-validator-nodejs"
+    "title": "Production Deployment Guide",
+    "permalink": "/docs/modules/identity-production-deployment"
   },
   "next": {
     "title": "Logging SDK - Node.js Quick Start",

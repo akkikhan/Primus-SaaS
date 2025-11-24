@@ -1,7 +1,7 @@
 # Development Guide for `trunked-npm-backend`
 
 ## 📚 Overview
-The **trunked‑npm‑backend** example demonstrates how to integrate the **Primus Identity Validator** SDK in a plain Express backend.  It works out‑of‑the‑box when the SDK is installed from npm (`npm i primus-identity-validator@1.1.0`).
+The **trunked‑npm‑backend** example demonstrates how to integrate the **Primus Identity Validator** SDK in a plain Express backend.  It works out‑of‑the‑box when the SDK is installed from npm (`npm i @primus-saas/identity-validator@1.3.0`).
 
 When developing locally you may want to use the **local SDK source** (via `npm link`).  This can cause a **TypeScript type conflict** with `@types/express` because the linked SDK pulls in its own version of `@types/express` (v5) while the example uses v4.  The compiler then reports errors such as:
 ```

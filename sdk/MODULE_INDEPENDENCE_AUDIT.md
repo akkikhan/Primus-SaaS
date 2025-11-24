@@ -107,7 +107,7 @@ HttpContext.Items["PrimusUser"] = primusUser;
 ### To NuGet.org (Public)
 ```bash
 # Logging
-dotnet nuget push sdk/logging/dotnet/packages/PrimusSaaS.Logging.1.0.0.nupkg \
+dotnet nuget push sdk/logging/dotnet/PrimusSaaS.Logging/bin/Release/PrimusSaaS.Logging.1.0.0.nupkg \
   --api-key YOUR_API_KEY \
   --source https://api.nuget.org/v3/index.json
 

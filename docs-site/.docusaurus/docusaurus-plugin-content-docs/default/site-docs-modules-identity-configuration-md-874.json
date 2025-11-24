@@ -1,0 +1,23 @@
+{
+  "id": "modules/identity-configuration",
+  "title": "Identity Validator Configuration",
+  "description": "This guide covers all configuration options for the Primus Identity Validator SDKs (.NET and Node.js).",
+  "source": "@site/docs/modules/identity-configuration.md",
+  "sourceDirName": "modules",
+  "slug": "/modules/identity-configuration",
+  "permalink": "/docs/modules/identity-configuration",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docs",
+  "previous": {
+    "title": "Identity Validator - Node.js Quick Start",
+    "permalink": "/docs/modules/identity-validator-nodejs"
+  },
+  "next": {
+    "title": "Token Generation Guide",
+    "permalink": "/docs/modules/identity-token-generation"
+  }
+}

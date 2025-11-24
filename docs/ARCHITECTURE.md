@@ -433,8 +433,8 @@ Developers can:
 │                                                              │
 │  Node:                                                        │
 │  • Update package.json:                                      │
-│    "@primus-saas/identity-validator": "^1.2.0"              │
-│  • Or: npm install @primus-saas/identity-validator@1.2.0    │
+│    "@primus-saas/identity-validator": "^1.3.0"              │
+│  • Or: npm install @primus-saas/identity-validator@1.3.0    │
 └────────────────────────────┬─────────────────────────────────┘
                              │
                              ▼

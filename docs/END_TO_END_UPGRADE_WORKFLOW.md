@@ -1056,7 +1056,7 @@ jobs:
 **Solution**:
 ```bash
 npm cache clean --force
-npm install primus-identity-validator@1.1.0
+npm install @primus-saas/identity-validator@1.3.0
 ```
 
 #### Issue 2: Build fails after upgrading

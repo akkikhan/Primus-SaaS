@@ -66,4 +66,3 @@ public class SecureController : ControllerBase
 - [Full Configuration Guide](./identity-configuration)
 - [Token Generation](./identity-token-generation)
 - [Error Reference](./identity-error-reference)
-- [Production Deployment](./identity-production-deployment)

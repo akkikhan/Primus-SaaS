@@ -150,7 +150,9 @@ public class ApplicationsController : ControllerBase
     [HttpPost("{applicationId}/modules")]
     public async Task<ActionResult<ApplicationModule>> IntegrateModule(int applicationId, [FromBody] IntegrateModuleRequest request)
     {
-        var application = await _context.Applications.FindAsync(applicationId);
+        var application = await _context.Applications
+            .Include(a => a.Owner)
+            .FirstOrDefaultAsync(a => a.Id == applicationId);
         if (application == null)
         {
             return NotFound("Application not found");

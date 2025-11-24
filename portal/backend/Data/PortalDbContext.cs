@@ -164,6 +164,13 @@ public class PortalDbContext : DbContext
             Name = "IdentityValidator",
             ModuleKey = "identity-validator",
             Description = "Authentication module supporting Local JWT and Azure AD OIDC validation"
+        },
+        new Module
+        {
+            Id = 2,
+            Name = "Logging",
+            ModuleKey = "logging",
+            Description = "Enterprise-ready structured logging with PII masking, file rotation, and context enrichment"
         });
 
         // Seed initial version
@@ -187,6 +194,16 @@ public class PortalDbContext : DbContext
             Changelog = "Added: in-memory JWKS cache with configurable TTL\nChanged: default audience parsing now trims api:// prefix\nFixed: null reference when openid config is temporarily unavailable",
             SupportedStacksJson = "[\"DotNet\",\"NodeJS\"]",
             ReleasedAt = DateTime.UtcNow.AddDays(7)
+        },
+        new ModuleVersion
+        {
+            Id = 100,
+            ModuleId = 2,
+            Version = "1.0.0",
+            IsBreakingChange = false,
+            ReleaseNotes = "Initial release of Logging module",
+            SupportedStacksJson = "[\"DotNet\",\"NodeJS\"]",
+            ReleasedAt = DateTime.UtcNow
         });
 
         // Seed package registry mapping for npm
@@ -205,6 +222,22 @@ public class PortalDbContext : DbContext
                 ModuleId = 1,
                 RegistryType = "nuget",
                 PackageName = "PrimusSaaS.Identity.Validator",
+                CreatedAt = DateTime.UtcNow
+            },
+            new PackageRegistryMapping
+            {
+                Id = 100,
+                ModuleId = 2,
+                RegistryType = "npm",
+                PackageName = "@primus-saas/logging",
+                CreatedAt = DateTime.UtcNow
+            },
+            new PackageRegistryMapping
+            {
+                Id = 101,
+                ModuleId = 2,
+                RegistryType = "nuget",
+                PackageName = "PrimusSaaS.Logging",
                 CreatedAt = DateTime.UtcNow
             });
     }

@@ -1,0 +1,23 @@
+{
+  "id": "modules/identity-error-reference",
+  "title": "Error Reference",
+  "description": "Common errors you might encounter when using the Identity Validator and how to resolve them.",
+  "source": "@site/docs/modules/identity-error-reference.md",
+  "sourceDirName": "modules",
+  "slug": "/modules/identity-error-reference",
+  "permalink": "/docs/modules/identity-error-reference",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docs",
+  "previous": {
+    "title": "Token Generation Guide",
+    "permalink": "/docs/modules/identity-token-generation"
+  },
+  "next": {
+    "title": "Production Deployment Guide",
+    "permalink": "/docs/modules/identity-production-deployment"
+  }
+}

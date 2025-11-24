@@ -34,7 +34,7 @@ After this guide, your app will have:
 In your Express backend directory:
 
 ```bash
-npm install primus-identity-validator
+npm install @primus-saas/identity-validator
 ```
 
 ## Step 2: Create `.env` File
@@ -804,7 +804,7 @@ Should return users list if you have Admin role.
 
 **Solution:**
 ```bash
-npm install primus-identity-validator --save
+npm install @primus-saas/identity-validator --save
 ```
 
 ## Issue: CORS Error in Browser

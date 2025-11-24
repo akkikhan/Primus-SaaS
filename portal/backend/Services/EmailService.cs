@@ -80,7 +80,7 @@ public class EmailService : IEmailService
         }
 
         var moduleName = version.Module.Name;
-        var stack = app.Stack?.ToLowerInvariant() ?? "dotnet";
+        var stack = app.Stack.ToString().ToLowerInvariant();
         
         // Get package name and install command based on module and stack
         var (packageName, installCommand) = GetPackageInfo(moduleName, stack);
@@ -169,6 +169,8 @@ public class EmailService : IEmailService
         if (!await ShouldSendForVersionAsync(version))
         {
             _logger.LogInformation("Skipping version email for module {ModuleId} version {Version} (non-major policy)", version.ModuleId, version.Version);
+            return;
+        }
         // Check user preferences
         var pref = await _context.NotificationPreferences
             .FirstOrDefaultAsync(p => p.UserId == app.OwnerUserId);
@@ -234,6 +236,8 @@ public class EmailService : IEmailService
         await SendEmailAsync(to, subject, body);
 
         // Send to additional emails if configured
+        if (pref != null && !string.IsNullOrEmpty(pref.AdditionalEmails))
+        {
             var emails = pref.AdditionalEmails.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             foreach (var email in emails)
             {

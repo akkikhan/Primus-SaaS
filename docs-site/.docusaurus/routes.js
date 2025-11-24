@@ -39,15 +39,15 @@ export default [
   },
   {
     path: '/docs',
-    component: ComponentCreator('/docs', 'fa9'),
+    component: ComponentCreator('/docs', '687'),
     routes: [
       {
         path: '/docs',
-        component: ComponentCreator('/docs', '553'),
+        component: ComponentCreator('/docs', 'a14'),
         routes: [
           {
             path: '/docs',
-            component: ComponentCreator('/docs', 'e4e'),
+            component: ComponentCreator('/docs', '859'),
             routes: [
               {
                 path: '/docs/',
@@ -63,9 +63,8 @@ export default [
               },
               {
                 path: '/docs/integrations/java-spring-boot',
-                component: ComponentCreator('/docs/integrations/java-spring-boot', '758'),
-                exact: true,
-                sidebar: "docs"
+                component: ComponentCreator('/docs/integrations/java-spring-boot', 'aa1'),
+                exact: true
               },
               {
                 path: '/docs/integrations/node-express',
@@ -86,6 +85,30 @@ export default [
                 sidebar: "docs"
               },
               {
+                path: '/docs/modules/identity-configuration',
+                component: ComponentCreator('/docs/modules/identity-configuration', '8c2'),
+                exact: true,
+                sidebar: "docs"
+              },
+              {
+                path: '/docs/modules/identity-error-reference',
+                component: ComponentCreator('/docs/modules/identity-error-reference', 'ca3'),
+                exact: true,
+                sidebar: "docs"
+              },
+              {
+                path: '/docs/modules/identity-production-deployment',
+                component: ComponentCreator('/docs/modules/identity-production-deployment', '018'),
+                exact: true,
+                sidebar: "docs"
+              },
+              {
+                path: '/docs/modules/identity-token-generation',
+                component: ComponentCreator('/docs/modules/identity-token-generation', '6d0'),
+                exact: true,
+                sidebar: "docs"
+              },
+              {
                 path: '/docs/modules/identity-validator-dotnet',
                 component: ComponentCreator('/docs/modules/identity-validator-dotnet', '1e6'),
                 exact: true,
@@ -98,14 +121,32 @@ export default [
                 sidebar: "docs"
               },
               {
+                path: '/docs/modules/logging-configuration',
+                component: ComponentCreator('/docs/modules/logging-configuration', '375'),
+                exact: true,
+                sidebar: "docs"
+              },
+              {
                 path: '/docs/modules/logging-dotnet',
                 component: ComponentCreator('/docs/modules/logging-dotnet', '748'),
                 exact: true,
                 sidebar: "docs"
               },
               {
+                path: '/docs/modules/logging-enterprise-features',
+                component: ComponentCreator('/docs/modules/logging-enterprise-features', '964'),
+                exact: true,
+                sidebar: "docs"
+              },
+              {
                 path: '/docs/modules/logging-nodejs',
                 component: ComponentCreator('/docs/modules/logging-nodejs', '0df'),
+                exact: true,
+                sidebar: "docs"
+              },
+              {
+                path: '/docs/modules/logging-targets',
+                component: ComponentCreator('/docs/modules/logging-targets', 'a3b'),
                 exact: true,
                 sidebar: "docs"
               }
