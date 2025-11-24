@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v7.0": {
-      "PrimusSaaS.Identity.Validator/1.2.3": {
+      "PrimusSaaS.Identity.Validator/1.3.0": {
         "dependencies": {
           "Microsoft.AspNetCore.Authentication.JwtBearer": "7.0.20",
           "Microsoft.Extensions.Options": "7.0.0",
@@ -138,7 +138,7 @@
     }
   },
   "libraries": {
-    "PrimusSaaS.Identity.Validator/1.2.3": {
+    "PrimusSaaS.Identity.Validator/1.3.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

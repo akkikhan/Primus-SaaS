@@ -41,7 +41,7 @@ public class IdentityDiagnosticsService
         return new IdentityDiagnosticsSnapshot
         {
             GeneratedAtUtc = DateTimeOffset.UtcNow,
-            Issuers = _options.Issuers.Select(i => new IssuerDiagnostics
+            Issuers = ((_options?.Issuers) ?? new List<IssuerConfig>()).Select(i => new IssuerDiagnostics
             {
                 Name = i.Name,
                 Type = i.Type.ToString(),

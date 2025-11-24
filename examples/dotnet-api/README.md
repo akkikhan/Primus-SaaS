@@ -62,7 +62,14 @@ dotnet run
 
 The API will start on `https://localhost:7xxx` (check console output for exact port).
 
-### 4. Access Swagger UI
+### 4. (Optional) Expose Primus Diagnostics
+In `Program.cs`, map the diagnostics endpoint:
+```csharp
+app.MapPrimusIdentityDiagnostics(); // GET /primus/diagnostics
+```
+This returns issuers plus JWKS and security metrics (auth successes/failures/rate-limited).
+
+### 5. Access Swagger UI
 
 Navigate to `https://localhost:7xxx/swagger` to see the interactive API documentation.
 

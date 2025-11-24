@@ -76,6 +76,22 @@ public static class PrimusIdentityExtensions
             return opt.RateLimiting;
         });
         services.AddSingleton<FailedValidationRateLimiter>();
+        services.AddSingleton(sp =>
+        {
+            var opt = sp.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
+            return opt.TokenRefresh;
+        });
+        services.AddSingleton<ITokenRefreshService>(sp =>
+        {
+            var options = sp.GetRequiredService<TokenRefreshOptions>();
+            if (options.Enabled && options.UseInMemoryStore)
+            {
+                return new InMemoryTokenRefreshService(options);
+            }
+
+            // If refresh is disabled, register a no-op stub to avoid nulls
+            return new NoopTokenRefreshService();
+        });
 
         // Add authentication with JWT Bearer
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

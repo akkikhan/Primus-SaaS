@@ -196,6 +196,11 @@ public class PrimusIdentityOptions
     /// Rate limiting options for failed token validations.
     /// </summary>
     public FailedValidationRateLimiterOptions RateLimiting { get; set; } = new();
+
+    /// <summary>
+    /// Token refresh options (optional; disabled by default).
+    /// </summary>
+    public TokenRefreshOptions TokenRefresh { get; set; } = new();
 }
 
 /// <summary>

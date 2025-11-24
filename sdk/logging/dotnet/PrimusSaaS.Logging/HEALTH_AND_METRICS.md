@@ -17,6 +17,22 @@
 - Log when sinks fail: already emitted to stderr.
 - Use scopes for correlation (`Logger.BeginScope` or ILogger scopes).
 - Include request/correlation IDs via LoggingMiddleware.
+- Optionally expose metrics via your HTTP app:
+  ```csharp
+  app.MapGet("/primus/logging/metrics", (Logger logger) =>
+  {
+      return Results.Json(logger.GetMetricsSnapshot());
+  });
+  ```
+- Optional health endpoint based on metrics:
+  ```csharp
+  app.MapGet("/primus/logging/health", (Logger logger) =>
+  {
+      var metrics = logger.GetMetricsSnapshot();
+      var healthy = metrics.WriteFailures == 0;
+      return Results.Json(new { healthy, metrics });
+  });
+  ```
 
 ## Sample
 ```csharp

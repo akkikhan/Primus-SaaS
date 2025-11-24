@@ -8,7 +8,7 @@
     
     <!-- NuGet Package Metadata -->
     <PackageId>PrimusSaaS.Identity.Validator</PackageId>
-    <Version>1.2.3</Version>
+    <Version>1.3.0</Version>
     <Authors>Primus SaaS</Authors>
     <Company>Primus SaaS</Company>
     <Product>Primus SaaS Identity Validator</Product>
@@ -22,6 +22,7 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+    <PackageReleaseNotes>JWKS discovery normalization with retry/backoff and diagnostics; actionable config validation; security event logging + rate limiting; diagnostics endpoint helper; optional token refresh interface; policy helper scaffolding; docs updated.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
@@ -57,6 +58,12 @@
     <None Include="CLAIMS_MAPPING.md" Pack="true" PackagePath="\" />
     <None Include="ANGULAR_INTEGRATION.md" Pack="true" PackagePath="\" />
     <None Include="TENANT_RESOLVER_GUIDE.md" Pack="true" PackagePath="\" />
+    <None Include="DIAGNOSTICS_AND_TROUBLESHOOTING.md" Pack="true" PackagePath="\" />
+    <None Include="AZURE_AD_TROUBLESHOOTING.md" Pack="true" PackagePath="\" />
+    <None Include="AZURE_AD_END_TO_END.md" Pack="true" PackagePath="\" />
+    <None Include="REFRESH_GUIDE.md" Pack="true" PackagePath="\" />
+    <None Include="POLICY_HELPERS_SCOPE.md" Pack="true" PackagePath="\" />
+    <None Include="RELEASE_AND_ROADMAP.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
