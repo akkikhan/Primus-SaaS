@@ -57,6 +57,22 @@ public class TargetConfig
     public bool Pretty { get; set; }
 
     /// <summary>
+    /// Format string (for compatibility with documentation).
+    /// Set to "PrettyPrint" to enable Pretty printing.
+    /// </summary>
+    public string? Format
+    {
+        get => Pretty ? "PrettyPrint" : "Json";
+        set
+        {
+            if (string.Equals(value, "PrettyPrint", StringComparison.OrdinalIgnoreCase))
+            {
+                Pretty = true;
+            }
+        }
+    }
+
+    /// <summary>
     /// Application Insights connection string
     /// </summary>
     public string? ConnectionString { get; set; }

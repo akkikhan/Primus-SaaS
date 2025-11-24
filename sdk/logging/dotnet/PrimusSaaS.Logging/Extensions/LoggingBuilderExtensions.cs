@@ -37,4 +37,20 @@ public static class LoggingBuilderExtensions
             options.Environment = "development";
         });
     }
+
+    /// <summary>
+    /// Adds Primus Logging as a provider to the logging builder (Alias for AddPrimus to match documentation)
+    /// </summary>
+    public static ILoggingBuilder AddPrimusLogging(this ILoggingBuilder builder, Action<LoggerOptions> configure)
+    {
+        return builder.AddPrimus(configure);
+    }
+
+    /// <summary>
+    /// Adds Primus Logging as a provider with default options (Alias for AddPrimus to match documentation)
+    /// </summary>
+    public static ILoggingBuilder AddPrimusLogging(this ILoggingBuilder builder)
+    {
+        return builder.AddPrimus();
+    }
 }

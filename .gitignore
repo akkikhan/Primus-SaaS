@@ -15,6 +15,10 @@ node_modules/
 portal/frontend/dist/
 *.tsbuildinfo
 
+# Docusaurus
+docs-site/.docusaurus/
+docs-site/build/
+
 # Logs
 *.log
 

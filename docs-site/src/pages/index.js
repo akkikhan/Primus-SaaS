@@ -21,8 +21,8 @@ export default function Home() {
                 <Link className="button button--primary button--lg" to="/docs">
                   View Docs
                 </Link>
-                <Link className="button button--secondary button--lg" to="/docs/integrations/overview">
-                  Integration Overview
+                <Link className="button button--secondary button--lg" to="/docs/modules/identity-validator-nodejs">
+                  Quick Start Guide
                 </Link>
               </div>
             </div>
