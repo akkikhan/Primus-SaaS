@@ -8,7 +8,7 @@
     
     <!-- Package Metadata -->
     <PackageId>PrimusSaaS.Logging</PackageId>
-    <Version>1.1.1</Version>
+    <Version>1.2.0</Version>
     <Authors>Primus SaaS</Authors>
     <Company>Primus SaaS</Company>
     <Product>PrimusSaaS Logging SDK</Product>
@@ -20,6 +20,9 @@
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageReleaseNotes>Safe serialization (cycles/type/ClaimsPrincipal/HttpContext) with depth/size caps; error isolation; scopes + correlation IDs; async buffering with metrics; health endpoint and metrics; file rotation and AI target support; benchmarks/load harness; CI workflow and docs updated.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

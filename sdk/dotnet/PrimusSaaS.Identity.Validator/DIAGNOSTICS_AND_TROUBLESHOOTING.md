@@ -24,7 +24,7 @@ This guide covers the most common integration issues for OIDC/Azure AD with Prim
   - Use this to surface in health/diagnostics endpoints.
 - Expose a diagnostics endpoint:
   ```csharp
-  app.MapPrimusIdentityDiagnostics(); // GET /primus/diagnostics
+  app.MapPrimusIdentityDiagnostics(); // GET /primus/diagnostics (includes issuers, JWKS, security event metrics)
   ```
 
 ## Common Failure Patterns
@@ -46,6 +46,7 @@ This guide covers the most common integration issues for OIDC/Azure AD with Prim
   - FetchAttempts/FetchFailures
   - LastSuccessUtc
 - Alert on sustained fetch failures or zero cache hits (indicates cache bypass).
+- Security metrics (auth successes/failures/rate-limited) are included in diagnostics; alert on spikes in failures or rate-limited counts.
 
 ## Rate Limiting for Failed Validations
 - Configure in `PrimusIdentityOptions.RateLimiting`:

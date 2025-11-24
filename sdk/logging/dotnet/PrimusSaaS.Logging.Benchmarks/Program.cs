@@ -15,15 +15,17 @@ if (args.Contains("--load"))
     }
     else
     {
-        BenchmarkRunner.Run(new[]
-        {
-            typeof(LoggingBenchmarks),
-            typeof(FormatterBenchmarks),
-            typeof(AsyncFileTargetBenchmarks),
-            typeof(AsyncChannelBenchmarks),
-            typeof(AsyncTargetLoadHarness)
-        });
-    }
+    BenchmarkRunner.Run(new[]
+    {
+        typeof(LoggingBenchmarks),
+        typeof(FormatterBenchmarks),
+        typeof(AsyncFileTargetBenchmarks),
+        typeof(AsyncChannelBenchmarks),
+        typeof(AsyncTargetLoadHarness),
+        typeof(ApplicationInsightsBenchmarks),
+        typeof(FileRotationBenchmarks)
+    });
+}
 
 public class LoggingBenchmarks
 {
@@ -75,13 +77,16 @@ internal static class LoadHarness
         var rateOption = new Option<int>("--rate", () => 5000, "Logs per second");
         var durationOption = new Option<int>("--durationSeconds", () => 60, "Duration in seconds");
         var maxDropsOption = new Option<int?>("--maxDrops", description: "Optional max allowed drops; exits non-zero if exceeded.");
+        var maxFailuresOption = new Option<int?>("--maxFailures", description: "Optional max allowed write failures; exits non-zero if exceeded.");
         var root = new RootCommand { rateOption, durationOption };
         root.AddOption(maxDropsOption);
+        root.AddOption(maxFailuresOption);
 
         var parsed = root.Parse(args);
         var rate = parsed.GetValueForOption(rateOption);
         var durationSeconds = parsed.GetValueForOption(durationOption);
         var maxDrops = parsed.GetValueForOption(maxDropsOption);
+        var maxFailures = parsed.GetValueForOption(maxFailuresOption);
 
         var metrics = new PrimusSaaS.Logging.Core.LoggingMetrics();
         var logger = new PrimusSaaS.Logging.Core.Logger(new LoggerOptions
@@ -124,6 +129,12 @@ internal static class LoadHarness
         if (maxDrops.HasValue && snapshot.DroppedEntries > maxDrops.Value)
         {
             Console.Error.WriteLine($"FAIL: Drops {snapshot.DroppedEntries} exceeded allowed {maxDrops.Value}");
+            Environment.ExitCode = 1;
+        }
+
+        if (maxFailures.HasValue && snapshot.WriteFailures > maxFailures.Value)
+        {
+            Console.Error.WriteLine($"FAIL: Failures {snapshot.WriteFailures} exceeded allowed {maxFailures.Value}");
             Environment.ExitCode = 1;
         }
     }

@@ -58,6 +58,9 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
+// Diagnostics endpoint for logging health (optional; protect in production)
+app.MapPrimusLoggingHealth("/_primus/logging/health");
+
 // Get logger and log startup
 var logger = app.Services.GetRequiredService<Logger>();
 logger.Info("E-Commerce API starting", new Dictionary<string, object>

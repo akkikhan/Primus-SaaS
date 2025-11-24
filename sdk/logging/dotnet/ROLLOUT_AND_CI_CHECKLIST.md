@@ -12,6 +12,7 @@
 - Run tests across TFMs: net6.0, net7.0, net8.0 (matrix).
 - Optional/Recommended: run BenchmarkDotNet suite (compare to baseline; warn on regression). Use load harness with `--load --rate 5000 --durationSeconds 60 --maxDrops 0` for a smoke soak.
 - Lint/format: dotnet format (if enabled).
+- Document failures: capture metrics snapshot and health endpoint output on CI failure for triage.
 
 ## Staged Rollout
 - Enable in canary environment with async buffering ON and health endpoint wired.

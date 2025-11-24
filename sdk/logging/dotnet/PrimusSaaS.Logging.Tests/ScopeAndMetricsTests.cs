@@ -50,12 +50,13 @@ public class ScopeAndMetricsTests : IDisposable
         var asyncWrapper = new AsyncTargetWrapper(slowTarget, bufferSize: 1, metrics: metrics);
 
         var entry = LogEntry.Create(LogLevel.Info, "msg");
-        asyncWrapper.Write(entry);
-        asyncWrapper.Write(entry);
-        asyncWrapper.Write(entry);
+        for (int i = 0; i < 25; i++)
+        {
+            asyncWrapper.Write(entry);
+        }
 
         // Wait for processing
-        Thread.Sleep(200);
+        Thread.Sleep(500);
         asyncWrapper.Close();
 
         var snapshot = metrics.Snapshot();

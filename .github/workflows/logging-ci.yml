@@ -1,0 +1,41 @@
+name: Logging CI
+
+on:
+  push:
+    paths:
+      - "sdk/logging/dotnet/**"
+      - ".github/workflows/logging-ci.yml"
+  pull_request:
+    paths:
+      - "sdk/logging/dotnet/**"
+      - ".github/workflows/logging-ci.yml"
+
+jobs:
+  test-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet: [ "6.0.x", "7.0.x" ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET ${{ matrix.dotnet }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet }}
+      - name: Restore
+        run: dotnet restore sdk/logging/dotnet/PrimusSaaS.Logging.Tests/PrimusSaaS.Logging.Tests.csproj
+      - name: Test
+        run: dotnet test sdk/logging/dotnet/PrimusSaaS.Logging.Tests/PrimusSaaS.Logging.Tests.csproj -f net${{ matrix.dotnet }}
+
+  load-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET 7
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "7.0.x"
+      - name: Restore Benchmarks
+        run: dotnet restore sdk/logging/dotnet/PrimusSaaS.Logging.Benchmarks/PrimusSaaS.Logging.Benchmarks.csproj
+      - name: Run load harness (no drops/failures allowed)
+        run: dotnet run -c Release --project sdk/logging/dotnet/PrimusSaaS.Logging.Benchmarks/PrimusSaaS.Logging.Benchmarks.csproj -- --load --rate 5000 --durationSeconds 30 --maxDrops 0 --maxFailures 0

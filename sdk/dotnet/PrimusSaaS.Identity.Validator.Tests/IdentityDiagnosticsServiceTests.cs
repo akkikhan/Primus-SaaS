@@ -42,7 +42,9 @@ public class IdentityDiagnosticsServiceTests
             LastSuccessUtc = DateTimeOffset.UtcNow
         };
 
-        var service = new IdentityDiagnosticsService(options, () => jwksDiagnostics);
+        var securityMetrics = new SecurityEventMetrics();
+        securityMetrics.IncrementSuccess();
+        var service = new IdentityDiagnosticsService(options, () => jwksDiagnostics, securityMetrics);
 
         // Act
         var snapshot = service.GetSnapshot();
@@ -56,5 +58,6 @@ public class IdentityDiagnosticsServiceTests
         snapshot.Jwks.FetchAttempts.Should().Be(3);
         snapshot.Jwks.FetchFailures.Should().Be(0);
         snapshot.Jwks.LastSuccessUtc.Should().NotBeNull();
+        snapshot.Security.AuthSuccesses.Should().BeGreaterThanOrEqualTo(1);
     }
 }

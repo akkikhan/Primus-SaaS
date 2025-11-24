@@ -68,6 +68,8 @@ public static class PrimusIdentityExtensions
             return new AzureAdValidator(configService, jwksService);
         });
         services.AddSingleton<IdentityDiagnosticsService>();
+        services.AddSingleton<SecurityEventMetrics>();
+        services.AddSingleton<ISecurityEventLogger, DefaultSecurityEventLogger>();
         services.AddSingleton(sp =>
         {
             var opt = sp.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
@@ -193,9 +195,11 @@ public static class PrimusIdentityExtensions
                         var logger = context.HttpContext.RequestServices.GetService<ILoggerFactory>()?.CreateLogger("PrimusSaaS.Identity.Validator");
                         var primusIdentityOptions = context.HttpContext.RequestServices.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
                         var tenantResolver = ResolveTenantResolver(context.HttpContext, primusIdentityOptions);
+                        var securityLogger = context.HttpContext.RequestServices.GetService<ISecurityEventLogger>();
 
                         if (tenantResolver == null)
                         {
+                            securityLogger?.LogSuccessfulAuthentication(context.Principal!, context.SecurityToken?.Issuer);
                             return;
                         }
 
@@ -209,6 +213,8 @@ public static class PrimusIdentityExtensions
                             {
                                 context.HttpContext.Items["TenantContext"] = tenantContext;
                             }
+
+                            securityLogger?.LogSuccessfulAuthentication(context.Principal!, context.SecurityToken?.Issuer);
                         }
                         catch (Exception ex)
                         {
@@ -220,6 +226,8 @@ public static class PrimusIdentityExtensions
                     {
                         var logger = context.HttpContext.RequestServices.GetService<ILoggerFactory>()?.CreateLogger("PrimusSaaS.Identity.Validator");
                         logger?.LogWarning("Primus Identity: Authentication failed - {Reason}", context.Exception.Message);
+                        var securityLogger = context.HttpContext.RequestServices.GetService<ISecurityEventLogger>();
+                        securityLogger?.LogFailedAuthentication(null, context.Exception.Message);
 
                         var limiter = context.HttpContext.RequestServices.GetService<FailedValidationRateLimiter>();
                         if (limiter != null && limiter.RegisterFailure(context.HttpContext))
@@ -228,6 +236,7 @@ public static class PrimusIdentityExtensions
                             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
                             context.Response.Headers["Retry-After"] = Math.Max(1, (int)primusOptions.ClockSkew.TotalSeconds).ToString();
                             logger?.LogWarning("Primus Identity: Rate limit hit for failed validations.");
+                            securityLogger?.LogRateLimited(null, "Rate limit exceeded for failed validations.");
                         }
                         return Task.CompletedTask;
                     },
