@@ -13,5 +13,14 @@
   "frontMatter": {
     "id": "module-mapping",
     "title": "Module-to-Docs Mapping"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Primus Integration Hub",
+    "permalink": "/docs/"
+  },
+  "next": {
+    "title": "Identity Validator - .NET Quick Start",
+    "permalink": "/docs/modules/identity-validator-dotnet"
   }
 }

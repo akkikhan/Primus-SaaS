@@ -1,7 +1,7 @@
 {
   "id": "integrations/node-express",
-  "title": "Node.js (Express)",
-  "description": "Build a protected API with the Node.js validator and the same multi-issuer config used in test-apps/acme-dashboard/server.js.",
+  "title": "Node.js (Express) Integration",
+  "description": "This guide shows you how to integrate Primus SaaS modules with your Express.js application.",
   "source": "@site/docs/integrations/node-express.md",
   "sourceDirName": "integrations",
   "slug": "/integrations/node-express",
@@ -12,7 +12,7 @@
   "version": "current",
   "frontMatter": {
     "id": "node-express",
-    "title": "Node.js (Express)"
+    "title": "Node.js (Express) Integration"
   },
   "sidebar": "docs",
   "previous": {

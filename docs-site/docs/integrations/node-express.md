@@ -1,82 +1,206 @@
 ---
 id: node-express
-title: Node.js (Express)
+title: Node.js (Express) Integration
 ---
 
-Build a protected API with the Node.js validator and the same multi-issuer config used in `test-apps/acme-dashboard/server.js`.
+# Node.js (Express) Integration Guide
 
-## Install
+This guide shows you how to integrate Primus SaaS modules with your Express.js application.
+
+## Available Modules
+
+### Identity Validator
+Multi-issuer JWT/OIDC token validator for authenticating users.
+
+**[View Full Documentation →](/docs/modules/identity-validator-nodejs)**
+
+### Logging SDK
+Enterprise-grade structured logging with PII masking and file rotation.
+
+**[View Full Documentation →](/docs/modules/logging-nodejs)**
+
+---
+
+## Quick Start: Identity Validator
+
+### Installation
 
 ```bash
 npm install primus-identity-validator express
 ```
 
-## Wire up Express
+### Basic Setup
 
 ```javascript
-// server.js
 const express = require('express');
-const { primusIdentityMiddleware, requireRoles } = require('primus-identity-validator');
+const { PrimusIdentityValidator } = require('primus-identity-validator');
 
 const app = express();
 
-const primusAuth = primusIdentityMiddleware({
+const validator = new PrimusIdentityValidator({
   issuers: [
     {
       name: 'AzureAD',
       type: 'oidc',
-      issuer: 'https://login.microsoftonline.com/cbd15a9b-cd52-4ccc-916a-00e2edb13043/v2.0',
-      authority: 'https://login.microsoftonline.com/cbd15a9b-cd52-4ccc-916a-00e2edb13043/v2.0',
-      audiences: ['acc675f1-e32f-40b9-a0c6-716066cc6890']
-    },
-    {
-      name: 'LocalAuth',
-      type: 'jwt',
-      issuer: 'http://localhost:4000',
-      secret: process.env.LOCAL_JWT_SECRET || 'local-dev-secret-123',
-      audiences: ['acc675f1-e32f-40b9-a0c6-716066cc6890']
+      issuer: 'https://login.microsoftonline.com/<TENANT_ID>/v2.0',
+      authority: 'https://login.microsoftonline.com/<TENANT_ID>/v2.0',
+      audiences: ['api://your-api-id']
     }
-  ],
-  clockSkew: 300
+  ]
 });
 
+// Apply middleware
+app.use(validator.middleware());
+
 // Public endpoint
-app.get('/api/public', (_req, res) => {
+app.get('/api/public', (req, res) => {
   res.json({ message: 'No auth required' });
 });
 
 // Protected endpoint
-app.get('/api/protected', primusAuth, (req, res) => {
+app.get('/api/protected', validator.requireAuth(), (req, res) => {
   res.json({
     message: 'Authenticated',
     user: req.primusUser
   });
 });
 
-// Role-gated endpoint
-app.get('/api/admin', primusAuth, requireRoles('Admin'), (_req, res) => {
-  res.json({ message: 'Admin only' });
+app.listen(3000);
+```
+
+**[Full Identity Validator Documentation →](/docs/modules/identity-validator-nodejs)**
+
+---
+
+## Quick Start: Logging SDK
+
+### Installation
+
+```bash
+npm install @primus-saas/logging
+```
+
+### Basic Setup
+
+```javascript
+const express = require('express');
+const { Logger } = require('@primus-saas/logging');
+
+const app = express();
+
+const logger = new Logger({
+  applicationId: 'MY-APP',
+  environment: 'production',
+  targets: [
+    { type: 'console', pretty: true },
+    { type: 'file', path: 'logs/app.log' }
+  ]
+});
+
+// Middleware for request logging
+app.use((req, res, next) => {
+  logger.setHttpContext(req);
+  logger.info(`${req.method} ${req.path}`);
+  next();
+});
+
+// Use in routes
+app.get('/api/data', (req, res) => {
+  logger.info('Fetching data', { userId: req.user?.id });
+  res.json({ data: [] });
+});
+
+app.listen(3000);
+```
+
+**[Full Logging SDK Documentation →](/docs/modules/logging-nodejs)**
+
+---
+
+## Using Both Modules Together
+
+```javascript
+const express = require('express');
+const { PrimusIdentityValidator } = require('primus-identity-validator');
+const { Logger } = require('@primus-saas/logging');
+
+const app = express();
+
+// Setup logging
+const logger = new Logger({
+  applicationId: 'MY-APP',
+  environment: 'production',
+  targets: [
+    { type: 'console', pretty: true },
+    { type: 'file', path: 'logs/app.log', async: true }
+  ],
+  pii: {
+    maskEmails: true,
+    maskCreditCards: true
+  }
+});
+
+// Setup authentication
+const validator = new PrimusIdentityValidator({
+  issuers: [
+    {
+      name: 'AzureAD',
+      type: 'oidc',
+      issuer: 'https://login.microsoftonline.com/<TENANT_ID>/v2.0',
+      authority: 'https://login.microsoftonline.com/<TENANT_ID>/v2.0',
+      audiences: ['api://your-api-id']
+    }
+  ]
+});
+
+// Apply middleware
+app.use(validator.middleware());
+app.use((req, res, next) => {
+  logger.setHttpContext(req);
+  next();
+});
+
+// Protected route with logging
+app.get('/api/data', validator.requireAuth(), (req, res) => {
+  logger.info('User accessed data', {
+    userId: req.primusUser.userId,
+    email: req.primusUser.email
+  });
+  
+  res.json({ data: [] });
 });
 
 app.listen(3000, () => {
-  console.log('API listening on http://localhost:3000');
+  logger.info('Server started on port 3000');
 });
 ```
 
-## Test locally
+---
 
-1. Start your LocalAuth/JWT issuer on `http://localhost:4000` and create a token with `iss=http://localhost:4000`, `aud=acc675f1-e32f-40b9-a0c6-716066cc6890`.
-2. Hit `GET /api/protected` with `Authorization: Bearer <token>`.
-3. Repeat with an Azure AD token whose `iss` matches the configured tenant; the middleware will auto-route to OIDC validation.
+## Production Best Practices
 
-## Harden for production
+### Security
+- Use HTTPS in production
+- Store secrets in environment variables
+- Enable token lifetime validation
+- Implement rate limiting
 
-- Keep `clockSkew` small (`<=300s`) and enforce `https` for issuers.
-- Store secrets in env vars or a secret manager; never commit them.
-- Use multiple audiences when serving mobile/web clients that share the same API.
+### Logging
+- Enable PII masking for sensitive data
+- Use async file targets for performance
+- Configure file rotation to manage disk space
+- Send critical logs to Application Insights
 
-## Update steps
+### Monitoring
+- Track authentication failures
+- Monitor API response times
+- Set up alerts for errors
+- Review logs regularly
 
-1. Upgrade the package: `npm install primus-identity-validator@latest`.
-2. Confirm your `issuers` still match the `iss` values in tokens (Azure tenant URLs, LocalAuth URL).
-3. Re-run smoke tests on `/api/protected` and any role-gated routes.
+---
+
+## Next Steps
+
+- **Identity Validator**: [Full Documentation](/docs/modules/identity-validator-nodejs)
+- **Logging SDK**: [Full Documentation](/docs/modules/logging-nodejs)
+- **Module Mapping**: [View Available Modules](/docs/module-mapping)

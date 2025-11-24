@@ -78,27 +78,90 @@ public class EmailService : IEmailService
             _logger.LogWarning("No email address found for module assignment notification for application {AppId}", app.Id);
             return;
         }
-        var subject = $"Module {version.Module.Name} assigned to {app.Name}";
+
+        var moduleName = version.Module.Name;
+        var stack = app.Stack?.ToLowerInvariant() ?? "dotnet";
         
-        var npmMapping = await _context.PackageRegistryMappings
-            .FirstOrDefaultAsync(m => m.ModuleId == version.ModuleId && m.RegistryType == "npm");
-        var nugetMapping = await _context.PackageRegistryMappings
-            .FirstOrDefaultAsync(m => m.ModuleId == version.ModuleId && m.RegistryType == "nuget");
+        // Get package name and install command based on module and stack
+        var (packageName, installCommand) = GetPackageInfo(moduleName, stack);
+        
+        // Generate stack-specific documentation link
+        var docLink = GenerateDocLink(moduleName, stack);
+        
+        var subject = $"Module {moduleName} assigned to {app.Name}";
+        
+        var body = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }}
+        .content {{ padding: 20px; background: #f9f9f9; border-radius: 0 0 5px 5px; }}
+        .code-block {{ background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; margin: 10px 0; }}
+        .button {{ display: inline-block; padding: 12px 24px; background: #4CAF50; color: white !important; text-decoration: none; border-radius: 5px; margin: 10px 0; }}
+        .info-box {{ background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin: 15px 0; }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <div class=""header"">
+            <h1>🎉 Module Assigned!</h1>
+        </div>
+        <div class=""content"">
+            <h2>Hello!</h2>
+            <p>The <strong>{moduleName}</strong> module (v{version.Version}) has been assigned to your application <strong>{app.Name}</strong>.</p>
+            
+            <h3>📦 Installation</h3>
+            <div class=""code-block"">{installCommand}</div>
+            
+            <h3>📚 Documentation</h3>
+            <p>Get started with our comprehensive {stack.ToUpperInvariant()}-specific integration guide:</p>
+            <a href=""{docLink}"" class=""button"">View Documentation →</a>
+            
+            <div class=""info-box"">
+                <strong>📖 What's included:</strong>
+                <ul>
+                    <li>Quick start guide for {stack.ToUpperInvariant()}</li>
+                    <li>Configuration examples</li>
+                    <li>Code samples</li>
+                    <li>Best practices</li>
+                    <li>Troubleshooting guide</li>
+                </ul>
+            </div>
+            
+            <p>Need help? Visit our <a href=""{_docsBaseUrl}"">documentation</a> or contact support.</p>
+            
+            <p>Best regards,<br/>Primus SaaS Team</p>
+        </div>
+    </div>
+</body>
+</html>";
 
-        var npmPackageName = npmMapping?.PackageName ?? "unknown-package";
-        var nugetPackageName = nugetMapping?.PackageName ?? "Unknown.Package";
-        var docsLink = $"{_docsBaseUrl}{ModuleDocsMapper.GetIntegrationPath(app.Stack)}";
-
-        var body = $@"<p>Hello,</p>
-<p>The module <strong>{version.Module.Name}</strong> (v{version.Version}) has been assigned to your application <strong>{app.Name}</strong>.</p>
-<p>You can now integrate it using the following commands:</p>
-<ul>
-<li>npm: <code>npm install {npmPackageName}@{version.Version}</code></li>
-<li>NuGet: <code>Install-Package {nugetPackageName} -Version {version.Version}</code></li>
-</ul>
-<p>Integration guide: <a href=""{docsLink}"">{docsLink}</a></p>
-<p>Best regards,<br/>Primus SaaS Team</p>";
         await SendEmailAsync(to, subject, body);
+    }
+
+    private (string packageName, string installCommand) GetPackageInfo(string moduleName, string stack)
+    {
+        return (moduleName.ToLowerInvariant(), stack) switch
+        {
+            ("identity validator", "dotnet") => 
+                ("PrimusSaaS.Identity.Validator", "dotnet add package PrimusSaaS.Identity.Validator"),
+            ("identity validator", "nodejs") => 
+                ("primus-identity-validator", "npm install primus-identity-validator"),
+            ("logging", "dotnet") => 
+                ("PrimusSaaS.Logging", "dotnet add package PrimusSaaS.Logging"),
+            ("logging", "nodejs") => 
+                ("@primus-saas/logging", "npm install @primus-saas/logging"),
+            _ => ("Unknown", "# Package not found")
+        };
+    }
+
+    private string GenerateDocLink(string moduleName, string stack)
+    {
+        var module = moduleName.ToLowerInvariant().Replace(" ", "-");
+        return $"{_docsBaseUrl}/docs/modules/{module}-{stack}";
     }
 
     public async Task SendVersionPublishedAsync(Application app, ModuleVersion version)

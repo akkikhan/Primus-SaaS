@@ -153,8 +153,8 @@ export const ApplicationsPage = () => {
                   <option value="NodeJS">Node.js (Express)</option>
                   <option value="NodeJS-Nest">Node.js (NestJS)</option>
                   <option value="DotNet">.NET 8 Web API</option>
-                  <option value="TypeScriptLib">TypeScript Library</option>
-                  <option value="Python">Python FastAPI (preview)</option>
+                  <option value="TypeScriptLib" disabled>TypeScript Library (Coming Soon)</option>
+                  <option value="Python" disabled>Python FastAPI (Coming Soon)</option>
                 </select>
               </div>
               <div className="form-group">

@@ -42,17 +42,17 @@
       "plugin": "plugin---docusaurus-debugb-38-ad3"
     }
   },
-  "/docs-1cb": {
+  "/docs-fa9": {
     "__comp": "__comp---theme-docs-root-5-e-9-0b6",
     "__context": {
       "plugin": "plugin---docsaba-d7c"
     }
   },
-  "/docs-5fb": {
+  "/docs-553": {
     "__comp": "__comp---theme-doc-version-roota-7-b-5de",
     "__props": "__props---docs-005-788"
   },
-  "/docs-6f6": {
+  "/docs-e4e": {
     "__comp": "__comp---theme-doc-roota-94-67a"
   },
   "/docs/-be8": {
@@ -63,7 +63,7 @@
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---docs-integrations-dotnet-aspnetc-5-f-e84"
   },
-  "/docs/integrations/java-spring-boot-aa1": {
+  "/docs/integrations/java-spring-boot-758": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---docs-integrations-java-spring-boot-688-158"
   },
@@ -75,9 +75,25 @@
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---docs-integrations-overviewfbb-8a4"
   },
-  "/docs/module-mapping-8aa": {
+  "/docs/module-mapping-74c": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---docs-module-mappingc-02-2d3"
+  },
+  "/docs/modules/identity-validator-dotnet-1e6": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-modules-identity-validator-dotnet-29-c-ec6"
+  },
+  "/docs/modules/identity-validator-nodejs-ef0": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-modules-identity-validator-nodejs-38-f-ef1"
+  },
+  "/docs/modules/logging-dotnet-748": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-modules-logging-dotnetb-15-71b"
+  },
+  "/docs/modules/logging-nodejs-0df": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-modules-logging-nodejs-7-ba-05d"
   },
   "/-2e1": {
     "__comp": "__comp---site-src-pages-index-jsc-4-f-f99",

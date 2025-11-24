@@ -17,7 +17,8 @@
             },
             {
               "id": "integrations/java-spring-boot",
-              "path": "/docs/integrations/java-spring-boot"
+              "path": "/docs/integrations/java-spring-boot",
+              "sidebar": "docs"
             },
             {
               "id": "integrations/node-express",
@@ -36,7 +37,28 @@
             },
             {
               "id": "module-mapping",
-              "path": "/docs/module-mapping"
+              "path": "/docs/module-mapping",
+              "sidebar": "docs"
+            },
+            {
+              "id": "modules/identity-validator-dotnet",
+              "path": "/docs/modules/identity-validator-dotnet",
+              "sidebar": "docs"
+            },
+            {
+              "id": "modules/identity-validator-nodejs",
+              "path": "/docs/modules/identity-validator-nodejs",
+              "sidebar": "docs"
+            },
+            {
+              "id": "modules/logging-dotnet",
+              "path": "/docs/modules/logging-dotnet",
+              "sidebar": "docs"
+            },
+            {
+              "id": "modules/logging-nodejs",
+              "path": "/docs/modules/logging-nodejs",
+              "sidebar": "docs"
             }
           ],
           "draftIds": [],

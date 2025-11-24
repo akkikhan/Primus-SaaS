@@ -17,7 +17,7 @@
   },
   "sidebar": "docs",
   "next": {
-    "title": "Integration Overview",
-    "permalink": "/docs/integrations/overview"
+    "title": "Module-to-Docs Mapping",
+    "permalink": "/docs/module-mapping"
   }
 }

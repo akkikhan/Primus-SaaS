@@ -39,15 +39,15 @@ export default [
   },
   {
     path: '/docs',
-    component: ComponentCreator('/docs', '1cb'),
+    component: ComponentCreator('/docs', 'fa9'),
     routes: [
       {
         path: '/docs',
-        component: ComponentCreator('/docs', '5fb'),
+        component: ComponentCreator('/docs', '553'),
         routes: [
           {
             path: '/docs',
-            component: ComponentCreator('/docs', '6f6'),
+            component: ComponentCreator('/docs', 'e4e'),
             routes: [
               {
                 path: '/docs/',
@@ -63,8 +63,9 @@ export default [
               },
               {
                 path: '/docs/integrations/java-spring-boot',
-                component: ComponentCreator('/docs/integrations/java-spring-boot', 'aa1'),
-                exact: true
+                component: ComponentCreator('/docs/integrations/java-spring-boot', '758'),
+                exact: true,
+                sidebar: "docs"
               },
               {
                 path: '/docs/integrations/node-express',
@@ -80,8 +81,33 @@ export default [
               },
               {
                 path: '/docs/module-mapping',
-                component: ComponentCreator('/docs/module-mapping', '8aa'),
-                exact: true
+                component: ComponentCreator('/docs/module-mapping', '74c'),
+                exact: true,
+                sidebar: "docs"
+              },
+              {
+                path: '/docs/modules/identity-validator-dotnet',
+                component: ComponentCreator('/docs/modules/identity-validator-dotnet', '1e6'),
+                exact: true,
+                sidebar: "docs"
+              },
+              {
+                path: '/docs/modules/identity-validator-nodejs',
+                component: ComponentCreator('/docs/modules/identity-validator-nodejs', 'ef0'),
+                exact: true,
+                sidebar: "docs"
+              },
+              {
+                path: '/docs/modules/logging-dotnet',
+                component: ComponentCreator('/docs/modules/logging-dotnet', '748'),
+                exact: true,
+                sidebar: "docs"
+              },
+              {
+                path: '/docs/modules/logging-nodejs',
+                component: ComponentCreator('/docs/modules/logging-nodejs', '0df'),
+                exact: true,
+                sidebar: "docs"
               }
             ]
           }
