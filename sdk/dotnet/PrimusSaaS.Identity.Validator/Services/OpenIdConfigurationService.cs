@@ -30,11 +30,29 @@ public class OpenIdConfigurationService
     /// <param name="tenantId">The Azure AD tenant ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The OpenID configuration.</returns>
-    public async Task<PrimusOpenIdConfiguration> GetConfigurationAsync(
+    public Task<PrimusOpenIdConfiguration> GetConfigurationAsync(
         string tenantId,
         CancellationToken cancellationToken = default)
     {
-        var wellKnownUrl = GetWellKnownUrl(tenantId);
+        var authority = $"https://login.microsoftonline.com/{tenantId}";
+        return GetConfigurationByAuthorityAsync(authority, cancellationToken);
+    }
+
+    /// <summary>
+    /// Gets the OpenID Connect configuration for an authority URL (handles v2.0 normalization).
+    /// </summary>
+    /// <param name="authority">The authority URL (with or without /v2.0).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    public async Task<PrimusOpenIdConfiguration> GetConfigurationByAuthorityAsync(
+        string authority,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(authority))
+        {
+            throw new ArgumentException("Authority cannot be null or empty.", nameof(authority));
+        }
+
+        var wellKnownUrl = GetWellKnownUrlFromAuthority(authority);
 
         // Check cache first
         if (_configCache.TryGetValue(wellKnownUrl, out var cached))
@@ -95,7 +113,24 @@ public class OpenIdConfigurationService
     /// <returns>The well-known URL.</returns>
     public static string GetWellKnownUrl(string tenantId)
     {
-        return $"https://login.microsoftonline.com/{tenantId}/v2.0/.well-known/openid-configuration";
+        return GetWellKnownUrlFromAuthority($"https://login.microsoftonline.com/{tenantId}");
+    }
+
+    /// <summary>
+    /// Builds the well-known OpenID configuration URL from an authority, adding /v2.0 only when missing.
+    /// </summary>
+    public static string GetWellKnownUrlFromAuthority(string authority)
+    {
+        if (string.IsNullOrWhiteSpace(authority))
+        {
+            throw new ArgumentException("Authority cannot be null or empty.", nameof(authority));
+        }
+
+        var trimmed = authority.TrimEnd('/');
+        var hasV2Segment = trimmed.EndsWith("/v2.0", StringComparison.OrdinalIgnoreCase);
+        var basePath = hasV2Segment ? trimmed : $"{trimmed}/v2.0";
+
+        return $"{basePath}/.well-known/openid-configuration";
     }
 
     /// <summary>

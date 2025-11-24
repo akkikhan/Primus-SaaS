@@ -26,7 +26,7 @@ public class ApplicationInsightsTests
         // Using a dummy key - the SDK handles this gracefully by just dropping or queuing
         var connectionString = "InstrumentationKey=00000000-0000-0000-0000-000000000000"; 
         var target = new ApplicationInsightsTarget(connectionString);
-        var entry = LogEntry.Create(LogLevel.Info, "Test message", new Dictionary<string, object> { ["key"] = "value" });
+        var entry = LogEntry.Create(LogLevel.Info, "Test message", new Dictionary<string, object?> { ["key"] = "value" });
 
         // Act & Assert
         try

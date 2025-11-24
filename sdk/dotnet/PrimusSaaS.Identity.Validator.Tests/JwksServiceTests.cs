@@ -19,6 +19,7 @@ public class JwksServiceTests : IDisposable
     private readonly HttpClient _httpClient;
     private readonly JwksCache _cache;
     private readonly JwksService _service;
+    private readonly JwksServiceOptions _options;
     private readonly string _testTenantId = "12345678-1234-1234-1234-123456789abc";
     private readonly string _testJwksUri = "https://login.microsoftonline.com/test/discovery/v2.0/keys";
     private int _callCount;
@@ -29,7 +30,8 @@ public class JwksServiceTests : IDisposable
         _mockHttpHandler = new Mock<HttpMessageHandler>();
         _httpClient = new HttpClient(_mockHttpHandler.Object);
         _cache = new JwksCache(TimeSpan.FromHours(1));
-        _service = new JwksService(_httpClient, _cache);
+        _options = new JwksServiceOptions { MaxRetries = 3, BaseDelay = TimeSpan.FromMilliseconds(1) };
+        _service = new JwksService(_httpClient, _cache, enableCaching: true, options: _options);
         _callCount = 0;
         _capturedRequest = null;
     }
@@ -141,11 +143,11 @@ public class JwksServiceTests : IDisposable
 
         // Assert
         await act.Should().ThrowAsync<HttpRequestException>()
-            .WithMessage("*Network error*");
+            .WithMessage("*after*attempts*");
     }
 
     [Fact]
-    public async Task GetJwksAsync_WithTimeout_ThrowsTaskCanceledException()
+    public async Task GetJwksAsync_WithTimeout_ThrowsHttpRequestExceptionAfterRetries()
     {
         // Arrange
         _mockHttpHandler
@@ -160,7 +162,8 @@ public class JwksServiceTests : IDisposable
         Func<Task> act = async () => await _service.GetJwksAsync(_testJwksUri);
 
         // Assert
-        await act.Should().ThrowAsync<TaskCanceledException>();
+        await act.Should().ThrowAsync<HttpRequestException>()
+            .WithMessage("*after*attempts*");
     }
 
     [Fact]
@@ -279,6 +282,26 @@ public class JwksServiceTests : IDisposable
 
         // Assert - Should only call HTTP once (cached)
         _callCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetDiagnostics_ShouldReflectCacheAndFetchCounts()
+    {
+        // Arrange
+        var keySet = CreateTestKeySet("diag-key");
+        SetupValidJwksMock(keySet);
+
+        // Act
+        await _service.GetJwksAsync(_testJwksUri); // miss + fetch
+        await _service.GetJwksAsync(_testJwksUri); // hit
+        var diagnostics = _service.GetDiagnostics();
+
+        // Assert
+        diagnostics.CacheHits.Should().BeGreaterThanOrEqualTo(1);
+        diagnostics.CacheMisses.Should().BeGreaterThanOrEqualTo(1);
+        diagnostics.FetchAttempts.Should().BeGreaterThanOrEqualTo(1);
+        diagnostics.FetchFailures.Should().BeGreaterThanOrEqualTo(0);
+        diagnostics.LastSuccessUtc.Should().NotBeNull();
     }
 
     [Fact]
@@ -407,6 +430,7 @@ public class JwksServiceTests : IDisposable
         // We can't easily test actual HTTP call without mocking, so just verify construction
         
         // Act & Assert - Should not throw
+        await Task.CompletedTask;
         serviceWithDefaultClient.Should().NotBeNull();
     }
 
@@ -418,7 +442,7 @@ public class JwksServiceTests : IDisposable
         _callCount = 0;
         SetupMockWithCallCounter(keySet);
         
-        var serviceWithoutCache = new JwksService(_httpClient, null, enableCaching: false);
+        var serviceWithoutCache = new JwksService(_httpClient, null, enableCaching: false, options: _options);
 
         // Act - Call twice
         await serviceWithoutCache.GetJwksAsync(_testJwksUri);
@@ -426,6 +450,60 @@ public class JwksServiceTests : IDisposable
 
         // Assert - Should call HTTP twice (no caching)
         _callCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task GetJwksAsync_WithTransientFailure_RetriesAndSucceeds()
+    {
+        // Arrange: first call fails, second succeeds
+        var keySet = CreateTestKeySet("retry-key");
+        var failuresRemaining = 1;
+
+        _mockHttpHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() =>
+            {
+                if (failuresRemaining-- > 0)
+                {
+                    return new HttpResponseMessage(HttpStatusCode.InternalServerError);
+                }
+
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(keySet), Encoding.UTF8, "application/json")
+                };
+            });
+
+        // Act
+        var result = await _service.GetJwksAsync(_testJwksUri);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Keys.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task GetJwksAsync_WhenRetriesExhausted_ThrowsHttpRequestException()
+    {
+        // Arrange: always fail
+        _mockHttpHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+
+        // Act
+        Func<Task> act = async () => await _service.GetJwksAsync(_testJwksUri);
+
+        // Assert
+        await act.Should().ThrowAsync<HttpRequestException>()
+            .WithMessage("*after*attempts*");
     }
 
     // Helper methods

@@ -11,7 +11,13 @@ public class JwksService
     private readonly HttpClient _httpClient;
     private readonly JwksCache? _cache;
     private readonly bool _enableCaching;
+    private readonly JwksServiceOptions _options;
     private readonly SemaphoreSlim _fetchLock = new(1, 1);
+    private long _cacheHits;
+    private long _cacheMisses;
+    private long _fetchAttempts;
+    private long _fetchFailures;
+    private DateTimeOffset? _lastSuccessUtc;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JwksService"/> class.
@@ -19,11 +25,14 @@ public class JwksService
     /// <param name="httpClient">HTTP client for fetching JWKS.</param>
     /// <param name="cache">JWKS cache.</param>
     /// <param name="enableCaching">Set false to bypass caching entirely (useful for tests/local).</param>
-    public JwksService(HttpClient? httpClient = null, JwksCache? cache = null, bool enableCaching = true)
+    /// <param name="options">Resiliency options for JWKS fetching.</param>
+    public JwksService(HttpClient? httpClient = null, JwksCache? cache = null, bool enableCaching = true, JwksServiceOptions? options = null)
     {
         _httpClient = httpClient ?? new HttpClient();
         _enableCaching = enableCaching;
         _cache = enableCaching ? cache ?? new JwksCache() : null;
+        _options = options ?? new JwksServiceOptions();
+        _options.Validate();
     }
 
     /// <summary>
@@ -36,12 +45,19 @@ public class JwksService
         string jwksUri,
         CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(jwksUri))
+        {
+            throw new ArgumentException("JWKS URI cannot be null or empty.", nameof(jwksUri));
+        }
+
         // Try cache first
         var cachedKeySet = _enableCaching ? _cache?.Get(jwksUri) : null;
         if (cachedKeySet != null)
         {
+            Interlocked.Increment(ref _cacheHits);
             return cachedKeySet;
         }
+        Interlocked.Increment(ref _cacheMisses);
 
         // Fetch from Azure AD
         await _fetchLock.WaitAsync(cancellationToken);
@@ -51,21 +67,12 @@ public class JwksService
             cachedKeySet = _enableCaching ? _cache?.Get(jwksUri) : null;
             if (cachedKeySet != null)
             {
+                Interlocked.Increment(ref _cacheHits);
                 return cachedKeySet;
             }
 
-            var response = await _httpClient.GetAsync(jwksUri, cancellationToken);
-            response.EnsureSuccessStatusCode();
+            var keySet = await FetchWithRetriesAsync(jwksUri, cancellationToken);
 
-            var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            var keySet = JsonSerializer.Deserialize<PrimusJsonWebKeySet>(json);
-
-            if (keySet == null)
-            {
-                throw new InvalidOperationException("Failed to deserialize JWKS.");
-            }
-
-            // Cache the key set
             if (_enableCaching && _cache != null)
             {
                 _cache.Set(jwksUri, keySet);
@@ -77,6 +84,64 @@ public class JwksService
         {
             _fetchLock.Release();
         }
+    }
+
+    private async Task<PrimusJsonWebKeySet> FetchWithRetriesAsync(string jwksUri, CancellationToken cancellationToken)
+    {
+        Exception? lastError = null;
+
+        for (var attempt = 1; attempt <= _options.MaxRetries; attempt++)
+        {
+            try
+            {
+                Interlocked.Increment(ref _fetchAttempts);
+                var response = await _httpClient.GetAsync(jwksUri, cancellationToken);
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                var keySet = JsonSerializer.Deserialize<PrimusJsonWebKeySet>(json);
+
+                if (keySet == null)
+                {
+                    throw new InvalidOperationException("Failed to deserialize JWKS.");
+                }
+
+                _lastSuccessUtc = DateTimeOffset.UtcNow;
+                return keySet;
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException || ex is InvalidOperationException)
+            {
+                lastError = ex;
+                Interlocked.Increment(ref _fetchFailures);
+                if (attempt >= _options.MaxRetries)
+                {
+                    throw new HttpRequestException($"Failed to fetch JWKS from '{jwksUri}' after {attempt} attempts.", ex);
+                }
+
+                if (_options.BaseDelay > TimeSpan.Zero)
+                {
+                    var delay = TimeSpan.FromMilliseconds(_options.BaseDelay.TotalMilliseconds * attempt);
+                    await Task.Delay(delay, cancellationToken);
+                }
+            }
+        }
+
+        throw new HttpRequestException($"Failed to fetch JWKS from '{jwksUri}'.", lastError);
+    }
+
+    /// <summary>
+    /// Returns a snapshot of JWKS diagnostics (thread-safe).
+    /// </summary>
+    public JwksServiceDiagnostics GetDiagnostics()
+    {
+        return new JwksServiceDiagnostics
+        {
+            CacheHits = Interlocked.Read(ref _cacheHits),
+            CacheMisses = Interlocked.Read(ref _cacheMisses),
+            FetchAttempts = Interlocked.Read(ref _fetchAttempts),
+            FetchFailures = Interlocked.Read(ref _fetchFailures),
+            LastSuccessUtc = _lastSuccessUtc
+        };
     }
 
     /// <summary>

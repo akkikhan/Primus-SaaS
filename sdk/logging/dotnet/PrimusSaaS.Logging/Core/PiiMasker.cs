@@ -63,11 +63,11 @@ public class PiiMasker
     /// <summary>
     /// Masks PII in a context dictionary (recursive)
     /// </summary>
-    public Dictionary<string, object> MaskContext(Dictionary<string, object> context)
+    public Dictionary<string, object?> MaskContext(Dictionary<string, object?> context)
     {
-        if (context == null) return new Dictionary<string, object>();
+        if (context == null) return new Dictionary<string, object?>();
 
-        var maskedContext = new Dictionary<string, object>();
+        var maskedContext = new Dictionary<string, object?>();
 
         foreach (var kvp in context)
         {
@@ -75,7 +75,7 @@ public class PiiMasker
             {
                 maskedContext[kvp.Key] = "***REDACTED***";
             }
-            else if (kvp.Value is Dictionary<string, object> nestedDict)
+            else if (kvp.Value is Dictionary<string, object?> nestedDict)
             {
                 maskedContext[kvp.Key] = MaskContext(nestedDict);
             }

@@ -11,17 +11,36 @@ public class Logger
     private readonly LoggerOptions _options;
     private readonly List<ITarget> _targets = new();
     private readonly PiiMasker _piiMasker;
+    private readonly SafeObjectSerializer _serializer;
+    private readonly SafeLogFormatter _formatter;
+    private readonly LoggingMetrics _metrics;
+    private readonly Health.LoggingHealthReporter _healthReporter;
+    private static readonly AsyncLocal<Stack<Dictionary<string, object?>>?> ScopeStack = new();
     private HttpContext? _currentHttpContext;
 
     public Logger(LoggerOptions options)
     {
-        _options = options;
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+        LoggerOptionsValidator.Validate(_options);
+
+        _options.Serialization ??= new SerializationOptions();
+
         _piiMasker = new PiiMasker(options.Pii);
+        _serializer = new SafeObjectSerializer(_options.Serialization);
+        _formatter = new SafeLogFormatter(_serializer);
+        _metrics = _options.Metrics ?? new LoggingMetrics();
         InitializeTargets();
+        _healthReporter = new Health.LoggingHealthReporter(_metrics, _targets);
     }
 
     private void InitializeTargets()
     {
+        if (_options.CustomTargets is { Count: > 0 })
+        {
+            _targets.AddRange(_options.CustomTargets);
+            return;
+        }
+
         foreach (var config in _options.Targets)
         {
             var target = CreateTarget(config);
@@ -49,7 +68,7 @@ public class Logger
 
         if (target != null && config.Async)
         {
-            return new AsyncTargetWrapper(target, config.BufferSize);
+            return new AsyncTargetWrapper(target, config.BufferSize, _metrics);
         }
 
         return target;
@@ -66,7 +85,7 @@ public class Logger
     /// <summary>
     /// Log a DEBUG message
     /// </summary>
-    public void Debug(string message, Dictionary<string, object>? context = null)
+    public void Debug(string message, Dictionary<string, object?>? context = null)
     {
         Log(LogLevel.Debug, message, context);
     }
@@ -74,7 +93,7 @@ public class Logger
     /// <summary>
     /// Log a DEBUG message with exception
     /// </summary>
-    public void Debug(Exception ex, string message, Dictionary<string, object>? context = null)
+    public void Debug(Exception ex, string message, Dictionary<string, object?>? context = null)
     {
         Log(LogLevel.Debug, message, context, ex);
     }
@@ -82,7 +101,7 @@ public class Logger
     /// <summary>
     /// Log an INFO message
     /// </summary>
-    public void Info(string message, Dictionary<string, object>? context = null)
+    public void Info(string message, Dictionary<string, object?>? context = null)
     {
         Log(LogLevel.Info, message, context);
     }
@@ -90,7 +109,7 @@ public class Logger
     /// <summary>
     /// Log an INFO message with exception
     /// </summary>
-    public void Info(Exception ex, string message, Dictionary<string, object>? context = null)
+    public void Info(Exception ex, string message, Dictionary<string, object?>? context = null)
     {
         Log(LogLevel.Info, message, context, ex);
     }
@@ -98,7 +117,7 @@ public class Logger
     /// <summary>
     /// Log a WARNING message
     /// </summary>
-    public void Warn(string message, Dictionary<string, object>? context = null)
+    public void Warn(string message, Dictionary<string, object?>? context = null)
     {
         Log(LogLevel.Warning, message, context);
     }
@@ -106,7 +125,7 @@ public class Logger
     /// <summary>
     /// Log a WARNING message with exception
     /// </summary>
-    public void Warn(Exception ex, string message, Dictionary<string, object>? context = null)
+    public void Warn(Exception ex, string message, Dictionary<string, object?>? context = null)
     {
         Log(LogLevel.Warning, message, context, ex);
     }
@@ -114,7 +133,7 @@ public class Logger
     /// <summary>
     /// Log an ERROR message
     /// </summary>
-    public void Error(string message, Dictionary<string, object>? context = null)
+    public void Error(string message, Dictionary<string, object?>? context = null)
     {
         Log(LogLevel.Error, message, context);
     }
@@ -122,7 +141,7 @@ public class Logger
     /// <summary>
     /// Log an ERROR message with exception
     /// </summary>
-    public void Error(Exception ex, string message, Dictionary<string, object>? context = null)
+    public void Error(Exception ex, string message, Dictionary<string, object?>? context = null)
     {
         Log(LogLevel.Error, message, context, ex);
     }
@@ -130,7 +149,7 @@ public class Logger
     /// <summary>
     /// Log a CRITICAL message
     /// </summary>
-    public void Critical(string message, Dictionary<string, object>? context = null)
+    public void Critical(string message, Dictionary<string, object?>? context = null)
     {
         Log(LogLevel.Critical, message, context);
     }
@@ -138,7 +157,7 @@ public class Logger
     /// <summary>
     /// Log a CRITICAL message with exception
     /// </summary>
-    public void Critical(Exception ex, string message, Dictionary<string, object>? context = null)
+    public void Critical(Exception ex, string message, Dictionary<string, object?>? context = null)
     {
         Log(LogLevel.Critical, message, context, ex);
     }
@@ -159,7 +178,38 @@ public class Logger
         return $"corr-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{Guid.NewGuid():N}";
     }
 
-    private void Log(LogLevel level, string message, Dictionary<string, object>? context, Exception? exception = null)
+    /// <summary>
+    /// Begin a structured scope for ambient context propagation.
+    /// </summary>
+    public IDisposable BeginScope(Dictionary<string, object?>? state)
+    {
+        var stack = ScopeStack.Value ??= new Stack<Dictionary<string, object?>>();
+        stack.Push(state ?? new Dictionary<string, object?>());
+
+        return new ScopeDisposable(() =>
+        {
+            if (ScopeStack.Value is { Count: > 0 })
+            {
+                ScopeStack.Value!.Pop();
+                if (ScopeStack.Value!.Count == 0)
+                {
+                    ScopeStack.Value = null;
+                }
+            }
+        });
+    }
+
+    /// <summary>
+    /// Exposes current metrics snapshot for health/observability.
+    /// </summary>
+    public LoggingMetricsSnapshot GetMetricsSnapshot() => _metrics.Snapshot();
+
+    /// <summary>
+    /// Exposes a simple health snapshot (metrics + target statuses).
+    /// </summary>
+    public Health.LoggingHealthSnapshot GetHealthSnapshot() => _healthReporter.Snapshot();
+
+    private void Log(LogLevel level, string message, Dictionary<string, object?>? context, Exception? exception = null)
     {
         // Filter by log level
         if (level < _options.MinLevel)
@@ -169,6 +219,19 @@ public class Logger
 
         // Get base context
         var enrichedContext = GetBaseContext();
+
+        // Merge scope context (outermost first)
+        var scopeStack = ScopeStack.Value;
+        if (scopeStack != null && scopeStack.Count > 0)
+        {
+            foreach (var scope in scopeStack.Reverse())
+            {
+                foreach (var kvp in scope)
+                {
+                    enrichedContext[kvp.Key] = kvp.Value;
+                }
+            }
+        }
 
         // Merge with provided context
         if (context != null)
@@ -209,16 +272,19 @@ public class Logger
         var maskedMessage = _piiMasker.MaskMessage(message);
         var maskedContext = _piiMasker.MaskContext(enrichedContext);
 
+        // Sanitize for safe serialization
+        var safeContext = _serializer.SanitizeContext(maskedContext);
+
         // Create log entry
-        var logEntry = LogEntry.Create(level, maskedMessage, maskedContext);
+        var logEntry = LogEntry.Create(level, maskedMessage, safeContext, _formatter);
 
         // Write to all targets
         WriteToTargets(logEntry);
     }
 
-    private Dictionary<string, object> DeconstructException(Exception ex)
+    private Dictionary<string, object?> DeconstructException(Exception ex)
     {
-        var dict = new Dictionary<string, object>
+        var dict = new Dictionary<string, object?>
         {
             ["type"] = ex.GetType().Name,
             ["message"] = _piiMasker.MaskMessage(ex.Message), // Mask PII in exception message
@@ -233,55 +299,62 @@ public class Logger
         return dict;
     }
 
-    private Dictionary<string, object> GetBaseContext()
+    private Dictionary<string, object?> GetBaseContext()
     {
-        return new Dictionary<string, object>
+        return new Dictionary<string, object?>
         {
             ["applicationId"] = _options.ApplicationId,
             ["environment"] = _options.Environment
         };
     }
 
-    private void EnrichWithHttpContext(Dictionary<string, object> context)
+    private void EnrichWithHttpContext(Dictionary<string, object?> context)
     {
         if (_currentHttpContext == null) return;
 
-        // Add request ID
-        if (_currentHttpContext.Items.TryGetValue("PrimusRequestId", out var requestId))
+        try
         {
-            context["requestId"] = requestId;
-        }
-        else if (_currentHttpContext.Request.Headers.TryGetValue("X-Request-ID", out var headerId))
-        {
-            context["requestId"] = headerId.ToString();
-        }
-        else
-        {
-            context["requestId"] = $"req-{Guid.NewGuid():N}";
-        }
-
-        // Add user context (from Identity Validator or ASP.NET Identity)
-        if (_currentHttpContext.Items.TryGetValue("PrimusUser", out var primusUser))
-        {
-            var userDict = primusUser as Dictionary<string, object>;
-            if (userDict != null)
+            // Add request ID
+            if (_currentHttpContext.Items.TryGetValue("PrimusRequestId", out var requestId))
             {
-                if (userDict.TryGetValue("userId", out var userId))
-                    context["userId"] = userId;
-                if (userDict.TryGetValue("email", out var email))
-                    context["userEmail"] = email;
+                context["requestId"] = requestId;
+            }
+            else if (_currentHttpContext.Request.Headers.TryGetValue("X-Request-ID", out var headerId))
+            {
+                context["requestId"] = headerId.ToString();
+            }
+            else
+            {
+                context["requestId"] = $"req-{Guid.NewGuid():N}";
+            }
+
+            // Add user context (from Identity Validator or ASP.NET Identity)
+            if (_currentHttpContext.Items.TryGetValue("PrimusUser", out var primusUser))
+            {
+                var userDict = primusUser as Dictionary<string, object?>;
+                if (userDict != null)
+                {
+                    if (userDict.TryGetValue("userId", out var userId))
+                        context["userId"] = userId;
+                    if (userDict.TryGetValue("email", out var email))
+                        context["userEmail"] = email;
+                }
+            }
+
+            // Add tenant context
+            if (_currentHttpContext.Items.TryGetValue("PrimusTenantContext", out var tenantContext))
+            {
+                var tenantDict = tenantContext as Dictionary<string, object?>;
+                if (tenantDict != null)
+                {
+                    if (tenantDict.TryGetValue("tenantId", out var tenantId))
+                        context["tenantId"] = tenantId;
+                }
             }
         }
-
-        // Add tenant context
-        if (_currentHttpContext.Items.TryGetValue("PrimusTenantContext", out var tenantContext))
+        catch (Exception ex)
         {
-            var tenantDict = tenantContext as Dictionary<string, object>;
-            if (tenantDict != null)
-            {
-                if (tenantDict.TryGetValue("tenantId", out var tenantId))
-                    context["tenantId"] = tenantId;
-            }
+            context["httpContextError"] = ex.Message;
         }
     }
 
@@ -292,9 +365,11 @@ public class Logger
             try
             {
                 target.Write(logEntry);
+                _metrics.IncrementWritten();
             }
             catch (Exception ex)
             {
+                _metrics.IncrementFailure();
                 Console.Error.WriteLine($"Failed to write to log target: {ex.Message}");
             }
         }
@@ -306,7 +381,7 @@ public class Logger
 /// </summary>
 public interface ITimer
 {
-    void Done(string message, Dictionary<string, object>? context = null);
+    void Done(string message, Dictionary<string, object?>? context = null);
 }
 
 /// <summary>
@@ -323,11 +398,29 @@ internal class Timer : ITimer
         _startTime = DateTime.UtcNow;
     }
 
-    public void Done(string message, Dictionary<string, object>? context = null)
+    public void Done(string message, Dictionary<string, object?>? context = null)
     {
         var duration = (DateTime.UtcNow - _startTime).TotalMilliseconds;
-        var enrichedContext = context ?? new Dictionary<string, object>();
+        var enrichedContext = context ?? new Dictionary<string, object?>();
         enrichedContext["duration"] = duration;
         _logger.Info(message, enrichedContext);
+    }
+}
+
+internal sealed class ScopeDisposable : IDisposable
+{
+    private readonly Action _onDispose;
+    private bool _disposed;
+
+    public ScopeDisposable(Action onDispose)
+    {
+        _onDispose = onDispose;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _onDispose();
     }
 }

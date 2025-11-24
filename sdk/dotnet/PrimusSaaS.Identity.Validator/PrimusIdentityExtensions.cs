@@ -67,6 +67,13 @@ public static class PrimusIdentityExtensions
             var jwksService = sp.GetRequiredService<JwksService>();
             return new AzureAdValidator(configService, jwksService);
         });
+        services.AddSingleton<IdentityDiagnosticsService>();
+        services.AddSingleton(sp =>
+        {
+            var opt = sp.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
+            return opt.RateLimiting;
+        });
+        services.AddSingleton<FailedValidationRateLimiter>();
 
         // Add authentication with JWT Bearer
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -103,28 +110,35 @@ public static class PrimusIdentityExtensions
 
                         if (issuerConfig.Type.IsOidcBased())
                         {
-                            // For OIDC, we rely on the AzureAdValidator/JwksService to have cached keys
-                            // This is a synchronous call in a callback, which is tricky.
-                            // Ideally, we pre-fetch or use a synchronous cache.
-                            // For now, we'll use the JwksService synchronously (carefully) or rely on the fact 
-                            // that AzureAdValidator handles this if we delegate.
-                            
-                            // BETTER APPROACH: Return empty here and let the custom validator handle it? 
-                            // No, ValidateIssuerSigningKey=true will fail.
-                            
-                            // We need to fetch the keys.
+                            // Resolve JWKS via discovery metadata to avoid malformed URLs (e.g., double /v2.0).
                             var jwksService = sp.GetRequiredService<JwksService>();
-                            
-                            // If Authority is set, use it to find JWKS
-                            var jwksUrl = !string.IsNullOrEmpty(issuerConfig.JwksUrl) 
-                                ? issuerConfig.JwksUrl 
-                                : $"{issuerConfig.Authority?.TrimEnd('/')}/discovery/v2.0/keys"; // Simplified guess, ideally use Discovery Doc
-                                
-                            // Sync-over-async is dangerous but required by this specific API surface
-                            // In a real high-perf scenario, these should be background refreshed.
+                            var configurationService = sp.GetRequiredService<OpenIdConfigurationService>();
+
+                            var jwksUrl = issuerConfig.JwksUrl;
+
+                            if (string.IsNullOrWhiteSpace(jwksUrl))
+                            {
+                                if (string.IsNullOrWhiteSpace(issuerConfig.Authority))
+                                {
+                                    throw new SecurityTokenInvalidIssuerException($"OIDC issuer '{issuerConfig.Name}' is missing Authority.");
+                                }
+
+                                var configuration = configurationService
+                                    .GetConfigurationByAuthorityAsync(issuerConfig.Authority!)
+                                    .GetAwaiter()
+                                    .GetResult();
+
+                                jwksUrl = configuration.JwksUri;
+                            }
+
+                            if (string.IsNullOrWhiteSpace(jwksUrl))
+                            {
+                                throw new SecurityTokenInvalidIssuerException($"OIDC issuer '{issuerConfig.Name}' did not expose a JWKS endpoint via discovery.");
+                            }
+
                             var keys = jwksService.GetJwksAsync(jwksUrl).GetAwaiter().GetResult();
-                            
-                            return keys.Keys.Select(k => 
+
+                            return keys.Keys.Select(k =>
                             {
                                 var jsonKey = new Microsoft.IdentityModel.Tokens.JsonWebKey
                                 {
@@ -206,6 +220,15 @@ public static class PrimusIdentityExtensions
                     {
                         var logger = context.HttpContext.RequestServices.GetService<ILoggerFactory>()?.CreateLogger("PrimusSaaS.Identity.Validator");
                         logger?.LogWarning("Primus Identity: Authentication failed - {Reason}", context.Exception.Message);
+
+                        var limiter = context.HttpContext.RequestServices.GetService<FailedValidationRateLimiter>();
+                        if (limiter != null && limiter.RegisterFailure(context.HttpContext))
+                        {
+                            context.NoResult();
+                            context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                            context.Response.Headers["Retry-After"] = Math.Max(1, (int)primusOptions.ClockSkew.TotalSeconds).ToString();
+                            logger?.LogWarning("Primus Identity: Rate limit hit for failed validations.");
+                        }
                         return Task.CompletedTask;
                     },
                     OnChallenge = context =>

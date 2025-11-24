@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using PrimusSaaS.Logging.Core;
+using PrimusSaaS.Logging.Generated;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 using PrimusLogLevel = PrimusSaaS.Logging.Core.LogLevel;
 
@@ -12,18 +13,19 @@ public class PrimusLoggerAdapter : ILogger
 {
     private readonly string _categoryName;
     private readonly Core.Logger _primusLogger;
+    private readonly ILogger _adapterLogger;
 
     public PrimusLoggerAdapter(string categoryName, Core.Logger primusLogger)
     {
         _categoryName = categoryName;
         _primusLogger = primusLogger;
+        _adapterLogger = LoggerFactory.Create(builder => { }).CreateLogger(categoryName);
     }
 
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull
     {
-        // Scope support could be implemented by pushing to a context stack
-        // For now, we'll return null as basic implementation
-        return null;
+        var scopeDictionary = ToDictionary(state);
+        return _primusLogger.BeginScope(scopeDictionary);
     }
 
     public bool IsEnabled(LogLevel logLevel)
@@ -43,7 +45,7 @@ public class PrimusLoggerAdapter : ILogger
         var message = formatter(state, exception);
         var primusLevel = MapLogLevel(logLevel);
 
-        var context = new Dictionary<string, object>
+        var context = new Dictionary<string, object?>
         {
             ["category"] = _categoryName,
             ["eventId"] = eventId.Id
@@ -52,11 +54,6 @@ public class PrimusLoggerAdapter : ILogger
         if (eventId.Name != null)
         {
             context["eventName"] = eventId.Name;
-        }
-
-        if (exception != null)
-        {
-            context["exception"] = exception;
         }
 
         // Extract structured logging state if available
@@ -75,19 +72,29 @@ public class PrimusLoggerAdapter : ILogger
         switch (primusLevel)
         {
             case PrimusLogLevel.Debug:
-                _primusLogger.Debug(message, context);
+                AdapterLoggingMessages.Debug(_adapterLogger, message);
+                if (exception != null) _primusLogger.Debug(exception, message, context);
+                else _primusLogger.Debug(message, context);
                 break;
             case PrimusLogLevel.Info:
-                _primusLogger.Info(message, context);
+                AdapterLoggingMessages.Info(_adapterLogger, message);
+                if (exception != null) _primusLogger.Info(exception, message, context);
+                else _primusLogger.Info(message, context);
                 break;
             case PrimusLogLevel.Warning:
-                _primusLogger.Warn(message, context);
+                AdapterLoggingMessages.Warn(_adapterLogger, message);
+                if (exception != null) _primusLogger.Warn(exception, message, context);
+                else _primusLogger.Warn(message, context);
                 break;
             case PrimusLogLevel.Error:
-                _primusLogger.Error(message, context);
+                AdapterLoggingMessages.Error(_adapterLogger, message);
+                if (exception != null) _primusLogger.Error(exception, message, context);
+                else _primusLogger.Error(message, context);
                 break;
             case PrimusLogLevel.Critical:
-                _primusLogger.Critical(message, context);
+                AdapterLoggingMessages.Critical(_adapterLogger, message);
+                if (exception != null) _primusLogger.Critical(exception, message, context);
+                else _primusLogger.Critical(message, context);
                 break;
         }
     }
@@ -104,5 +111,27 @@ public class PrimusLoggerAdapter : ILogger
             LogLevel.Critical => PrimusLogLevel.Critical,
             _ => PrimusLogLevel.Info
         };
+    }
+
+    private static Dictionary<string, object?> ToDictionary<TState>(TState state)
+    {
+        var dict = new Dictionary<string, object?>();
+
+        if (state is IEnumerable<KeyValuePair<string, object>> structure)
+        {
+            foreach (var property in structure)
+            {
+                if (property.Key != "{OriginalFormat}")
+                {
+                    dict[property.Key] = property.Value;
+                }
+            }
+        }
+        else
+        {
+            dict["Scope"] = state?.ToString();
+        }
+
+        return dict;
     }
 }

@@ -70,7 +70,7 @@ public class ILoggerIntegrationTests
         var primusLogger = new Core.Logger(new LoggerOptions
         {
             ApplicationId = "TEST",
-            Targets = new List<TargetConfig>()
+            Targets = new List<TargetConfig> { new TargetConfig { Type = "console" } }
         });
 
         // Manually add test target

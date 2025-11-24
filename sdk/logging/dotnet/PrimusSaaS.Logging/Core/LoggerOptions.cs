@@ -1,3 +1,5 @@
+using PrimusSaaS.Logging.Targets;
+
 namespace PrimusSaaS.Logging.Core;
 
 /// <summary>
@@ -31,9 +33,26 @@ public class LoggerOptions
     public PiiOptions Pii { get; set; } = new();
 
     /// <summary>
+    /// Serialization safety configuration
+    /// </summary>
+    public SerializationOptions Serialization { get; set; } = new();
+
+    /// <summary>
     /// Custom enrichers to apply to every log entry
     /// </summary>
     public List<IEnricher> Enrichers { get; set; } = new();
+
+    /// <summary>
+    /// Optional external metrics collector (for observability/health).
+    /// If null, an internal instance will be created.
+    /// </summary>
+    public LoggingMetrics? Metrics { get; set; }
+
+    /// <summary>
+    /// Optional custom targets (primarily for advanced scenarios and testing).
+    /// When provided, these are used instead of the built-in target factory.
+    /// </summary>
+    public List<ITarget>? CustomTargets { get; set; }
 }
 
 /// <summary>

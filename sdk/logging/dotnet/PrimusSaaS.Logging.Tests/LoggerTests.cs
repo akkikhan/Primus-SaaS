@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using PrimusSaaS.Logging.Core;
 using Xunit;
 
@@ -102,5 +104,31 @@ public class LoggerTests
 
         // Assert
         Assert.NotNull(timer);
+    }
+
+    [Fact]
+    public void Logger_ShouldNotThrow_WhenContextContainsTypeHttpContextOrClaims()
+    {
+        // Arrange
+        var options = new LoggerOptions
+        {
+            ApplicationId = "TEST-APP",
+            Environment = "testing"
+        };
+        var logger = new Logger(options);
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("sub", "123"),
+            new Claim("email", "user@example.com")
+        }, "test"));
+        var context = new Dictionary<string, object?>
+        {
+            ["type"] = typeof(LoggerTests),
+            ["httpContext"] = new DefaultHttpContext(),
+            ["principal"] = principal
+        };
+
+        // Act & Assert
+        logger.Info("Safe serialization check", context);
     }
 }

@@ -9,5 +9,5 @@ public interface IEnricher
     /// Enrich the log context with additional properties
     /// </summary>
     /// <param name="context">The log context dictionary to modify</param>
-    void Enrich(Dictionary<string, object> context);
+    void Enrich(Dictionary<string, object?> context);
 }

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
+using PrimusSaaS.Identity.Validator.Services;
 
 namespace PrimusSaaS.Identity.Validator.HealthChecks;
 
@@ -32,7 +33,7 @@ public class PrimusIdentityHealthCheck : IHealthCheck
                     // Timeout quickly for health checks
                     client.Timeout = TimeSpan.FromSeconds(5);
                     
-                    var discoveryUrl = $"{issuer.Authority.TrimEnd('/')}/.well-known/openid-configuration";
+                    var discoveryUrl = OpenIdConfigurationService.GetWellKnownUrlFromAuthority(issuer.Authority);
                     var response = await client.GetAsync(discoveryUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                     
                     if (!response.IsSuccessStatusCode)

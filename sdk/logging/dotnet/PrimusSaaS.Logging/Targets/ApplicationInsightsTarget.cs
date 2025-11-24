@@ -37,34 +37,11 @@ public class ApplicationInsightsTarget : ITarget
         {
             if (kvp.Value != null)
             {
-                telemetry.Properties[kvp.Key] = kvp.Value.ToString();
+                telemetry.Properties[kvp.Key] = SerializeProperty(kvp.Value);
             }
         }
 
-        // Track exception if present in context
-        if (logEntry.Context.TryGetValue("exception", out var exceptionObj) && exceptionObj is Exception ex)
-        {
-            var exceptionTelemetry = new ExceptionTelemetry(ex)
-            {
-                SeverityLevel = severityLevel,
-                Timestamp = logEntry.Timestamp
-            };
-
-            // Copy properties to exception telemetry too
-            foreach (var kvp in logEntry.Context)
-            {
-                if (kvp.Key != "exception" && kvp.Value != null)
-                {
-                    exceptionTelemetry.Properties[kvp.Key] = kvp.Value.ToString();
-                }
-            }
-
-            _telemetryClient.TrackException(exceptionTelemetry);
-        }
-        else
-        {
-            _telemetryClient.TrackTrace(telemetry);
-        }
+        _telemetryClient.TrackTrace(telemetry);
     }
 
     public void Close()
@@ -85,5 +62,25 @@ public class ApplicationInsightsTarget : ITarget
             LogLevel.Critical => SeverityLevel.Critical,
             _ => SeverityLevel.Information
         };
+    }
+
+    private static string SerializeProperty(object value)
+    {
+        switch (value)
+        {
+            case string s:
+                return s;
+            case bool or byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal:
+                return value.ToString() ?? string.Empty;
+        }
+
+        try
+        {
+            return System.Text.Json.JsonSerializer.Serialize(value);
+        }
+        catch
+        {
+            return value.ToString() ?? string.Empty;
+        }
     }
 }

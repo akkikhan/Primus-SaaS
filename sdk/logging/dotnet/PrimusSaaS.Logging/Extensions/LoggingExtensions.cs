@@ -22,6 +22,8 @@ public static class LoggingExtensions
 
         var logger = new Logger(options);
         services.AddSingleton(logger);
+        services.AddSingleton(logger.GetHealthSnapshot);
+        services.AddSingleton(logger.GetMetricsSnapshot);
 
         return services;
     }

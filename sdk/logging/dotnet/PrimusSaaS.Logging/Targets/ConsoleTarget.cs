@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using PrimusSaaS.Logging.Core;
 
 namespace PrimusSaaS.Logging.Targets;
@@ -43,10 +45,7 @@ public class ConsoleTarget : ITarget
         if (logEntry.Context.Count > 0)
         {
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(logEntry.Context, new System.Text.Json.JsonSerializerOptions
-            {
-                WriteIndented = true
-            }));
+            Console.WriteLine(JsonSerializer.Serialize(logEntry.Context, PrettyOptions));
             Console.ResetColor();
         }
     }
@@ -68,4 +67,11 @@ public class ConsoleTarget : ITarget
     {
         // Nothing to close for console
     }
+
+    private static readonly JsonSerializerOptions PrettyOptions = new()
+    {
+        WriteIndented = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        ReferenceHandler = ReferenceHandler.IgnoreCycles
+    };
 }

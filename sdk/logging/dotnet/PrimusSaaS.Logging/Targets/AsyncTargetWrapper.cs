@@ -12,13 +12,15 @@ public class AsyncTargetWrapper : ITarget, IDisposable
     private readonly BlockingCollection<LogEntry> _buffer;
     private readonly Task _workerTask;
     private readonly CancellationTokenSource _cts;
+    private readonly LoggingMetrics? _metrics;
     private bool _disposed;
 
-    public AsyncTargetWrapper(ITarget innerTarget, int bufferSize = 1000)
+    public AsyncTargetWrapper(ITarget innerTarget, int bufferSize = 1000, LoggingMetrics? metrics = null)
     {
         _innerTarget = innerTarget;
         _buffer = new BlockingCollection<LogEntry>(bufferSize);
         _cts = new CancellationTokenSource();
+        _metrics = metrics;
         _workerTask = Task.Factory.StartNew(
             ProcessLogQueue,
             _cts.Token,
@@ -39,7 +41,10 @@ public class AsyncTargetWrapper : ITarget, IDisposable
                 // Buffer full - strategy: drop or fallback?
                 // For high-perf logging, dropping is often preferred over blocking
                 // But let's try a short wait
-                _buffer.TryAdd(logEntry, 10);
+                if (!_buffer.TryAdd(logEntry, 10))
+                {
+                    _metrics?.IncrementDropped();
+                }
             }
         }
         catch (InvalidOperationException)
@@ -57,9 +62,11 @@ public class AsyncTargetWrapper : ITarget, IDisposable
                 try
                 {
                     _innerTarget.Write(entry);
+                    _metrics?.IncrementWritten();
                 }
                 catch (Exception ex)
                 {
+                    _metrics?.IncrementFailure();
                     Console.Error.WriteLine($"Async target error: {ex.Message}");
                 }
             }

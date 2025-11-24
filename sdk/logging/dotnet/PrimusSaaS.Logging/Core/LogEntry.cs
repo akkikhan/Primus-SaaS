@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace PrimusSaaS.Logging.Core;
 
 /// <summary>
@@ -7,6 +5,13 @@ namespace PrimusSaaS.Logging.Core;
 /// </summary>
 public class LogEntry
 {
+    private readonly SafeLogFormatter _formatter;
+
+    private LogEntry(SafeLogFormatter formatter)
+    {
+        _formatter = formatter;
+    }
+
     /// <summary>
     /// Timestamp when the log was created
     /// </summary>
@@ -25,19 +30,33 @@ public class LogEntry
     /// <summary>
     /// Additional context data
     /// </summary>
-    public Dictionary<string, object> Context { get; set; } = new();
+    public IReadOnlyDictionary<string, object?> Context { get; private set; } = new Dictionary<string, object?>();
 
     /// <summary>
     /// Creates a new log entry
     /// </summary>
-    public static LogEntry Create(LogLevel level, string message, Dictionary<string, object>? context = null)
+    public static LogEntry Create(LogLevel level, string message, Dictionary<string, object?>? context = null)
     {
-        return new LogEntry
+        var serializer = new SafeObjectSerializer(new SerializationOptions());
+        var formatter = new SafeLogFormatter(serializer);
+        return Create(level, message, context, formatter);
+    }
+
+    /// <summary>
+    /// Creates a new log entry with a provided formatter
+    /// </summary>
+    internal static LogEntry Create(
+        LogLevel level, 
+        string message, 
+        IReadOnlyDictionary<string, object?>? context, 
+        SafeLogFormatter formatter)
+    {
+        return new LogEntry(formatter)
         {
             Timestamp = DateTime.UtcNow,
             Level = level,
             Message = message,
-            Context = context ?? new Dictionary<string, object>()
+            Context = context ?? new Dictionary<string, object?>()
         };
     }
 
@@ -46,17 +65,6 @@ public class LogEntry
     /// </summary>
     public string ToJson()
     {
-        var data = new Dictionary<string, object>
-        {
-            ["timestamp"] = Timestamp.ToString("O"),
-            ["level"] = Level.ToString().ToUpperInvariant(),
-            ["message"] = Message,
-            ["context"] = Context
-        };
-
-        return JsonSerializer.Serialize(data, new JsonSerializerOptions
-        {
-            WriteIndented = false
-        });
+        return _formatter.Format(this);
     }
 }

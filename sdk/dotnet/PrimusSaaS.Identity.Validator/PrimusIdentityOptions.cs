@@ -1,3 +1,5 @@
+using PrimusSaaS.Identity.Validator.Services;
+
 namespace PrimusSaaS.Identity.Validator;
 
 /// <summary>
@@ -99,32 +101,101 @@ public class PrimusIdentityOptions
     /// </summary>
     public void Validate()
     {
+        var errors = new List<string>();
+
         if (Issuers == null || !Issuers.Any())
-            throw new ArgumentException("At least one issuer configuration is required.", nameof(Issuers));
+        {
+            errors.Add("At least one issuer configuration is required.");
+            ThrowIfErrors();
+            return;
+        }
+
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var claimIssuers = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var issuer in Issuers)
         {
-            if (string.IsNullOrWhiteSpace(issuer.Name))
-                throw new ArgumentException("Issuer name is required.");
+            ValidateIssuer(issuer, names, claimIssuers, errors);
+        }
 
-            if (string.IsNullOrWhiteSpace(issuer.Issuer))
-                throw new ArgumentException($"Issuer claim value is required for {issuer.Name}.");
+        ThrowIfErrors();
 
-            if (issuer.Audiences == null || !issuer.Audiences.Any())
-                throw new ArgumentException($"At least one audience is required for {issuer.Name}.");
+        void ThrowIfErrors()
+        {
+            if (errors.Count == 0) return;
+            throw new ArgumentException($"Primus Identity configuration invalid: {string.Join("; ", errors)}");
+        }
+    }
 
-            if (issuer.Type.IsOidcBased() && string.IsNullOrWhiteSpace(issuer.Authority))
-                throw new ArgumentException($"Authority URL is required for OIDC/AzureAD issuer {issuer.Name}.");
+    private static void ValidateIssuer(
+        IssuerConfig issuer,
+        HashSet<string> names,
+        HashSet<string> claimIssuers,
+        List<string> errors)
+    {
+        if (string.IsNullOrWhiteSpace(issuer.Name))
+        {
+            errors.Add("Issuer name is required.");
+        }
+        else if (!names.Add(issuer.Name))
+        {
+            errors.Add($"Duplicate issuer name '{issuer.Name}'. Names must be unique.");
+        }
 
-            if (issuer.Type == IssuerType.Jwt && string.IsNullOrWhiteSpace(issuer.Secret) && string.IsNullOrWhiteSpace(issuer.JwksUrl))
-                throw new ArgumentException($"Secret or JWKS URL is required for JWT issuer {issuer.Name}.");
+        if (string.IsNullOrWhiteSpace(issuer.Issuer))
+        {
+            errors.Add($"Issuer claim value is required for '{issuer.Name}'.");
+        }
+        else if (!claimIssuers.Add(issuer.Issuer))
+        {
+            errors.Add($"Duplicate issuer claim value '{issuer.Issuer}'. Configure unique 'Issuer' per identity provider.");
+        }
+
+        if (issuer.Audiences == null || !issuer.Audiences.Any() || issuer.Audiences.Any(string.IsNullOrWhiteSpace))
+        {
+            errors.Add($"At least one non-empty audience is required for '{issuer.Name}'.");
+        }
+
+        if (issuer.Type.IsOidcBased())
+        {
+            if (string.IsNullOrWhiteSpace(issuer.Authority))
+            {
+                errors.Add($"Authority URL is required for OIDC/AzureAD issuer '{issuer.Name}'.");
+            }
+            else if (!Uri.TryCreate(issuer.Authority, UriKind.Absolute, out var authorityUri))
+            {
+                errors.Add($"Authority must be an absolute URI for '{issuer.Name}'. Example: https://login.microsoftonline.com/<tenant-id>.");
+            }
+            else if (!authorityUri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            {
+                errors.Add($"Authority must use HTTPS for '{issuer.Name}'.");
+            }
+        }
+        else if (issuer.Type == IssuerType.Jwt)
+        {
+            var hasSecret = !string.IsNullOrWhiteSpace(issuer.Secret);
+            var hasJwks = !string.IsNullOrWhiteSpace(issuer.JwksUrl);
+            if (!hasSecret && !hasJwks)
+            {
+                errors.Add($"Secret or JWKS URL is required for JWT issuer '{issuer.Name}'.");
+            }
+
+            if (hasJwks && !Uri.TryCreate(issuer.JwksUrl, UriKind.Absolute, out _))
+            {
+                errors.Add($"JWKS URL must be an absolute URI for '{issuer.Name}'.");
+            }
         }
     }
 
     /// <summary>
     /// Optional function to resolve tenant context from token claims.
     /// </summary>
-    public Func<TokenClaims, TenantContext>? TenantResolver { get; set; }
+    public Func<TokenClaims, TenantContext?>? TenantResolver { get; set; }
+
+    /// <summary>
+    /// Rate limiting options for failed token validations.
+    /// </summary>
+    public FailedValidationRateLimiterOptions RateLimiting { get; set; } = new();
 }
 
 /// <summary>

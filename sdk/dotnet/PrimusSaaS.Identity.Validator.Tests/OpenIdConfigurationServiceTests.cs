@@ -63,6 +63,38 @@ public class OpenIdConfigurationServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetConfigurationByAuthorityAsync_WithAuthorityContainingV2_SendsSingleV2WellKnown()
+    {
+        // Arrange
+        SetupMockWithRequestCapture();
+        var authority = $"https://login.microsoftonline.com/{_testTenantId}/v2.0";
+
+        // Act
+        await _service.GetConfigurationByAuthorityAsync(authority);
+
+        // Assert
+        _capturedRequest.Should().NotBeNull();
+        _capturedRequest!.RequestUri!.AbsoluteUri.Should()
+            .Be($"https://login.microsoftonline.com/{_testTenantId}/v2.0/.well-known/openid-configuration");
+    }
+
+    [Fact]
+    public async Task GetConfigurationByAuthorityAsync_WithAuthorityWithoutV2_AppendsV2WellKnown()
+    {
+        // Arrange
+        SetupMockWithRequestCapture();
+        var authority = $"https://login.microsoftonline.com/{_testTenantId}";
+
+        // Act
+        await _service.GetConfigurationByAuthorityAsync(authority);
+
+        // Assert
+        _capturedRequest.Should().NotBeNull();
+        _capturedRequest!.RequestUri!.AbsoluteUri.Should()
+            .Be($"https://login.microsoftonline.com/{_testTenantId}/v2.0/.well-known/openid-configuration");
+    }
+
+    [Fact]
     public async Task GetConfigurationAsync_WithHttpError_ThrowsHttpRequestException()
     {
         // Arrange
@@ -267,6 +299,18 @@ public class OpenIdConfigurationServiceTests : IDisposable
 
         // Assert
         url.Should().Be($"https://login.microsoftonline.com/{_testTenantId}/v2.0/.well-known/openid-configuration");
+    }
+
+    [Theory]
+    [InlineData("https://login.microsoftonline.com/tenantA", "https://login.microsoftonline.com/tenantA/v2.0/.well-known/openid-configuration")]
+    [InlineData("https://login.microsoftonline.com/tenantA/v2.0", "https://login.microsoftonline.com/tenantA/v2.0/.well-known/openid-configuration")]
+    public void GetWellKnownUrlFromAuthority_NormalizesV2Segment(string authority, string expected)
+    {
+        // Act
+        var url = OpenIdConfigurationService.GetWellKnownUrlFromAuthority(authority);
+
+        // Assert
+        url.Should().Be(expected);
     }
 
     [Fact]

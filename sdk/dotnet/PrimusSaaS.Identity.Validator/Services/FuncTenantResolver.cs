@@ -5,9 +5,9 @@ namespace PrimusSaaS.Identity.Validator.Services;
 /// </summary>
 internal class FuncTenantResolver : ITenantResolver
 {
-    private readonly Func<TokenClaims, TenantContext> _resolverFunc;
+    private readonly Func<TokenClaims, TenantContext?> _resolverFunc;
 
-    public FuncTenantResolver(Func<TokenClaims, TenantContext> resolverFunc)
+    public FuncTenantResolver(Func<TokenClaims, TenantContext?> resolverFunc)
     {
         _resolverFunc = resolverFunc ?? throw new ArgumentNullException(nameof(resolverFunc));
     }

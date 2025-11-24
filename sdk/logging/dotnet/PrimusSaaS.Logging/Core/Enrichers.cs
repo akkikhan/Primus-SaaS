@@ -19,7 +19,7 @@ public class MachineNameEnricher : IEnricher
         }
     }
 
-    public void Enrich(Dictionary<string, object> context)
+    public void Enrich(Dictionary<string, object?> context)
     {
         context["machineName"] = _machineName;
     }
@@ -30,7 +30,7 @@ public class MachineNameEnricher : IEnricher
 /// </summary>
 public class ThreadIdEnricher : IEnricher
 {
-    public void Enrich(Dictionary<string, object> context)
+    public void Enrich(Dictionary<string, object?> context)
     {
         context["threadId"] = Environment.CurrentManagedThreadId;
     }
@@ -50,7 +50,7 @@ public class PropertyEnricher : IEnricher
         _value = value;
     }
 
-    public void Enrich(Dictionary<string, object> context)
+    public void Enrich(Dictionary<string, object?> context)
     {
         context[_key] = _value;
     }

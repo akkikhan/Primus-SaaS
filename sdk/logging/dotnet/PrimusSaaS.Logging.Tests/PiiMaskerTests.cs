@@ -30,7 +30,7 @@ public class PiiMaskerTests
             CustomSensitiveKeys = new List<string> { "password", "token" }
         });
 
-        var context = new Dictionary<string, object>
+        var context = new Dictionary<string, object?>
         {
             ["userId"] = "123",
             ["email"] = "john@example.com",
@@ -55,12 +55,12 @@ public class PiiMaskerTests
     {
         // Arrange
         var masker = new PiiMasker(new PiiOptions { MaskEmails = true });
-        var nested = new Dictionary<string, object>
+        var nested = new Dictionary<string, object?>
         {
             ["email"] = "nested@example.com",
             ["other"] = "value"
         };
-        var context = new Dictionary<string, object>
+        var context = new Dictionary<string, object?>
         {
             ["user"] = nested
         };
@@ -69,7 +69,7 @@ public class PiiMaskerTests
         var result = masker.MaskContext(context);
 
         // Assert
-        var maskedNested = result["user"] as Dictionary<string, object>;
+        var maskedNested = result["user"] as Dictionary<string, object?>;
         Assert.NotNull(maskedNested);
         Assert.Equal("***REDACTED***", maskedNested["email"]);
         Assert.Equal("value", maskedNested["other"]);

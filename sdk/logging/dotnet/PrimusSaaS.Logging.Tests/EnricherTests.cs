@@ -22,7 +22,7 @@ public class EnricherTests
         // Workaround: We can't easily test the full pipeline with TestTarget because Logger creates targets.
         // But we can test the enrichers themselves.
         
-        var context = new Dictionary<string, object>();
+        var context = new Dictionary<string, object?>();
         var enricher = new PropertyEnricher("foo", "bar");
         
         // Act
@@ -35,12 +35,12 @@ public class EnricherTests
     [Fact]
     public void MachineNameEnricher_ShouldAddMachineName()
     {
-        var context = new Dictionary<string, object>();
+        var context = new Dictionary<string, object?>();
         var enricher = new MachineNameEnricher();
         
         enricher.Enrich(context);
         
         Assert.True(context.ContainsKey("machineName"));
-        Assert.NotEmpty(context["machineName"].ToString());
+        Assert.False(string.IsNullOrWhiteSpace(context["machineName"]?.ToString()));
     }
 }
