@@ -303,9 +303,30 @@ The SDK automatically logs authentication events to the console. For more detail
 - .NET 7.0 or later
 - ASP.NET Core 7.0 or later
 
+## Known Issues
+
+### Namespace Conflict with PrimusSaaS.Logging
+
+If you are using both `PrimusSaaS.Identity.Validator` and `PrimusSaaS.Logging`, you may encounter an ambiguous reference error for `UsePrimusLogging()`.
+
+**Solution:** Use the fully qualified name or an alias.
+
+```csharp
+using PrimusLogging = PrimusSaaS.Logging.Extensions;
+
+// ...
+
+PrimusLogging.LoggingExtensions.UsePrimusLogging(app);
+```
+
 ## Documentation
 
 - [TOKEN_GENERATION_GUIDE.md](./TOKEN_GENERATION_GUIDE.md) - Complete guide to generating JWT tokens
+- [LOCAL_DEVELOPMENT_GUIDE.md](./LOCAL_DEVELOPMENT_GUIDE.md) - Setup guide for offline/local development
+- [INTEGRATION_PATTERNS.md](./INTEGRATION_PATTERNS.md) - Controller, Service, and Middleware examples
+- [TENANT_RESOLVER_GUIDE.md](./TENANT_RESOLVER_GUIDE.md) - Multi-tenant context resolution guide
+- [PRIMUS_USER_REFERENCE.md](./PRIMUS_USER_REFERENCE.md) - PrimusUser object properties and mapping
+- [ERROR_HANDLING_GUIDE.md](./ERROR_HANDLING_GUIDE.md) - Handling exceptions and customizing responses
 - [ERROR_REFERENCE.md](./ERROR_REFERENCE.md) - Troubleshooting validation errors
 - [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md) - Production deployment best practices
 - [SECRET_MANAGEMENT.md](./SECRET_MANAGEMENT.md) - Securely managing secrets (Key Vault, User Secrets)

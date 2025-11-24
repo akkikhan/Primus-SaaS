@@ -1,180 +1,127 @@
-# Testing Guide - .NET SDK
+# Testing Guide
 
-This guide covers how to test your **PrimusSaaS.Identity.Validator** integration, including verifying multi-issuer setups and using Postman.
-
-## Table of Contents
-
-1. [Verifying Multi-Issuer Configuration](#verifying-multi-issuer-configuration)
-2. [Testing with Postman](#testing-with-postman)
-3. [Integration Testing in .NET](#integration-testing-in-net)
-4. [Troubleshooting Common Test Failures](#troubleshooting-common-test-failures)
+This guide covers how to test applications using `PrimusSaaS.Identity.Validator`, including unit testing, integration testing, and local development.
 
 ---
 
-## Verifying Multi-Issuer Configuration
+## 1. Unit Testing
 
-When you have multiple issuers configured (e.g., Azure AD + LocalAuth), it's critical to verify which one is validating your token.
+Since `PrimusSaaS` relies on `HttpContext` and `ClaimsPrincipal`, you can easily mock these for unit tests.
 
-### 1. Inspect the `iss` Claim
+### Mocking Tenant Context
 
-The `iss` (Issuer) claim in the token tells you who issued it. The validator checks this against your configuration.
-
-Create a debug endpoint to inspect the current user's identity:
+If you use the `ITenantService` pattern (see [INTEGRATION_PATTERNS.md](./INTEGRATION_PATTERNS.md)), you can mock the interface directly.
 
 ```csharp
-[HttpGet("whoami")]
-[Authorize]
-public IActionResult WhoAmI()
+[Fact]
+public async Task GetOrders_ShouldFilterByTenant()
 {
-    var issuer = User.FindFirst("iss")?.Value;
-    var subject = User.FindFirst("sub")?.Value;
+    // Arrange
+    var mockTenantService = new Mock<ITenantService>();
+    mockTenantService.Setup(x => x.GetTenantId()).Returns("tenant-123");
     
-    return Ok(new 
-    { 
-        message = $"Authenticated via {issuer}",
-        issuer = issuer,
-        subject = subject,
-        claims = User.Claims.Select(c => new { c.Type, c.Value })
-    });
+    var service = new OrderService(mockTenantService.Object, mockRepo.Object);
+    
+    // Act
+    await service.GetOrdersAsync();
+    
+    // Assert
+    mockRepo.Verify(x => x.GetOrdersByTenantAsync("tenant-123"), Times.Once);
 }
 ```
 
-### 2. Test Scenarios
+### Mocking HttpContext Extensions
 
-| Scenario | Token Source | Expected Issuer (`iss`) | Result |
-|----------|--------------|-------------------------|--------|
-| **Scenario A** | Azure AD | `https://login.microsoftonline.com/...` | ✅ 200 OK |
-| **Scenario B** | Local JWT Generator | `https://localhost:5265` | ✅ 200 OK |
-| **Scenario C** | Unknown Issuer | `https://evil.com` | ❌ 401 Unauthorized |
+If you use the extension methods (`GetTenantId`, `Get`), you need to construct a mock `HttpContext`.
 
----
-
-## Testing with Postman
-
-We provide a ready-to-use Postman collection to test your API.
-
-### 1. Import Collection
-
-Import `PrimusSaaS.Identity.Validator.postman_collection.json` into Postman.
-
-### 2. Configure Variables
-
-Set the following collection variables:
-
-- `baseUrl`: Your API URL (e.g., `https://localhost:7001`)
-- `localSecret`: Your configured local secret key
-- `localIssuer`: Your configured local issuer URL
-
-### 3. Generate Local Token (Pre-request Script)
-
-The collection includes a Pre-request Script that automatically generates a valid JWT signed with your `localSecret`.
-
-**To use it:**
-1. Open the "Local Auth Request" folder.
-2. Check the "Pre-request Script" tab.
-3. It uses CryptoJS to sign a token matching your config.
-
-### 4. Test Azure AD Token
-
-1. Open "Azure AD Request".
-2. Go to **Authorization** tab.
-3. Type: **OAuth 2.0**.
-4. Configure "Get New Access Token":
-   - **Grant Type**: Authorization Code (or Client Credentials)
-   - **Auth URL**: `https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize`
-   - **Token URL**: `https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token`
-   - **Client ID**: Your App ID
-   - **Scope**: `api://{your-api-id}/.default`
-
----
-
-## Integration Testing in .NET
-
-You can write automated integration tests using `WebApplicationFactory`.
-
-### 1. Setup Test Project
-
-```bash
-dotnet new xunit -n MyApi.Tests
-dotnet add package Microsoft.AspNetCore.Mvc.Testing
+```csharp
+[Fact]
+public void Controller_ShouldReturnCurrentTenant()
+{
+    // Arrange
+    var controller = new OrdersController();
+    var httpContext = new DefaultHttpContext();
+    
+    // Setup User Claims
+    var claims = new[] { new Claim("sub", "user-1") };
+    var identity = new ClaimsIdentity(claims, "TestAuth");
+    httpContext.User = new ClaimsPrincipal(identity);
+    
+    // Setup Tenant Context
+    var tenantContext = new TenantContext { TenantId = "tenant-123" };
+    httpContext.Items["TenantContext"] = tenantContext;
+    
+    controller.ControllerContext = new ControllerContext 
+    { 
+        HttpContext = httpContext 
+    };
+    
+    // Act
+    var result = controller.GetOrders();
+    
+    // Assert
+    // ... verify result contains tenant-123
+}
 ```
 
-### 2. Create Test Factory
+---
+
+## 2. Integration Testing
+
+For integration tests using `WebApplicationFactory`, you can bypass authentication or use a test token.
+
+### Bypassing Auth (Test Scheme)
+
+Register a custom authentication scheme for tests.
 
 ```csharp
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.ConfigureServices(services =>
+        builder.ConfigureTestServices(services =>
         {
-            // Optional: Override config for tests
-            services.Configure<PrimusIdentityOptions>(options =>
-            {
-                options.Issuers = new List<IssuerConfig>
-                {
-                    new IssuerConfig 
-                    {
-                        Name = "TestAuth",
-                        Type = IssuerType.Jwt,
-                        Issuer = "https://test.local",
-                        Secret = "test-secret-key-must-be-32-chars-long",
-                        Audiences = new[] { "api://test" }
-                    }
-                };
-            });
+            services.AddAuthentication("Test")
+                .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", options => { });
         });
     }
 }
-```
 
-### 3. Write Test
-
-```csharp
-public class AuthTests : IClassFixture<CustomWebApplicationFactory>
+public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
-    private readonly HttpClient _client;
-
-    public AuthTests(CustomWebApplicationFactory factory)
+    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        _client = factory.CreateClient();
-    }
-
-    [Fact]
-    public async Task GetSecureData_WithValidToken_ReturnsOk()
-    {
-        // Arrange
-        var token = GenerateTestToken(); // Helper to generate JWT
-        _client.DefaultRequestHeaders.Authorization = 
-            new AuthenticationHeaderValue("Bearer", token);
-
-        // Act
-        var response = await _client.GetAsync("/api/secure");
-
-        // Assert
-        response.EnsureSuccessStatusCode();
+        var claims = new[] 
+        { 
+            new Claim("sub", "test-user"), 
+            new Claim("tid", "test-tenant") 
+        };
+        var identity = new ClaimsIdentity(claims, "Test");
+        var principal = new ClaimsPrincipal(identity);
+        var ticket = new AuthenticationTicket(principal, "Test");
+        
+        return Task.FromResult(AuthenticateResult.Success(ticket));
     }
 }
 ```
 
+### Using Local Dev Tokens
+
+You can also use the "LocalAuth" issuer configuration and generate real JWTs signed with the dev secret. See [LOCAL_DEVELOPMENT_GUIDE.md](./LOCAL_DEVELOPMENT_GUIDE.md) for details.
+
 ---
 
-## Troubleshooting Common Test Failures
+## 3. Local Development
 
-### ❌ 401 Unauthorized
+See [LOCAL_DEVELOPMENT_GUIDE.md](./LOCAL_DEVELOPMENT_GUIDE.md) for a complete guide on setting up your environment for offline development without Azure AD.
 
-- **Check Logs**: Look at server console/logs.
-- **Audience**: Does your token's `aud` match the config?
-- **Issuer**: Does your token's `iss` match the config?
-- **HTTPS**: Are you testing on HTTP but `RequireHttpsMetadata` is true?
+---
 
-### ❌ 403 Forbidden
+## 4. Postman Testing
 
-- **Authentication Succeeded**, but **Authorization Failed**.
-- Check `[Authorize(Roles = "...")]` attributes.
-- Verify your token has the required `roles` claim.
+We provide a Postman collection to help you test your integration.
 
-### ❌ "Kid" not found (Azure AD)
-
-- The signing key rolled over or is invalid.
-- Ensure your `Authority` URL is correct in config.
+1. Import `PrimusSaaS.Identity.Validator.postman_collection.json`
+2. Configure your environment variables (BaseUrl, Token)
+3. Use the "Generate Local Token" request (if you implemented the dev controller)
+4. Call your protected endpoints

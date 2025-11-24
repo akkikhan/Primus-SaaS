@@ -7,7 +7,7 @@
     
     <!-- NuGet Package Metadata -->
     <PackageId>PrimusSaaS.Identity.Validator</PackageId>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
     <Authors>Primus SaaS</Authors>
     <Company>Primus SaaS</Company>
     <Product>Primus SaaS Identity Validator</Product>
@@ -38,6 +38,7 @@
     <None Include="TESTING_GUIDE.md" Pack="true" PackagePath="\" />
     <None Include="CLAIMS_MAPPING.md" Pack="true" PackagePath="\" />
     <None Include="ANGULAR_INTEGRATION.md" Pack="true" PackagePath="\" />
+    <None Include="TENANT_RESOLVER_GUIDE.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

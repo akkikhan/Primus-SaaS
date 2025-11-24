@@ -22,6 +22,7 @@ export const ApplicationDetailsPage = () => {
   const [showEditApp, setShowEditApp] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', stack: '', description: '' });
   const [activeTab, setActiveTab] = useState<'overview' | 'integration'>('overview');
+  const [activeModuleTab, setActiveModuleTab] = useState<number | null>(null);
   const stackInfo: Record<string, { label: string; tone: string }> = {
     DotNet: { label: '.NET', tone: 'tone-dotnet' },
     NodeJS: { label: 'Node.js', tone: 'tone-node' },
@@ -37,6 +38,13 @@ export const ApplicationDetailsPage = () => {
       void fetchModules();
     }
   }, [id, fetchApplication, fetchModules]);
+
+  // Set active module tab to first module when switching to integration tab
+  useEffect(() => {
+    if (activeTab === 'integration' && currentApplication?.integratedModules && currentApplication.integratedModules.length > 0 && !activeModuleTab) {
+      setActiveModuleTab(currentApplication.integratedModules[0].moduleId);
+    }
+  }, [activeTab, currentApplication, activeModuleTab]);
 
   if (isLoading || !currentApplication) {
     return <p>Loading application...</p>;
@@ -162,47 +170,67 @@ ${getCodeSnippet()}
     setShowEditApp(false);
   };
 
-  // Generate integration documentation based on stack
-  const getInstallCommand = () => {
-    switch (currentApplication.stack) {
-      case 'DotNet':
-        return 'dotnet add package PrimusSaaS.Identity.Validator';
-      case 'NodeJS':
-        return 'npm install primus-identity-validator';
-      case 'NodeJS-Nest':
-        return 'npm install primus-identity-validator';
-      case 'TypeScriptLib':
-        return 'npm install primus-identity-validator';
-      case 'Python':
-        return 'pip install primus-identity-validator';
-      case 'Python-FastAPI':
-        return 'pip install primus-identity-validator';
-      default:
-        return '';
+  // Generate integration documentation based on stack and module
+  const getInstallCommand = (moduleName?: string) => {
+    const module = moduleName || 'Identity Validator';
+    const stack = currentApplication.stack;
+    
+    if (module.toLowerCase() === 'identity validator') {
+      switch (stack) {
+        case 'DotNet':
+          return 'dotnet add package PrimusSaaS.Identity.Validator';
+        case 'NodeJS':
+        case 'NodeJS-Nest':
+        case 'TypeScriptLib':
+          return 'npm install @primus-saas/identity-validator';
+        case 'Python':
+        case 'Python-FastAPI':
+          return 'pip install primus-identity-validator';
+        default:
+          return '';
+      }
+    } else if (module.toLowerCase() === 'logging' || module.toLowerCase() === 'logging sdk') {
+      switch (stack) {
+        case 'DotNet':
+          return 'dotnet add package PrimusSaaS.Logging';
+        case 'NodeJS':
+        case 'NodeJS-Nest':
+        case 'TypeScriptLib':
+          return 'npm install @primus-saas/logging';
+        case 'Python':
+        case 'Python-FastAPI':
+          return 'pip install primus-logging';
+        default:
+          return '';
+      }
     }
+    return '';
   };
 
-  const getConfigTemplate = () => {
+  const getConfigTemplate = (moduleName?: string) => {
     const primusClientId = currentApplication.primusClientId;
+    const module = moduleName || 'Identity Validator';
+    const stack = currentApplication.stack;
 
-    switch (currentApplication.stack) {
-      case 'DotNet':
-        return `{
+    if (module.toLowerCase() === 'identity validator') {
+      switch (stack) {
+        case 'DotNet':
+          return `{
   "Primus": {
     "AzureAd": {
       "TenantId": "<YOUR_TENANT_ID>"
     }
   }
 }`;
-      case 'NodeJS':
-      case 'NodeJS-Nest':
-      case 'TypeScriptLib':
-        return `// No configuration file needed.
+        case 'NodeJS':
+        case 'NodeJS-Nest':
+        case 'TypeScriptLib':
+          return `// No configuration file needed.
 // Pass issuers directly to middleware/validator:
 // See code snippet below for inline configuration.`;
-      case 'Python':
-      case 'Python-FastAPI':
-        return `{
+        case 'Python':
+        case 'Python-FastAPI':
+          return `{
   "Primus": {
     "ClientId": "${primusClientId}"
   },
@@ -216,17 +244,50 @@ ${getCodeSnippet()}
     }
   }
 }`;
-      default:
-        return '';
+        default:
+          return '';
+      }
+    } else if (module.toLowerCase() === 'logging' || module.toLowerCase() === 'logging sdk') {
+      switch (stack) {
+        case 'DotNet':
+          return `{
+  "Logging": {
+    "Primus": {
+      "Targets": [
+        {
+          "Type": "console",
+          "Format": "PrettyPrint"
+        },
+        {
+          "Type": "file",
+          "Path": "logs/app.log"
+        }
+      ]
     }
+  }
+}`;
+        case 'NodeJS':
+        case 'NodeJS-Nest':
+        case 'TypeScriptLib':
+          return `// No configuration file needed.
+// Configure logging in code:
+// See code snippet below for setup.`;
+        default:
+          return '';
+      }
+    }
+    return '';
   };
 
-  const getCodeSnippet = () => {
+  const getCodeSnippet = (moduleName?: string) => {
     const primusClientId = currentApplication.primusClientId;
+    const module = moduleName || 'Identity Validator';
+    const stack = currentApplication.stack;
 
-    switch (currentApplication.stack) {
-      case 'DotNet':
-        return `// Program.cs
+    if (module.toLowerCase() === 'identity validator') {
+      switch (stack) {
+        case 'DotNet':
+          return `// Program.cs
 using PrimusSaaS.Identity.Validator;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -345,27 +406,80 @@ def get_user():
       case 'Python-FastAPI':
         return `# main.py
 from fastapi import FastAPI, Depends
-from primus_identity_validator import createIdentityValidator
+from primus_identity_validator import PrimusIdentityValidator
 
 app = FastAPI()
-
-auth = createIdentityValidator(
+validator = PrimusIdentityValidator(
     primus_client_id="${primusClientId}",
     mode="AzureAd",
     azure_ad={
-        "tenant_id": os.getenv("AZURE_TENANT"),
-        "client_id": os.getenv("AZURE_CLIENT"),
-        "audience": os.getenv("AZURE_AUD")
+        "tenant_id": "<YOUR_TENANT_ID>",
+        "client_id": "<YOUR_AZURE_CLIENT_ID>",
+        "audience": "api://<YOUR_AZURE_CLIENT_ID>"
     }
 )
 
 @app.get("/api/me")
-async def get_user(user=Depends(auth.require_auth)):
+async def get_user(user=Depends(validator.require_auth)):
     return {"user": user}`;
       default:
         return '';
     }
-  };
+  } else if (module.toLowerCase() === 'logging' || module.toLowerCase() === 'logging sdk') {
+    switch (stack) {
+      case 'DotNet':
+        return `// Program.cs
+using PrimusSaaS.Logging;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.AddPrimusLogging(options =>
+{
+    options.Targets = new List<LogTarget>
+    {
+        new ConsoleTarget { Format = "PrettyPrint" },
+        new FileTarget { Path = "logs/app.log" }
+    };
+});
+
+var app = builder.Build();
+app.UsePrimusLogging();  // Adds HTTP context enrichment
+app.Run();`;
+      case 'NodeJS':
+      case 'NodeJS-Nest':
+        return `// logger.ts
+import { createPrimusLogger } from "@primus-saas/logging";
+
+export const logger = createPrimusLogger({
+  targets: [
+    { type: "console", format: "pretty" },
+    { type: "file", path: "logs/app.log" }
+  ]
+});
+
+// Usage
+logger.info("User logged in", { userId: "123" });
+logger.error("Failed to process", { error: err });`;
+      case 'TypeScriptLib':
+        return `// logger.ts
+import { PrimusLogger } from "@primus-saas/logging";
+
+export const logger = new PrimusLogger({
+  targets: [
+    { type: "console", format: "json" },
+    { type: "file", path: "logs/lib.log" }
+  ]
+});
+
+export function logOperation(operation: string, data: any) {
+  logger.info(\`Operation: \${operation}\`, data);
+}`;
+      default:
+        return '';
+    }
+  }
+  return '';
+};
 
   return (
     <section className="app-detail">
@@ -574,7 +688,7 @@ async def get_user(user=Depends(auth.require_auth)):
                   Ship-ready steps tuned for {stackInfo[currentApplication.stack]?.label ?? currentApplication.stack} teams.
                 </p>
                 <div className="docs-links">
-                  <a href="http://localhost:3001" target="_blank" rel="noopener noreferrer" className="docs-link-primary">
+                  <a href="https://akkikhan.github.io/Primus-SaaS/docs" target="_blank" rel="noopener noreferrer" className="docs-link-primary">
                     View Full Documentation ↗
                   </a>
                 </div>
@@ -598,135 +712,130 @@ async def get_user(user=Depends(auth.require_auth)):
               </div>
             </div>
 
-            <div className="stepper-container">
-              {/* Step 1 */}
-              <div className="step-item">
-                <div className="step-number">1</div>
-                <div className="step-content">
-                  <h3>Install the SDK</h3>
-                  <p>Add the Primus Identity Validator SDK to your {currentApplication.stack} project.</p>
-                  <div className="code-block-shell">
-                    <div className="code-block-toolbar">
-                      <span className="pill">CLI</span>
-                      <button
-                        type="button"
-                        className="copy-btn copy-btn--solid"
-                        onClick={() => handleCopy(getInstallCommand(), 'install')}
-                      >
-                        {copiedText === 'install' ? 'Copied' : 'Copy'}
-                      </button>
-                    </div>
-                    <pre className="code-block">
-                      <code>{getInstallCommand()}</code>
-                    </pre>
-                  </div>
-                </div>
+            {/* Module-specific tabs */}
+            {currentApplication.integratedModules && currentApplication.integratedModules.length > 0 && (
+              <div className="module-tabs">
+                {currentApplication.integratedModules.map(module => (
+                  <button
+                    key={module.moduleId}
+                    className={`module-tab-btn ${activeModuleTab === module.moduleId ? 'active' : ''}`}
+                    onClick={() => setActiveModuleTab(module.moduleId)}
+                  >
+                    {module.moduleName}
+                  </button>
+                ))}
               </div>
+            )}
 
-              {/* Step 2 */}
-              <div className="step-item">
-                <div className="step-number">2</div>
-                <div className="step-content">
-                  <h3>Configure your application</h3>
-                  <p>Wire your Primus portal credentials and Azure AD tenant settings.</p>
-
-                  <div className="inline-callout">
-                    <strong>Note:</strong> The <code>PrimusClientId</code> is pre-filled with your application's ID. Replace the
-                    placeholders with your portal secret and Azure AD tenant details.
-                  </div>
-
-                  <div className="code-block-shell">
-                    <div className="code-block-toolbar">
-                      <span className="pill">Config template</span>
-                      <button
-                        type="button"
-                        className="copy-btn copy-btn--solid"
-                        onClick={() => handleCopy(getConfigTemplate(), 'config')}
-                      >
-                        {copiedText === 'config' ? 'Copied' : 'Copy'}
-                      </button>
+            {currentApplication.integratedModules && currentApplication.integratedModules.length > 0 ? (
+              currentApplication.integratedModules.map(module => (
+                activeModuleTab === module.moduleId && (
+                  <div key={module.moduleId} className="stepper-container">
+                    {/* Step 1 */}
+                    <div className="step-item">
+                      <div className="step-number">1</div>
+                      <div className="step-content">
+                        <h3>Install the SDK</h3>
+                        <p>Add the {module.moduleName} SDK to your {currentApplication.stack} project.</p>
+                        <div className="code-block-shell">
+                          <div className="code-block-toolbar">
+                            <span className="pill">CLI</span>
+                            <button
+                              type="button"
+                              className="copy-btn copy-btn--solid"
+                              onClick={() => handleCopy(getInstallCommand(module.moduleName), `install-${module.moduleId}`)}
+                            >
+                              {copiedText === `install-${module.moduleId}` ? 'Copied' : 'Copy'}
+                            </button>
+                          </div>
+                          <pre className="code-block">
+                            <code>{getInstallCommand(module.moduleName)}</code>
+                          </pre>
+                        </div>
+                      </div>
                     </div>
-                    <pre className="code-block">
-                      <code>{getConfigTemplate()}</code>
-                    </pre>
-                  </div>
 
-                  <div className="config-help">
-                    <h4>Configuration guide</h4>
-                    <ul>
-                      <li><strong>API_AUDIENCE</strong>: Use the Primus App ID as the audience for your API.</li>
-                      <li><strong>Azure AD</strong>: Tenant ID/authority for OIDC validation.</li>
-                    </ul>
+                    {/* Step 2 */}
+                    <div className="step-item">
+                      <div className="step-number">2</div>
+                      <div className="step-content">
+                        <h3>Configure your application</h3>
+                        <p>Wire your configuration for {module.moduleName}.</p>
+
+                        <div className="inline-callout">
+                          <strong>Note:</strong> The <code>PrimusClientId</code> is pre-filled with your application's ID. Replace the
+                          placeholders with your credentials.
+                        </div>
+
+                        <div className="code-block-shell">
+                          <div className="code-block-toolbar">
+                            <span className="pill">Config template</span>
+                            <button
+                              type="button"
+                              className="copy-btn copy-btn--solid"
+                              onClick={() => handleCopy(getConfigTemplate(module.moduleName), `config-${module.moduleId}`)}
+                            >
+                              {copiedText === `config-${module.moduleId}` ? 'Copied' : 'Copy'}
+                            </button>
+                          </div>
+                          <pre className="code-block">
+                            <code>{getConfigTemplate(module.moduleName)}</code>
+                          </pre>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Step 3 */}
+                    <div className="step-item">
+                      <div className="step-number">3</div>
+                      <div className="step-content">
+                        <h3>Initialize in your code</h3>
+                        <p>Add the {module.moduleName} to your application startup.</p>
+                        <div className="code-block-shell">
+                          <div className="code-block-toolbar">
+                            <span className="pill">Starter snippet</span>
+                            <button
+                              type="button"
+                              className="copy-btn copy-btn--solid"
+                              onClick={() => handleCopy(getCodeSnippet(module.moduleName), `code-${module.moduleId}`)}
+                            >
+                              {copiedText === `code-${module.moduleId}` ? 'Copied' : 'Copy'}
+                            </button>
+                          </div>
+                          <pre className="code-block">
+                            <code>{getCodeSnippet(module.moduleName)}</code>
+                          </pre>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Step 4 - Documentation Link */}
+                    <div className="step-item">
+                      <div className="step-number">4</div>
+                      <div className="step-content">
+                        <h3>Complete Integration Guide</h3>
+                        <p>View the full documentation for detailed setup instructions, examples, and best practices.</p>
+                        <a 
+                          href={`https://akkikhan.github.io/Primus-SaaS/docs/modules/${module.moduleName.toLowerCase().replace(' ', '-')}-${currentApplication.stack.toLowerCase()}`}
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="docs-link-primary"
+                        >
+                          View {module.moduleName} Documentation ↗
+                        </a>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )
+              ))
+            ) : (
+              <div className="empty-state" style={{ marginTop: '2rem' }}>
+                <p>No modules integrated yet. Add a module to see integration documentation.</p>
+                <button type="button" onClick={() => { setActiveTab('overview'); setShowAddModule(true); }}>
+                  + Integrate Your First Module
+                </button>
               </div>
-
-              {/* Step 3 */}
-              <div className="step-item">
-                <div className="step-number">3</div>
-                <div className="step-content">
-                  <h3>Environment baseline</h3>
-                  <p>Pin these secrets in your CI/CD or vault before deploying.</p>
-                  <div className="env-pill-grid">
-                    <div className="env-pill">
-                      <span className="env-key">API_AUDIENCE</span>
-                      <span className="env-value">{currentApplication.primusClientId}</span>
-                    </div>
-                    <div className="env-pill">
-                      <span className="env-key">AZURE_AD_ISSUER</span>
-                      <span className="env-value">https://login.microsoftonline.com/&lt;TENANT_ID&gt;/v2.0</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Step 4 */}
-              <div className="step-item">
-                <div className="step-number">4</div>
-                <div className="step-content">
-                  <h3>Initialize in your code</h3>
-                  <p>Add the Primus Identity Validator to your application startup.</p>
-                  <div className="code-block-shell">
-                    <div className="code-block-toolbar">
-                      <span className="pill">Starter snippet</span>
-                      <button
-                        type="button"
-                        className="copy-btn copy-btn--solid"
-                        onClick={() => handleCopy(getCodeSnippet(), 'code')}
-                      >
-                        {copiedText === 'code' ? 'Copied' : 'Copy'}
-                      </button>
-                    </div>
-                    <pre className="code-block">
-                      <code>{getCodeSnippet()}</code>
-                    </pre>
-                  </div>
-                </div>
-              </div>
-
-              {/* Step 5 */}
-              <div className="step-item">
-                <div className="step-number">5</div>
-                <div className="step-content">
-                  <h3>Protect your routes</h3>
-                  <p>Apply authentication to your API endpoints.</p>
-                  {currentApplication.stack === 'NodeJS' && (
-                    <div className="code-block-shell">
-                      <pre className="code-block">
-                        <code>{`app.get("/api/me", primusAuth, handler);`}</code>
-                      </pre>
-                    </div>
-                  )}
-                  {currentApplication.stack === 'DotNet' && (
-                    <div className="code-block-shell">
-                      <pre className="code-block">
-                        <code>{`[Authorize]\npublic class MyController : ControllerBase { ... }`}</code>
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>

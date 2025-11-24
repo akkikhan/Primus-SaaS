@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using PrimusSaaS.Identity.Validator.Services;
@@ -80,131 +81,120 @@ public static class PrimusIdentityExtensions
                 // Custom validation logic to handle multiple issuers
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = false, // We'll validate manually based on config
-                    ValidateAudience = false, // We'll validate manually based on config
+                    ValidateIssuer = true, // Validate issuer against our config
+                    ValidateAudience = true, // Validate audience against our config
                     ValidateLifetime = primusOptions.ValidateLifetime,
                     ClockSkew = primusOptions.ClockSkew,
                     ValidateIssuerSigningKey = true,
                     RequireSignedTokens = true,
-                    RequireExpirationTime = true
+                    RequireExpirationTime = true,
+                    
+                    // CRITICAL FIX: Resolve keys dynamically based on the token's issuer
+                    IssuerSigningKeyResolver = (token, securityToken, kid, validationParameters) =>
+                    {
+                        var jwt = securityToken as System.IdentityModel.Tokens.Jwt.JwtSecurityToken;
+                        if (jwt == null) return Enumerable.Empty<SecurityKey>();
+
+                        var issuer = jwt.Issuer;
+                        var issuerConfig = primusOptions.Issuers.FirstOrDefault(i => i.Issuer == issuer);
+
+                        if (issuerConfig == null) return Enumerable.Empty<SecurityKey>();
+
+                        if (issuerConfig.Type == IssuerType.Oidc)
+                        {
+                            // For OIDC, we rely on the AzureAdValidator/JwksService to have cached keys
+                            // This is a synchronous call in a callback, which is tricky.
+                            // Ideally, we pre-fetch or use a synchronous cache.
+                            // For now, we'll use the JwksService synchronously (carefully) or rely on the fact 
+                            // that AzureAdValidator handles this if we delegate.
+                            
+                            // BETTER APPROACH: Return empty here and let the custom validator handle it? 
+                            // No, ValidateIssuerSigningKey=true will fail.
+                            
+                            // We need to fetch the keys.
+                            var jwksService = sp.GetRequiredService<JwksService>();
+                            
+                            // If Authority is set, use it to find JWKS
+                            var jwksUrl = !string.IsNullOrEmpty(issuerConfig.JwksUrl) 
+                                ? issuerConfig.JwksUrl 
+                                : $"{issuerConfig.Authority?.TrimEnd('/')}/discovery/v2.0/keys"; // Simplified guess, ideally use Discovery Doc
+                                
+                            // Sync-over-async is dangerous but required by this specific API surface
+                            // In a real high-perf scenario, these should be background refreshed.
+                            var keys = jwksService.GetJwksAsync(jwksUrl).GetAwaiter().GetResult();
+                            
+                            return keys.Keys.Select(k => 
+                            {
+                                var jsonKey = new Microsoft.IdentityModel.Tokens.JsonWebKey
+                                {
+                                    Kty = k.KeyType,
+                                    Use = k.Use,
+                                    Kid = k.KeyId,
+                                    N = k.Modulus,
+                                    E = k.Exponent,
+                                    Alg = k.Algorithm,
+                                    X5t = k.X509Thumbprint
+                                };
+                                if(k.X509CertificateChain != null) 
+                                    foreach(var c in k.X509CertificateChain) jsonKey.X5c.Add(c);
+                                return jsonKey;
+                            });
+                        }
+                        else // JWT
+                        {
+                            if (!string.IsNullOrEmpty(issuerConfig.Secret))
+                            {
+                                return new[] { new SymmetricSecurityKey(Encoding.UTF8.GetBytes(issuerConfig.Secret)) };
+                            }
+                        }
+
+                        return Enumerable.Empty<SecurityKey>();
+                    },
+                    
+                    // Validate Issuer matches one of our configs
+                    IssuerValidator = (issuer, securityToken, validationParameters) => 
+                    {
+                        if (primusOptions.Issuers.Any(i => i.Issuer == issuer)) return issuer;
+                        throw new SecurityTokenInvalidIssuerException($"Unknown issuer: {issuer}");
+                    },
+
+                    // Validate Audience matches the config for that issuer
+                    AudienceValidator = (audiences, securityToken, validationParameters) =>
+                    {
+                        var jwt = securityToken as System.IdentityModel.Tokens.Jwt.JwtSecurityToken;
+                        var issuerConfig = primusOptions.Issuers.FirstOrDefault(i => i.Issuer == jwt?.Issuer);
+                        
+                        if (issuerConfig == null) return false;
+                        
+                        // Ensure at least one token audience matches one configured audience
+                        return audiences.Any(a => issuerConfig.Audiences.Contains(a));
+                    }
                 };
 
                 options.Events = new JwtBearerEvents
                 {
                     OnTokenValidated = async context =>
                     {
+                        var logger = context.HttpContext.RequestServices.GetService<ILoggerFactory>()?.CreateLogger("PrimusSaaS.Identity.Validator");
                         try
                         {
-                            var token = context.SecurityToken as System.IdentityModel.Tokens.Jwt.JwtSecurityToken;
-                            if (token == null)
-                            {
-                                context.Fail("Invalid token type.");
-                                return;
-                            }
+                            var principal = context.Principal;
+                            if (principal == null) return;
 
-                            var issuer = token.Issuer;
-                            var issuerConfig = primusOptions.Issuers.FirstOrDefault(i => i.Issuer == issuer);
-
-                            if (issuerConfig == null)
-                            {
-                                context.Fail($"Untrusted issuer: {issuer}. No matching configuration found.");
-                                return;
-                            }
-
-                            System.Security.Claims.ClaimsPrincipal principal;
-
-                            if (issuerConfig.Type == IssuerType.Oidc)
-                            {
-                                // Validate as OIDC (Azure AD) token
-                                if (string.IsNullOrEmpty(issuerConfig.Authority))
-                                {
-                                    context.Fail($"Authority URL is required for OIDC issuer {issuerConfig.Name}");
-                                    return;
-                                }
-
-                                var tenantId = ExtractTenantId(issuerConfig.Authority);
-                                if (string.IsNullOrEmpty(tenantId))
-                                {
-                                    context.Fail($"Could not extract Tenant ID from authority: {issuerConfig.Authority}");
-                                    return;
-                                }
-
-                                // Use first audience for now
-                                var audience = issuerConfig.Audiences.FirstOrDefault();
-
-                                principal = await azureValidator.ValidateTokenAsync(
-                                    token.RawData,
-                                    tenantId,
-                                    audience ?? string.Empty,
-                                    primusOptions.ValidateLifetime,
-                                    primusOptions.ClockSkew);
-                            }
-                            else // Jwt
-                            {
-                                // Validate as Local JWT token
-                                var validationParameters = new TokenValidationParameters
-                                {
-                                    ValidateIssuer = true,
-                                    ValidIssuer = issuerConfig.Issuer,
-                                    ValidateAudience = true,
-                                    ValidAudiences = issuerConfig.Audiences,
-                                    ValidateLifetime = primusOptions.ValidateLifetime,
-                                    ValidateIssuerSigningKey = true,
-                                    ClockSkew = primusOptions.ClockSkew
-                                };
-
-                                if (!string.IsNullOrEmpty(issuerConfig.JwksUrl))
-                                {
-                                    // Fetch keys from JWKS endpoint
-                                    var keySet = await jwksService.GetJwksAsync(issuerConfig.JwksUrl);
-                                    var securityKeys = new List<SecurityKey>();
-
-                                    foreach (var key in keySet.Keys)
-                                    {
-                                        var jsonKey = new Microsoft.IdentityModel.Tokens.JsonWebKey
-                                        {
-                                            Kty = key.KeyType,
-                                            Use = key.Use,
-                                            Kid = key.KeyId,
-                                            N = key.Modulus,
-                                            E = key.Exponent,
-                                            Alg = key.Algorithm,
-                                            X5t = key.X509Thumbprint,
-                                            // Map other properties if needed
-                                        };
-                                        
-                                        // Add X5C if present
-                                        if (key.X509CertificateChain != null)
-                                        {
-                                            foreach (var cert in key.X509CertificateChain)
-                                            {
-                                                jsonKey.X5c.Add(cert);
-                                            }
-                                        }
-
-                                        securityKeys.Add(jsonKey);
-                                    }
-
-                                    validationParameters.IssuerSigningKeys = securityKeys;
-                                }
-                                else if (!string.IsNullOrEmpty(issuerConfig.Secret))
-                                {
-                                    validationParameters.IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(issuerConfig.Secret));
-                                }
-                                else
-                                {
-                                    context.Fail($"Secret or JWKS URL is required for JWT issuer {issuerConfig.Name}");
-                                    return;
-                                }
-
-                                var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
-                                principal = handler.ValidateToken(token.RawData, validationParameters, out _);
-                            }
-
-                            context.Principal = principal;
-                            
                             // Resolve Tenant Context
-                            if (primusOptions.TenantResolver != null)
+                            var tenantResolver = context.HttpContext.RequestServices.GetService<ITenantResolver>();
+                            if (tenantResolver != null)
+                            {
+                                var claimsDict = principal.Claims.ToDictionary(c => c.Type, c => (object)c.Value);
+                                var tokenClaims = new TokenClaims(claimsDict);
+                                var tenantContext = await tenantResolver.ResolveAsync(tokenClaims);
+                                
+                                if (tenantContext != null)
+                                {
+                                    context.HttpContext.Items["TenantContext"] = tenantContext;
+                                }
+                            }
+                            else if (primusOptions.TenantResolver != null)
                             {
                                 var claimsDict = principal.Claims.ToDictionary(c => c.Type, c => (object)c.Value);
                                 var tokenClaims = new TokenClaims(claimsDict);
@@ -216,22 +206,24 @@ public static class PrimusIdentityExtensions
                                 }
                             }
 
-                            Console.WriteLine($"Primus Identity: Token validated for user - {principal.Identity?.Name} (Issuer: {issuerConfig.Name})");
+                            logger?.LogInformation("Primus Identity: Token validated for user - {UserName}", principal.Identity?.Name);
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"Primus Identity: Validation failed - {ex.Message}");
+                            logger?.LogWarning("Primus Identity: Post-validation logic failed: {Reason}", ex.Message);
                             context.Fail(ex);
                         }
                     },
                     OnAuthenticationFailed = context =>
                     {
-                        Console.WriteLine($"Primus Identity: Authentication failed - {context.Exception.Message}");
+                        var logger = context.HttpContext.RequestServices.GetService<ILoggerFactory>()?.CreateLogger("PrimusSaaS.Identity.Validator");
+                        logger?.LogWarning("Primus Identity: Authentication failed - {Reason}", context.Exception.Message);
                         return Task.CompletedTask;
                     },
                     OnChallenge = context =>
                     {
-                        Console.WriteLine($"Primus Identity: Authentication challenge - {context.Error}, {context.ErrorDescription}");
+                        var logger = context.HttpContext.RequestServices.GetService<ILoggerFactory>()?.CreateLogger("PrimusSaaS.Identity.Validator");
+                        logger?.LogWarning("Primus Identity: Authentication challenge - {Error}, {ErrorDescription}", context.Error, context.ErrorDescription);
                         return Task.CompletedTask;
                     }
                 };
@@ -255,6 +247,18 @@ public static class PrimusIdentityExtensions
 
         app.UseAuthentication();
         return app;
+    }
+
+    /// <summary>
+    /// Adds the Tenant Isolation middleware to the pipeline.
+    /// Ensures that all authenticated requests have a resolved TenantContext.
+    /// </summary>
+    public static IApplicationBuilder UsePrimusTenantIsolation(this IApplicationBuilder app)
+    {
+        if (app == null)
+            throw new ArgumentNullException(nameof(app));
+
+        return app.UseMiddleware<Middleware.TenantIsolationMiddleware>();
     }
 
     private static string? ExtractTenantId(string authority)

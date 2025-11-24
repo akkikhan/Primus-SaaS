@@ -72,11 +72,27 @@ public class Logger
     }
 
     /// <summary>
+    /// Log a DEBUG message with exception
+    /// </summary>
+    public void Debug(Exception ex, string message, Dictionary<string, object>? context = null)
+    {
+        Log(LogLevel.Debug, message, context, ex);
+    }
+
+    /// <summary>
     /// Log an INFO message
     /// </summary>
     public void Info(string message, Dictionary<string, object>? context = null)
     {
         Log(LogLevel.Info, message, context);
+    }
+
+    /// <summary>
+    /// Log an INFO message with exception
+    /// </summary>
+    public void Info(Exception ex, string message, Dictionary<string, object>? context = null)
+    {
+        Log(LogLevel.Info, message, context, ex);
     }
 
     /// <summary>
@@ -88,6 +104,14 @@ public class Logger
     }
 
     /// <summary>
+    /// Log a WARNING message with exception
+    /// </summary>
+    public void Warn(Exception ex, string message, Dictionary<string, object>? context = null)
+    {
+        Log(LogLevel.Warning, message, context, ex);
+    }
+
+    /// <summary>
     /// Log an ERROR message
     /// </summary>
     public void Error(string message, Dictionary<string, object>? context = null)
@@ -96,11 +120,27 @@ public class Logger
     }
 
     /// <summary>
+    /// Log an ERROR message with exception
+    /// </summary>
+    public void Error(Exception ex, string message, Dictionary<string, object>? context = null)
+    {
+        Log(LogLevel.Error, message, context, ex);
+    }
+
+    /// <summary>
     /// Log a CRITICAL message
     /// </summary>
     public void Critical(string message, Dictionary<string, object>? context = null)
     {
         Log(LogLevel.Critical, message, context);
+    }
+
+    /// <summary>
+    /// Log a CRITICAL message with exception
+    /// </summary>
+    public void Critical(Exception ex, string message, Dictionary<string, object>? context = null)
+    {
+        Log(LogLevel.Critical, message, context, ex);
     }
 
     /// <summary>
@@ -119,7 +159,7 @@ public class Logger
         return $"corr-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{Guid.NewGuid():N}";
     }
 
-    private void Log(LogLevel level, string message, Dictionary<string, object>? context)
+    private void Log(LogLevel level, string message, Dictionary<string, object>? context, Exception? exception = null)
     {
         // Filter by log level
         if (level < _options.MinLevel)
@@ -137,6 +177,12 @@ public class Logger
             {
                 enrichedContext[kvp.Key] = kvp.Value;
             }
+        }
+
+        // Add exception details if present
+        if (exception != null)
+        {
+            enrichedContext["exception"] = DeconstructException(exception);
         }
 
         // Enrich with HTTP context if available
@@ -168,6 +214,23 @@ public class Logger
 
         // Write to all targets
         WriteToTargets(logEntry);
+    }
+
+    private Dictionary<string, object> DeconstructException(Exception ex)
+    {
+        var dict = new Dictionary<string, object>
+        {
+            ["type"] = ex.GetType().Name,
+            ["message"] = _piiMasker.MaskMessage(ex.Message), // Mask PII in exception message
+            ["stackTrace"] = ex.StackTrace ?? string.Empty
+        };
+
+        if (ex.InnerException != null)
+        {
+            dict["inner"] = DeconstructException(ex.InnerException);
+        }
+
+        return dict;
     }
 
     private Dictionary<string, object> GetBaseContext()

@@ -9,6 +9,7 @@ import { TenantEnricher } from './enrichers/TenantEnricher';
 import { Target } from './targets/Target';
 import { ConsoleTarget } from './targets/ConsoleTarget';
 import { FileTarget } from './targets/FileTarget';
+import { primusLoggingMiddleware } from './middleware/express';
 
 /**
  * Creates a new logger instance
@@ -29,7 +30,8 @@ export {
     TenantEnricher,
     Target,
     ConsoleTarget,
-    FileTarget
+    FileTarget,
+    primusLoggingMiddleware
 };
 
 // Export type for Timer

@@ -144,15 +144,17 @@ public class EmailService : IEmailService
 
     private (string packageName, string installCommand) GetPackageInfo(string moduleName, string stack)
     {
-        return (moduleName.ToLowerInvariant(), stack) switch
+        var normalizedStack = stack.ToLowerInvariant();
+        
+        return (moduleName.ToLowerInvariant(), normalizedStack) switch
         {
             ("identity validator", "dotnet") => 
                 ("PrimusSaaS.Identity.Validator", "dotnet add package PrimusSaaS.Identity.Validator"),
-            ("identity validator", "nodejs") => 
-                ("primus-identity-validator", "npm install primus-identity-validator"),
-            ("logging", "dotnet") => 
+            ("identity validator", "nodejs") or ("identity validator", "nodejs-nest") => 
+                ("@primus-saas/identity-validator", "npm install @primus-saas/identity-validator"),
+            ("logging", "dotnet") or ("logging sdk", "dotnet") => 
                 ("PrimusSaaS.Logging", "dotnet add package PrimusSaaS.Logging"),
-            ("logging", "nodejs") => 
+            ("logging", "nodejs") or ("logging", "nodejs-nest") or ("logging sdk", "nodejs") or ("logging sdk", "nodejs-nest") => 
                 ("@primus-saas/logging", "npm install @primus-saas/logging"),
             _ => ("Unknown", "# Package not found")
         };
@@ -161,7 +163,14 @@ public class EmailService : IEmailService
     private string GenerateDocLink(string moduleName, string stack)
     {
         var module = moduleName.ToLowerInvariant().Replace(" ", "-");
-        return $"{_docsBaseUrl}/docs/modules/{module}-{stack}";
+        var normalizedStack = stack.ToLowerInvariant() switch
+        {
+            "dotnet" => "dotnet",
+            "nodejs" => "nodejs",
+            "nodejs-nest" => "nodejs",
+            _ => stack.ToLowerInvariant()
+        };
+        return $"https://akkikhan.github.io/Primus-SaaS/docs/modules/{module}-{normalizedStack}";
     }
 
     public async Task SendVersionPublishedAsync(Application app, ModuleVersion version)

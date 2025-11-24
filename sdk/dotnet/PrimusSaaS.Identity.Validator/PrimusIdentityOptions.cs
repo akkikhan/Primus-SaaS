@@ -145,8 +145,29 @@ public class TenantContext
 
 /// <summary>
 /// Wrapper around token claims for easier access.
+/// Implements IEnumerable to support LINQ operations.
 /// </summary>
-public class TokenClaims
+/// <example>
+/// <code>
+/// options.TenantResolver = claims =>
+/// {
+///     // Access claims using Get method
+///     var tenantId = claims.Get("tid");
+///     
+///     // Or use LINQ (now supported!)
+///     var roles = claims.Where(c => c.Key.StartsWith("role_"))
+///                       .Select(c => c.Value.ToString())
+///                       .ToList();
+///     
+///     return new TenantContext 
+///     { 
+///         TenantId = tenantId ?? "default",
+///         Roles = roles
+///     };
+/// };
+/// </code>
+/// </example>
+public class TokenClaims : IEnumerable<KeyValuePair<string, object>>
 {
     private readonly Dictionary<string, object> _claims;
 
@@ -155,8 +176,19 @@ public class TokenClaims
         _claims = claims ?? new Dictionary<string, object>();
     }
 
+    /// <summary>
+    /// Gets a claim value as a string.
+    /// </summary>
+    /// <param name="claimType">The claim type to retrieve.</param>
+    /// <returns>The claim value as a string, or null if not found.</returns>
     public string? Get(string claimType) => _claims.TryGetValue(claimType, out var val) ? val?.ToString() : null;
     
+    /// <summary>
+    /// Gets a claim value as a specific type.
+    /// </summary>
+    /// <typeparam name="T">The type to convert the claim value to.</typeparam>
+    /// <param name="claimType">The claim type to retrieve.</param>
+    /// <returns>The claim value as type T, or default(T) if not found or cannot convert.</returns>
     public T? Get<T>(string claimType)
     {
         if (_claims.TryGetValue(claimType, out var val) && val is T typedVal)
@@ -164,5 +196,51 @@ public class TokenClaims
         return default;
     }
 
+    /// <summary>
+    /// Gets all claims as a dictionary.
+    /// </summary>
     public Dictionary<string, object> All => _claims;
+
+    /// <summary>
+    /// Gets the first claim value that matches the predicate, or null.
+    /// </summary>
+    /// <param name="predicate">The predicate to match claims.</param>
+    /// <returns>The first matching claim value as a string, or null.</returns>
+    public string? FirstOrDefault(Func<KeyValuePair<string, object>, bool> predicate)
+    {
+        var match = _claims.FirstOrDefault(predicate);
+        return match.Value?.ToString();
+    }
+
+    /// <summary>
+    /// Filters claims based on a predicate.
+    /// </summary>
+    /// <param name="predicate">The predicate to filter claims.</param>
+    /// <returns>Enumerable of matching claims.</returns>
+    public IEnumerable<KeyValuePair<string, object>> Where(Func<KeyValuePair<string, object>, bool> predicate)
+    {
+        return _claims.Where(predicate);
+    }
+
+    /// <summary>
+    /// Checks if a claim exists.
+    /// </summary>
+    /// <param name="claimType">The claim type to check.</param>
+    /// <returns>True if the claim exists, false otherwise.</returns>
+    public bool Contains(string claimType) => _claims.ContainsKey(claimType);
+
+    /// <summary>
+    /// Gets the number of claims.
+    /// </summary>
+    public int Count => _claims.Count;
+
+    /// <summary>
+    /// Implements IEnumerable to support LINQ operations.
+    /// </summary>
+    public IEnumerator<KeyValuePair<string, object>> GetEnumerator() => _claims.GetEnumerator();
+
+    /// <summary>
+    /// Implements IEnumerable to support LINQ operations.
+    /// </summary>
+    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => _claims.GetEnumerator();
 }

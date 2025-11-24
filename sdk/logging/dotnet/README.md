@@ -30,15 +30,22 @@ Use the familiar `ILogger<T>` interface:
 ```csharp
 using Microsoft.Extensions.Logging;
 using PrimusSaaS.Logging.Extensions;
+// Alias to avoid conflict with Microsoft.Extensions.Logging.LogLevel
+using PrimusLogLevel = PrimusSaaS.Logging.Core.LogLevel;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Replace default logging with PrimusSaaS.Logging
+// Both AddPrimus() and AddPrimusLogging() work (aliases)
 builder.Logging.ClearProviders();
 builder.Logging.AddPrimus(options =>
 {
     options.ApplicationId = "MY-APP";
     options.Environment = "production";
+    
+    // Use PrimusLogLevel to avoid ambiguity if Microsoft.Extensions.Logging is imported
+    options.MinLevel = PrimusLogLevel.Info;
+    
     options.Targets = new List<PrimusSaaS.Logging.Core.TargetConfig>
     {
         new() { Type = "console", Pretty = true },
@@ -47,6 +54,11 @@ builder.Logging.AddPrimus(options =>
 });
 
 var app = builder.Build();
+
+// Optional: Add middleware for automatic HTTP context enrichment
+// Requires: using PrimusSaaS.Logging.Extensions;
+app.UsePrimusLogging();
+
 app.Run();
 
 // Use in controllers
@@ -76,6 +88,8 @@ Use the PrimusSaaS Logger class directly:
 
 ```csharp
 using PrimusSaaS.Logging.Core;
+// If Microsoft.Extensions.Logging is NOT used in this file, LogLevel is unambiguous
+// Otherwise use PrimusSaaS.Logging.Core.LogLevel
 
 var logger = new Logger(new LoggerOptions
 {
@@ -105,8 +119,8 @@ var options = new LoggerOptions
     // Environment (development, testing, production)
     Environment = "production",
 
-    // Minimum log level
-    MinLevel = LogLevel.Info,
+    // Minimum log level (use fully qualified name if needed)
+    MinLevel = PrimusSaaS.Logging.Core.LogLevel.Info,
 
     // Output targets
     Targets = new List<TargetConfig>
@@ -225,11 +239,14 @@ logger.Info("Step 2", new Dictionary<string, object>
 The middleware automatically enriches logs with HTTP context:
 
 ```csharp
+using Microsoft.Extensions.Logging;
 using PrimusSaaS.Logging.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddPrimusLogging(options =>
+// Add Primus Logging to the logging pipeline
+builder.Logging.ClearProviders();
+builder.Logging.AddPrimus(options =>
 {
     options.ApplicationId = "MY-WEBAPI";
     options.Environment = "production";
@@ -237,7 +254,7 @@ builder.Services.AddPrimusLogging(options =>
 
 var app = builder.Build();
 
-// Add middleware
+// Add middleware for automatic HTTP context enrichment
 app.UsePrimusLogging();
 
 app.Run();
@@ -316,6 +333,13 @@ See the `Examples/` directory:
 - **Thread-Safe**: Lock-free reads, minimal contention
 - **File Rotation**: Automatic cleanup prevents disk exhaustion
 - **Compression**: Gzip reduces storage by ~70%
+
+## Documentation
+
+- [CONFIGURATION_GUIDE.md](./CONFIGURATION_GUIDE.md) - Detailed configuration options
+- [CUSTOM_ENRICHERS_GUIDE.md](./PrimusSaaS.Logging/CUSTOM_ENRICHERS_GUIDE.md) - Guide to creating custom enrichers
+- [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Common issues and solutions
+- [VERIFICATION_GUIDE.md](./VERIFICATION_GUIDE.md) - Verification steps
 
 ## License
 

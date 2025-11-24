@@ -15,6 +15,7 @@ const sidebars = {
             'modules/identity-validator-nodejs',
             'modules/identity-configuration',
             'modules/identity-token-generation',
+            'modules/identity-tenant-resolver',
             'modules/identity-error-reference'
           ]
         },
@@ -25,12 +26,14 @@ const sidebars = {
             'modules/logging-dotnet',
             'modules/logging-nodejs',
             'modules/logging-configuration',
+            'modules/logging-middleware',
             'modules/logging-enterprise-features',
             'modules/logging-targets'
           ]
         }
       ]
-    }
+    },
+    'release-notes'
   ]
 };
 
