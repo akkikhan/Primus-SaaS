@@ -130,7 +130,7 @@ builder.Services.AddPrimusIdentity(options =>
     options.Issuers.Add(new IssuerConfig
     {
         Name = "AzureAD",
-        Type = IssuerType.Oidc,
+        Type = IssuerType.AzureAD,
         Issuer = "https://login.microsoftonline.com/{tenant-id}/v2.0",
         Authority = "https://login.microsoftonline.com/{tenant-id}/v2.0",
         Audiences = new List<string> { "your-client-id" }
@@ -477,6 +477,25 @@ options.TenantResolver = claims =>
 var roles = claims.Where(c => c.Key.StartsWith("role_")).ToList();
 ```
 
+### Issue: TenantResolver throws an exception
+
+**Behavior:** The SDK catches resolver exceptions and returns `401 Unauthorized` with `Tenant resolution failed` to avoid 500 errors.
+
+**Fix:** Add a fallback in your resolver if you want to keep the request authenticated:
+```csharp
+options.TenantResolver = claims =>
+{
+    try
+    {
+        return ResolveTenant(claims);
+    }
+    catch
+    {
+        return new TenantContext { TenantId = "default" };
+    }
+};
+```
+
 ---
 
 ## Best Practices
@@ -504,7 +523,7 @@ builder.Services.AddPrimusIdentity(options =>
     options.Issuers.Add(new IssuerConfig
     {
         Name = "AzureAD",
-        Type = IssuerType.Oidc,
+        Type = IssuerType.AzureAD,
         Issuer = "https://login.microsoftonline.com/{tenant-id}/v2.0",
         Authority = "https://login.microsoftonline.com/{tenant-id}/v2.0",
         Audiences = new List<string> { "your-client-id" }

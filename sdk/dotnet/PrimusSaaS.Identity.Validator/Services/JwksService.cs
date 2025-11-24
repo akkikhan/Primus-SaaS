@@ -9,7 +9,8 @@ namespace PrimusSaaS.Identity.Validator.Services;
 public class JwksService
 {
     private readonly HttpClient _httpClient;
-    private readonly JwksCache _cache;
+    private readonly JwksCache? _cache;
+    private readonly bool _enableCaching;
     private readonly SemaphoreSlim _fetchLock = new(1, 1);
 
     /// <summary>
@@ -17,10 +18,12 @@ public class JwksService
     /// </summary>
     /// <param name="httpClient">HTTP client for fetching JWKS.</param>
     /// <param name="cache">JWKS cache.</param>
-    public JwksService(HttpClient? httpClient = null, JwksCache? cache = null)
+    /// <param name="enableCaching">Set false to bypass caching entirely (useful for tests/local).</param>
+    public JwksService(HttpClient? httpClient = null, JwksCache? cache = null, bool enableCaching = true)
     {
         _httpClient = httpClient ?? new HttpClient();
-        _cache = cache ?? new JwksCache();
+        _enableCaching = enableCaching;
+        _cache = enableCaching ? cache ?? new JwksCache() : null;
     }
 
     /// <summary>
@@ -34,7 +37,7 @@ public class JwksService
         CancellationToken cancellationToken = default)
     {
         // Try cache first
-        var cachedKeySet = _cache.Get(jwksUri);
+        var cachedKeySet = _enableCaching ? _cache?.Get(jwksUri) : null;
         if (cachedKeySet != null)
         {
             return cachedKeySet;
@@ -45,7 +48,7 @@ public class JwksService
         try
         {
             // Double-check cache after acquiring lock
-            cachedKeySet = _cache.Get(jwksUri);
+            cachedKeySet = _enableCaching ? _cache?.Get(jwksUri) : null;
             if (cachedKeySet != null)
             {
                 return cachedKeySet;
@@ -57,13 +60,16 @@ public class JwksService
             var json = await response.Content.ReadAsStringAsync(cancellationToken);
             var keySet = JsonSerializer.Deserialize<PrimusJsonWebKeySet>(json);
 
-            if (keySet == null || keySet.Keys.Count == 0)
+            if (keySet == null)
             {
-                throw new InvalidOperationException("Failed to deserialize JWKS or no keys found.");
+                throw new InvalidOperationException("Failed to deserialize JWKS.");
             }
 
             // Cache the key set
-            _cache.Set(jwksUri, keySet);
+            if (_enableCaching && _cache != null)
+            {
+                _cache.Set(jwksUri, keySet);
+            }
 
             return keySet;
         }
@@ -92,6 +98,6 @@ public class JwksService
     /// </summary>
     public void ClearCache()
     {
-        _cache.Clear();
+        _cache?.Clear();
     }
 }

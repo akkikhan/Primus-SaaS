@@ -8,12 +8,17 @@ public enum IssuerType
     /// <summary>
     /// OpenID Connect issuer (e.g., Azure AD).
     /// </summary>
-    Oidc,
+    Oidc = 0,
+
+    /// <summary>
+    /// Azure AD issuer (alias for OIDC to improve discoverability).
+    /// </summary>
+    AzureAD = Oidc,
 
     /// <summary>
     /// JWT issuer using shared secret (e.g., Local Auth).
     /// </summary>
-    Jwt
+    Jwt = 1
 }
 
 /// <summary>
@@ -27,7 +32,7 @@ public class IssuerConfig
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// Type of issuer (Oidc or Jwt).
+    /// Type of issuer (Oidc/AzureAD or Jwt).
     /// </summary>
     public IssuerType Type { get; set; }
 
@@ -108,8 +113,8 @@ public class PrimusIdentityOptions
             if (issuer.Audiences == null || !issuer.Audiences.Any())
                 throw new ArgumentException($"At least one audience is required for {issuer.Name}.");
 
-            if (issuer.Type == IssuerType.Oidc && string.IsNullOrWhiteSpace(issuer.Authority))
-                throw new ArgumentException($"Authority URL is required for OIDC issuer {issuer.Name}.");
+            if (issuer.Type.IsOidcBased() && string.IsNullOrWhiteSpace(issuer.Authority))
+                throw new ArgumentException($"Authority URL is required for OIDC/AzureAD issuer {issuer.Name}.");
 
             if (issuer.Type == IssuerType.Jwt && string.IsNullOrWhiteSpace(issuer.Secret) && string.IsNullOrWhiteSpace(issuer.JwksUrl))
                 throw new ArgumentException($"Secret or JWKS URL is required for JWT issuer {issuer.Name}.");
@@ -181,7 +186,19 @@ public class TokenClaims : IEnumerable<KeyValuePair<string, object>>
     /// </summary>
     /// <param name="claimType">The claim type to retrieve.</param>
     /// <returns>The claim value as a string, or null if not found.</returns>
-    public string? Get(string claimType) => _claims.TryGetValue(claimType, out var val) ? val?.ToString() : null;
+    public string? Get(string claimType)
+    {
+        if (!_claims.TryGetValue(claimType, out var val) || val == null)
+            return null;
+
+        if (val is IEnumerable<string> stringEnumerable)
+            return stringEnumerable.FirstOrDefault();
+
+        if (val is IEnumerable<object> objectEnumerable)
+            return objectEnumerable.FirstOrDefault()?.ToString();
+
+        return val.ToString();
+    }
     
     /// <summary>
     /// Gets a claim value as a specific type.

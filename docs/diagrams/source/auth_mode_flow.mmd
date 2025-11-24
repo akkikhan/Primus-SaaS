@@ -1,0 +1,28 @@
+flowchart TD
+    Start([Choose Auth Mode]) --> A{What's Your Identity Provider?}
+    
+    A -->|Azure AD| B1[Mode: AzureAd]
+    A -->|Local JWT| B2[Mode: Local]
+    A -->|Both| B3[Mode: Hybrid]
+    
+    B1 --> C1[Configure:<br/>- TenantId<br/>- Audience<br/>- Authority]
+    B2 --> C2[Configure:<br/>- JwtSecret<br/>- Issuer<br/>- Audience]
+    B3 --> C3[Configure Both:<br/>- Azure AD settings<br/>- Local settings<br/>- Fallback order]
+    
+    C1 --> D1[SDK fetches JWKS<br/>from Azure AD]
+    C2 --> D2[SDK uses symmetric<br/>key validation]
+    C3 --> D3[SDK tries Azure first,<br/>falls back to Local]
+    
+    D1 --> E1[Validates RS256 tokens]
+    D2 --> E2[Validates HS256 tokens]
+    D3 --> E3[Validates both types]
+    
+    E1 --> F[✅ Tokens Validated]
+    E2 --> F
+    E3 --> F
+    
+    F --> G[User info available<br/>in req.primusUser]
+    
+    style Start fill:#e3f2fd
+    style F fill:#90caf9
+    style G fill:#42a5f5

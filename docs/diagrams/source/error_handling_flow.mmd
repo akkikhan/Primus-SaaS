@@ -1,0 +1,32 @@
+flowchart TD
+    Start([Token Validation Fails]) --> A{What's the Error?}
+    
+    A -->|Invalid Signature| B1[Error: INVALID_SIGNATURE]
+    A -->|Token Expired| B2[Error: TOKEN_EXPIRED]
+    A -->|Wrong Audience| B3[Error: INVALID_AUDIENCE]
+    A -->|Wrong Issuer| B4[Error: INVALID_ISSUER]
+    A -->|Malformed Token| B5[Error: MALFORMED_TOKEN]
+    
+    B1 --> C1[Check:<br/>- JWKS endpoint accessible?<br/>- Token from correct tenant?<br/>- Clock skew issues?]
+    B2 --> C2[Check:<br/>- Token not expired?<br/>- System time correct?<br/>- Refresh token flow working?]
+    B3 --> C3[Check:<br/>- Audience matches config?<br/>- Azure AD app ID correct?<br/>- Case sensitivity?]
+    B4 --> C4[Check:<br/>- Tenant ID correct?<br/>- Authority URL correct?<br/>- Multi-tenant config?]
+    B5 --> C5[Check:<br/>- Token format (3 parts)?<br/>- Base64 encoding valid?<br/>- Special characters?]
+    
+    C1 --> D[Consult ERROR_REFERENCE.md]
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    C5 --> D
+    
+    D --> E[Apply Fix from Guide]
+    E --> F{Fixed?}
+    F -->|Yes| G[✅ Validation Succeeds]
+    F -->|No| H[Contact Support with:<br/>- Error code<br/>- Token header<br/>- Configuration]
+    
+    H --> I[Support provides solution]
+    I --> E
+    
+    style Start fill:#ffebee
+    style G fill:#c8e6c9
+    style H fill:#fff9c4

@@ -1,0 +1,28 @@
+flowchart TD
+    Start([Request Arrives]) --> A[Identity Validator Middleware]
+    
+    A --> B[Validate Token]
+    B --> C{Valid?}
+    
+    C -->|Yes| D[Extract user info:<br/>- userId<br/>- tenantId<br/>- roles]
+    C -->|No| E[Logger: Authentication failed]
+    
+    D --> F[Attach to request context]
+    F --> G[Logger middleware detects context]
+    
+    G --> H[Logger auto-enriches with:<br/>- userId from token<br/>- tenantId from token<br/>- requestId (generated)]
+    
+    H --> I[Application code executes]
+    I --> J[logger.info('Processing order')]
+    
+    J --> K[Log includes ALL context automatically]
+    
+    K --> L{Log Output}
+    L --> M[Console: Structured JSON]
+    L --> N[File: Structured JSON]
+    
+    E --> O[Log includes:<br/>- Error reason<br/>- Token header<br/>- IP address]
+    
+    style Start fill:#e8f5e9
+    style K fill:#66bb6a
+    style O fill:#ef5350

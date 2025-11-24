@@ -31,7 +31,7 @@ builder.Services.AddPrimusIdentity(options =>
         new IssuerConfig
         {
             Name = "AzureAD",
-            Type = IssuerType.Oidc,
+            Type = IssuerType.AzureAD, // Alias for OIDC (Azure-friendly)
             Issuer = "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
             Authority = "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
             Audiences = new List<string> { "api://your-api-id" }
@@ -134,7 +134,7 @@ if (primusUser != null)
 
 | Option | Required | Description | Default |
 |--------|----------|-------------|---------|
-| Issuers | Yes | List of issuer configs (Oidc or Jwt) | - |
+| Issuers | Yes | List of issuer configs (Oidc/AzureAD or Jwt) | - |
 | ValidateLifetime | No | Validate token expiration | true |
 | RequireHttpsMetadata | No | Require HTTPS for metadata | true |
 | ClockSkew | No | Allowed time difference | 5 minutes |

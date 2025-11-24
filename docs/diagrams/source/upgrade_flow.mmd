@@ -1,0 +1,35 @@
+flowchart TD
+    Start([New Version Released]) --> A[Portal Admin releases v2.0.0]
+    
+    A --> B[Portal identifies apps using v1.x]
+    B --> C[Email sent to developers]
+    
+    C --> D[Email Contains:<br/>- Version number<br/>- Breaking changes<br/>- Migration guide<br/>- Deadline]
+    
+    D --> E[Developer reviews changes]
+    E --> F{Breaking Changes?}
+    
+    F -->|Yes| G1[Read migration guide]
+    F -->|No| G2[Simple version bump]
+    
+    G1 --> H1[Update code per guide:<br/>- Configuration changes<br/>- API signature changes<br/>- Behavior changes]
+    G2 --> H2[Update package version only]
+    
+    H1 --> I[Test in dev environment]
+    H2 --> I
+    
+    I --> J{Tests Pass?}
+    J -->|Yes| K[Deploy to staging]
+    J -->|No| L[Fix issues]
+    L --> I
+    
+    K --> M[Verify in staging]
+    M --> N{Staging OK?}
+    N -->|Yes| O[Deploy to production]
+    N -->|No| L
+    
+    O --> P[Mark as upgraded in portal]
+    P --> Q[✅ Upgrade Complete]
+    
+    style Start fill:#e1f5e1
+    style Q fill:#81c784

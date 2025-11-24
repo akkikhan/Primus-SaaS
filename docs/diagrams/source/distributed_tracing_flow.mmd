@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant Client as Client App
+    participant ServiceA as Order Service
+    participant ServiceB as Payment Service
+    participant ServiceC as Email Service
+    participant Logs as Log Aggregator
+    
+    Client->>ServiceA: 1. POST /orders
+    ServiceA->>ServiceA: 2. Generate correlationId: "abc-123"
+    ServiceA->>ServiceA: 3. logger.info('Order created', {correlationId})
+    
+    ServiceA->>ServiceB: 4. POST /payments<br/>X-Correlation-ID: abc-123
+    ServiceB->>ServiceB: 5. Extract correlationId from header
+    ServiceB->>ServiceB: 6. logger.info('Payment processing', {correlationId})
+    
+    ServiceB->>ServiceC: 7. POST /emails<br/>X-Correlation-ID: abc-123
+    ServiceC->>ServiceC: 8. Extract correlationId from header
+    ServiceC->>ServiceC: 9. logger.info('Email sent', {correlationId})
+    
+    ServiceA->>Logs: 10. Log: Order created (abc-123)
+    ServiceB->>Logs: 11. Log: Payment processed (abc-123)
+    ServiceC->>Logs: 12. Log: Email sent (abc-123)
+    
+    Note over Logs: Search "abc-123" shows complete flow:<br/>1. Order created at 10:00:01<br/>2. Payment processed at 10:00:03<br/>3. Email sent at 10:00:05
+    
+    Logs->>Client: 13. Developer queries logs by correlationId
+    
+    Note over Client,Logs: ✅ Complete request journey visible

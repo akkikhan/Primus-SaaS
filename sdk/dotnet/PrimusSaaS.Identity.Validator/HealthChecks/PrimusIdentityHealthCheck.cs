@@ -24,7 +24,7 @@ public class PrimusIdentityHealthCheck : IHealthCheck
         foreach (var issuer in _options.Issuers)
         {
             // Only check remote endpoints
-            if (issuer.Type == IssuerType.Oidc && !string.IsNullOrEmpty(issuer.Authority))
+            if (issuer.Type.IsOidcBased() && !string.IsNullOrEmpty(issuer.Authority))
             {
                 try
                 {

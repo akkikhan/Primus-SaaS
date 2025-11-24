@@ -91,7 +91,23 @@ public class MiddlewareIntegrationTests
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    private TestServer CreateServer(bool enableIsolation = false)
+    [Fact]
+    public async Task TenantResolver_Exception_Should_Return_401_Instead_Of_500()
+    {
+        // Arrange
+        using var server = CreateServer(tenantResolverThrows: true);
+        var client = server.CreateClient();
+        var token = GenerateToken(LocalIssuer, LocalAudience, LocalSecret, "tenant-1");
+
+        // Act
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        var response = await client.GetAsync("/api/secure");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    private TestServer CreateServer(bool enableIsolation = false, bool tenantResolverThrows = false)
     {
         var builder = new WebHostBuilder()
             .ConfigureServices(services =>
@@ -117,6 +133,11 @@ public class MiddlewareIntegrationTests
                     // Simple tenant resolver
                     options.TenantResolver = claims => 
                     {
+                        if (tenantResolverThrows)
+                        {
+                            throw new InvalidOperationException("Resolver failure");
+                        }
+
                         var tid = claims.Get("tid");
                         return tid == null ? null : new TenantContext { TenantId = tid };
                     };

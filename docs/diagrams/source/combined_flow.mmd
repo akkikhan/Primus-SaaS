@@ -1,0 +1,28 @@
+flowchart TD
+    Start([Request with JWT]) --> A[Identity Validator Middleware]
+    
+    A --> B[Logging: Auth attempt started]
+    B --> C[Validate token]
+    
+    C --> D{Valid?}
+    
+    D -->|Yes| E[Extract claims:<br/>userId, tenantId, roles]
+    D -->|No| F[Logging: Auth failed<br/>Reason: Invalid signature]
+    
+    E --> G[Attach to request.user]
+    G --> H[Logging: Auth successful<br/>User: john@acme.com]
+    
+    H --> I[Logger Context Updated:<br/>- userId: john@acme.com<br/>- tenantId: acme-corp<br/>- roles: [Admin]]
+    
+    I --> J[Application Controller]
+    J --> K[logger.info('Fetching orders')]
+    
+    K --> L[Log Output:<br/>{<br/>  timestamp: '2025-11-24T13:30:00Z',<br/>  level: 'INFO',<br/>  message: 'Fetching orders',<br/>  userId: 'john@acme.com',<br/>  tenantId: 'acme-corp',<br/>  roles: ['Admin'],<br/>  requestId: 'req-abc-123',<br/>  applicationId: 'PSP-CLI-711224'<br/>}]
+    
+    F --> M[Log Output:<br/>{<br/>  timestamp: '2025-11-24T13:30:00Z',<br/>  level: 'ERROR',<br/>  message: 'Auth failed',<br/>  reason: 'Invalid signature',<br/>  ipAddress: '192.168.1.100',<br/>  requestId: 'req-abc-124'<br/>}]
+    
+    L --> N[✅ Complete Audit Trail]
+    M --> N
+    
+    style Start fill:#f3e5f5
+    style N fill:#ab47bc

@@ -1,12 +1,15 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using PrimusSaaS.Identity.Validator.Services;
 using PrimusSaaS.Identity.Validator.Validators;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using System.Security.Claims;
 
 namespace PrimusSaaS.Identity.Validator;
 
@@ -71,9 +74,7 @@ public static class PrimusIdentityExtensions
             {
                 var sp = services.BuildServiceProvider();
                 var primusOptions = sp.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
-                var azureValidator = sp.GetRequiredService<AzureAdValidator>();
-                var jwksService = sp.GetRequiredService<JwksService>();
-                
+
                 primusOptions.Validate();
 
                 options.RequireHttpsMetadata = primusOptions.RequireHttpsMetadata;
@@ -100,7 +101,7 @@ public static class PrimusIdentityExtensions
 
                         if (issuerConfig == null) return Enumerable.Empty<SecurityKey>();
 
-                        if (issuerConfig.Type == IssuerType.Oidc)
+                        if (issuerConfig.Type.IsOidcBased())
                         {
                             // For OIDC, we rely on the AzureAdValidator/JwksService to have cached keys
                             // This is a synchronous call in a callback, which is tricky.
@@ -173,6 +174,34 @@ public static class PrimusIdentityExtensions
 
                 options.Events = new JwtBearerEvents
                 {
+                    OnTokenValidated = async context =>
+                    {
+                        var logger = context.HttpContext.RequestServices.GetService<ILoggerFactory>()?.CreateLogger("PrimusSaaS.Identity.Validator");
+                        var primusIdentityOptions = context.HttpContext.RequestServices.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
+                        var tenantResolver = ResolveTenantResolver(context.HttpContext, primusIdentityOptions);
+
+                        if (tenantResolver == null)
+                        {
+                            return;
+                        }
+
+                        var tokenClaims = new TokenClaims(BuildClaimDictionary(context.Principal, context.SecurityToken));
+
+                        try
+                        {
+                            var tenantContext = await tenantResolver.ResolveAsync(tokenClaims);
+
+                            if (tenantContext != null)
+                            {
+                                context.HttpContext.Items["TenantContext"] = tenantContext;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            logger?.LogWarning(ex, "Primus Identity: TenantResolver threw an exception. Authentication failed.");
+                            context.Fail("Tenant resolution failed.");
+                        }
+                    },
                     OnAuthenticationFailed = context =>
                     {
                         var logger = context.HttpContext.RequestServices.GetService<ILoggerFactory>()?.CreateLogger("PrimusSaaS.Identity.Validator");
@@ -218,6 +247,64 @@ public static class PrimusIdentityExtensions
             throw new ArgumentNullException(nameof(app));
 
         return app.UseMiddleware<Middleware.TenantIsolationMiddleware>();
+    }
+
+    private static ITenantResolver? ResolveTenantResolver(HttpContext httpContext, PrimusIdentityOptions options)
+    {
+        var resolverFromServices = httpContext.RequestServices.GetService<ITenantResolver>();
+        if (resolverFromServices != null)
+        {
+            return resolverFromServices;
+        }
+
+        return options.TenantResolver != null
+            ? new FuncTenantResolver(options.TenantResolver)
+            : null;
+    }
+
+    private static Dictionary<string, object> BuildClaimDictionary(ClaimsPrincipal? principal, SecurityToken? securityToken)
+    {
+        var claimDictionary = new Dictionary<string, object>();
+
+        void AddClaims(IEnumerable<Claim>? claimsToAdd)
+        {
+            if (claimsToAdd == null)
+            {
+                return;
+            }
+
+            foreach (var claim in claimsToAdd)
+            {
+                if (claimDictionary.TryGetValue(claim.Type, out var existing))
+                {
+                    if (existing is List<string> list)
+                    {
+                        list.Add(claim.Value);
+                    }
+                    else
+                    {
+                        claimDictionary[claim.Type] = new List<string>
+                        {
+                            existing?.ToString() ?? string.Empty,
+                            claim.Value
+                        };
+                    }
+                }
+                else
+                {
+                    claimDictionary[claim.Type] = claim.Value;
+                }
+            }
+        }
+
+        if (securityToken is JwtSecurityToken jwt)
+        {
+            AddClaims(jwt.Claims);
+        }
+
+        AddClaims(principal?.Claims);
+
+        return claimDictionary;
     }
 
     private static string? ExtractTenantId(string authority)

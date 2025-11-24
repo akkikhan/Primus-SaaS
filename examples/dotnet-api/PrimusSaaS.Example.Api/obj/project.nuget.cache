@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "DLU9Wr4qXDqGYqUjbX1yFhEETqEUbRBp0EbAAU/0DEQIb16VFj3pkOSF5p64FiEgv75yRCLTbe76u3Pj+7nPHw==",
+  "dgSpecHash": "dujFmDDxwf5CZdMftjiR1ITlhLf6ea/vvDFbSW9Kx9a7EemomtmyAPVerjjauW693iBGAHRITrSCFozdYXTodw==",
   "success": true,
   "projectFilePath": "C:\\Users\\aakib\\Primus SaaS\\examples\\dotnet-api\\PrimusSaaS.Example.Api\\PrimusSaaS.Example.Api.csproj",
   "expectedPackageFiles": [
@@ -27,7 +27,8 @@
     "C:\\Users\\aakib\\.nuget\\packages\\system.componentmodel.annotations\\5.0.0\\system.componentmodel.annotations.5.0.0.nupkg.sha512",
     "C:\\Users\\aakib\\.nuget\\packages\\system.identitymodel.tokens.jwt\\8.14.0\\system.identitymodel.tokens.jwt.8.14.0.nupkg.sha512",
     "C:\\Users\\aakib\\.nuget\\packages\\system.memory\\4.6.3\\system.memory.4.6.3.nupkg.sha512",
-    "C:\\Users\\aakib\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\6.1.2\\system.runtime.compilerservices.unsafe.6.1.2.nupkg.sha512"
+    "C:\\Users\\aakib\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\6.1.2\\system.runtime.compilerservices.unsafe.6.1.2.nupkg.sha512",
+    "C:\\Users\\aakib\\.nuget\\packages\\primussaas.identity.validator\\1.2.3\\primussaas.identity.validator.1.2.3.nupkg.sha512"
   ],
   "logs": []
 }

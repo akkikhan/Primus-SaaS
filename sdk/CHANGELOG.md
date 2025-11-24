@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Identity.Validator Unreleased]
+
+### Added
+
+- `IssuerType.AzureAD` alias for OIDC issuers to improve Azure AD discoverability.
+
+### Changed
+
+- TenantResolver execution is now wrapped in try/catch to return a clear authentication failure instead of a 500 when resolution throws.
+
+---
+
 ## [Identity.Validator 1.2.1] - 2025-11-24
 
 ### Fixed

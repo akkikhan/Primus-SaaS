@@ -124,21 +124,20 @@ public IActionResult Get()
 
 ### Handling Resolver Exceptions
 
-If your `TenantResolver` delegate throws an exception, it will bubble up. Wrap your resolver logic in a try-catch block if you want to fail gracefully.
+The SDK now wraps `TenantResolver` exceptions in a try-catch. If your resolver throws, authentication is failed with `401 Unauthorized` and the error `Tenant resolution failed` (no more 500s). You can still add your own fallback inside the resolver if you prefer to keep the request authorized:
 
 ```csharp
 options.TenantResolver = claims =>
 {
     try
     {
-        // Complex logic that might fail
         return ResolveTenant(claims);
     }
     catch (Exception ex)
     {
-        // Log error
-        Console.Error.WriteLine($"Tenant resolution failed: {ex.Message}");
-        return null; // Fail safe
+        // Optional: keep the request going with a safe default
+        Console.Error.WriteLine($"Tenant resolution failed, using default tenant: {ex.Message}");
+        return new TenantContext { TenantId = "default" };
     }
 };
 ```

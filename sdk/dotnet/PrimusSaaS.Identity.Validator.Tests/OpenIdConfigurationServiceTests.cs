@@ -20,6 +20,7 @@ public class OpenIdConfigurationServiceTests : IDisposable
     private readonly OpenIdConfigurationService _service;
     private readonly string _testTenantId = "12345678-1234-1234-1234-123456789abc";
     private int _callCount;
+    private HttpRequestMessage? _capturedRequest;
 
     public OpenIdConfigurationServiceTests()
     {
@@ -27,6 +28,7 @@ public class OpenIdConfigurationServiceTests : IDisposable
         _httpClient = new HttpClient(_mockHttpHandler.Object);
         _service = new OpenIdConfigurationService(_httpClient);
         _callCount = 0;
+        _capturedRequest = null;
     }
 
     [Fact]
@@ -49,14 +51,14 @@ public class OpenIdConfigurationServiceTests : IDisposable
     public async Task GetConfigurationAsync_ConstructsCorrectUrl()
     {
         // Arrange
-        SetupMockWithRequestCapture(out var capturedRequest);
+        SetupMockWithRequestCapture();
 
         // Act
         await _service.GetConfigurationAsync(_testTenantId);
 
         // Assert
-        capturedRequest.Should().NotBeNull();
-        capturedRequest!.RequestUri!.AbsoluteUri.Should()
+        _capturedRequest.Should().NotBeNull();
+        _capturedRequest!.RequestUri!.AbsoluteUri.Should()
             .Be($"https://login.microsoftonline.com/{_testTenantId}/v2.0/.well-known/openid-configuration");
     }
 
@@ -337,10 +339,10 @@ public class OpenIdConfigurationServiceTests : IDisposable
             .ReturnsAsync(response);
     }
 
-    private void SetupMockWithRequestCapture(out HttpRequestMessage? capturedRequest)
+    private void SetupMockWithRequestCapture()
     {
         var config = CreateTestConfiguration(_testTenantId);
-        HttpRequestMessage? captured = null;
+        _capturedRequest = null;
         
         _mockHttpHandler
             .Protected()
@@ -348,12 +350,11 @@ public class OpenIdConfigurationServiceTests : IDisposable
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>())
-            .Callback<HttpRequestMessage, CancellationToken>((req, ct) => captured = req)
+            .Callback<HttpRequestMessage, CancellationToken>((req, ct) => _capturedRequest = req)
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(JsonSerializer.Serialize(config), Encoding.UTF8, "application/json")
             });
-        capturedRequest = captured;
     }
 
     private void SetupHttpErrorMock(HttpStatusCode statusCode)

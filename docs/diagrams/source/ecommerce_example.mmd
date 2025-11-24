@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant OrderAPI
+    participant PaymentAPI
+    participant Logger
+    participant Logs
+    
+    User->>Frontend: 1. Place Order
+    Frontend->>OrderAPI: 2. POST /orders<br/>Bearer: {azure-token}
+    
+    Note over OrderAPI: Identity Validator
+    OrderAPI->>OrderAPI: 3. Validate token
+    OrderAPI->>Logger: 4. Log: Order attempt (userId: john)
+    
+    OrderAPI->>OrderAPI: 5. Create order
+    OrderAPI->>Logger: 6. Log: Order created (orderId: 123, correlationId: abc)
+    
+    OrderAPI->>PaymentAPI: 7. POST /payments<br/>X-Correlation-ID: abc
+    
+    Note over PaymentAPI: Identity Validator
+    PaymentAPI->>PaymentAPI: 8. Validate token
+    PaymentAPI->>Logger: 9. Log: Payment attempt (correlationId: abc)
+    
+    PaymentAPI->>PaymentAPI: 10. Process payment
+    PaymentAPI->>Logger: 11. Log: Payment success (correlationId: abc)
+    
+    PaymentAPI->>OrderAPI: 12. Payment confirmed
+    OrderAPI->>Logger: 13. Log: Order completed (correlationId: abc)
+    
+    OrderAPI->>Frontend: 14. Success response
+    Frontend->>User: 15. Show confirmation
+    
+    Note over Logs: Complete audit trail:<br/>• Who: john@acme.com<br/>• What: Order 123<br/>• When: 2025-11-24 13:30:00<br/>• Where: OrderAPI, PaymentAPI<br/>• How: correlationId: abc

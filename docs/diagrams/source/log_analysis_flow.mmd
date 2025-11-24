@@ -1,0 +1,35 @@
+flowchart TD
+    Start([Logs Generated]) --> A{Where are logs?}
+    
+    A -->|Local Files| B1[Use grep/PowerShell]
+    A -->|CloudWatch| B2[Use CloudWatch Insights]
+    A -->|ELK Stack| B3[Use Kibana]
+    A -->|Splunk| B4[Use Splunk Search]
+    
+    B1 --> C1[Search by:<br/>- correlationId<br/>- userId<br/>- level: ERROR]
+    B2 --> C2[Query:<br/>fields @timestamp, message<br/>filter level = 'ERROR']
+    B3 --> C3[Query:<br/>level:ERROR AND<br/>tenantId:acme-corp]
+    B4 --> C4[Search:<br/>index=app level=ERROR<br/>| stats count by userId]
+    
+    C1 --> D[Find relevant logs]
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    
+    D --> E{Analysis Type}
+    
+    E -->|Debugging| F1[Trace correlationId<br/>through all services]
+    E -->|Performance| F2[Measure time between<br/>log entries]
+    E -->|Security| F3[Find failed auth attempts<br/>by userId]
+    E -->|Compliance| F4[Export logs for<br/>audit period]
+    
+    F1 --> G[Identify root cause]
+    F2 --> H[Identify bottleneck]
+    F3 --> I[Identify attack pattern]
+    F4 --> J[Generate audit report]
+    
+    style Start fill:#e1f5fe
+    style G fill:#4fc3f7
+    style H fill:#4fc3f7
+    style I fill:#4fc3f7
+    style J fill:#4fc3f7

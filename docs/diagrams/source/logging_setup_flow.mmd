@@ -1,0 +1,33 @@
+flowchart TD
+    Start([Developer Wants Logging]) --> A[Check portal for Logging module]
+    
+    A --> B[Admin assigns Logging module]
+    B --> C[Email with integration docs]
+    
+    C --> D{Choose Stack}
+    D -->|.NET| E1[Install NuGet:<br/>PrimusSaaS.Logging]
+    D -->|Node.js| E2[Install NPM:<br/>@primus-saas/logging]
+    
+    E1 --> F1[Configure in appsettings.json:<br/>- ApplicationId<br/>- Environment<br/>- MinLevel<br/>- Targets]
+    E2 --> F2[Configure in code:<br/>- ApplicationId<br/>- Environment<br/>- MinLevel<br/>- Targets]
+    
+    F1 --> G1[Initialize logger:<br/>services.AddPrimusLogging()]
+    F2 --> G2[Initialize logger:<br/>createLogger(config)]
+    
+    G1 --> H[Replace existing logging calls]
+    G2 --> H
+    
+    H --> I[logger.info('message', context)]
+    I --> J[Logs written to configured targets]
+    
+    J --> K{Verify logs}
+    K -->|Console| L1[See structured JSON in console]
+    K -->|File| L2[See logs in file]
+    K -->|Both| L3[See in both locations]
+    
+    L1 --> M[✅ Logging Active]
+    L2 --> M
+    L3 --> M
+    
+    style Start fill:#fff3e0
+    style M fill:#ffb74d

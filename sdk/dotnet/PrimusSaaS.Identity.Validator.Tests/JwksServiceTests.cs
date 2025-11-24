@@ -418,7 +418,7 @@ public class JwksServiceTests : IDisposable
         _callCount = 0;
         SetupMockWithCallCounter(keySet);
         
-        var serviceWithoutCache = new JwksService(_httpClient, null);
+        var serviceWithoutCache = new JwksService(_httpClient, null, enableCaching: false);
 
         // Act - Call twice
         await serviceWithoutCache.GetJwksAsync(_testJwksUri);

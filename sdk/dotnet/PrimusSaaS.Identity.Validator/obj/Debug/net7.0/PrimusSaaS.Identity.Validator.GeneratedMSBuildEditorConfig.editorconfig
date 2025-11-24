@@ -8,4 +8,4 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = PrimusSaaS.Identity.Validator
-build_property.ProjectDir = c:\Users\aakib\Primus SaaS\sdk\dotnet\PrimusSaaS.Identity.Validator\
+build_property.ProjectDir = C:\Users\aakib\Primus SaaS\sdk\dotnet\PrimusSaaS.Identity.Validator\

@@ -1,0 +1,39 @@
+sequenceDiagram
+    participant App as Application Code
+    participant Logger as Primus Logger
+    participant Enricher as Context Enricher
+    participant Masker as PII Masker
+    participant Target as Log Target
+    participant File as Log File
+    
+    App->>Logger: 1. logger.info('User login', {userId: '123'})
+    
+    Logger->>Logger: 2. Check log level (INFO >= minLevel?)
+    
+    alt Level Enabled
+        Logger->>Enricher: 3. Enrich with context
+        Enricher->>Enricher: 4. Add timestamp
+        Enricher->>Enricher: 5. Add requestId (from middleware)
+        Enricher->>Enricher: 6. Add tenantId (from auth)
+        Enricher->>Enricher: 7. Add applicationId
+        Enricher->>Enricher: 8. Add environment
+        
+        Enricher->>Masker: 9. Check for sensitive data
+        Masker->>Masker: 10. Scan for PII patterns
+        
+        alt Contains PII
+            Masker->>Masker: 11a. Mask password fields
+            Masker->>Masker: 11b. Mask SSN patterns
+            Masker->>Masker: 11c. Mask credit card numbers
+        end
+        
+        Masker->>Logger: 12. Return sanitized log entry
+        
+        Logger->>Target: 13. Format as JSON
+        Target->>File: 14. Write to file (async)
+        Target->>App: 15. Write to console (if enabled)
+        
+        Note over Logger,File: ⚡ Non-blocking: <1ms overhead
+    else Level Disabled
+        Logger->>App: Skip logging (DEBUG < INFO)
+    end

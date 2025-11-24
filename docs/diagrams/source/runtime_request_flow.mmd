@@ -1,0 +1,51 @@
+sequenceDiagram
+    participant User as End User
+    participant SPA as Frontend (SPA)
+    participant AAD as Azure AD
+    participant API as Client API
+    participant SDK as Primus SDK
+    participant Cache as JWKS Cache
+    
+    User->>SPA: 1. Click Login
+    SPA->>AAD: 2. Redirect to Azure AD
+    AAD->>User: 3. Show Login Page
+    User->>AAD: 4. Enter Credentials
+    AAD->>AAD: 5. Validate Credentials
+    AAD->>SPA: 6. Return Access Token (JWT)
+    
+    Note over SPA: Token stored in memory
+    
+    SPA->>API: 7. GET /api/orders<br/>Authorization: Bearer {token}
+    
+    API->>SDK: 8. Request hits middleware
+    SDK->>SDK: 9. Extract token from header
+    
+    SDK->>Cache: 10. Check JWKS cache
+    
+    alt Cache Hit
+        Cache-->>SDK: 11a. Return cached keys
+    else Cache Miss
+        SDK->>AAD: 11b. Fetch JWKS endpoint
+        AAD-->>SDK: 11c. Return public keys
+        SDK->>Cache: 11d. Store in cache (24h TTL)
+    end
+    
+    SDK->>SDK: 12. Validate token signature
+    SDK->>SDK: 13. Validate issuer
+    SDK->>SDK: 14. Validate audience
+    SDK->>SDK: 15. Validate expiry
+    SDK->>SDK: 16. Extract claims
+    
+    alt Valid Token
+        SDK->>SDK: 17a. Attach user to request
+        SDK->>API: 17b. Continue to controller
+        API->>API: 18. Process business logic
+        API->>SPA: 19. Return data
+        SPA->>User: 20. Display results
+    else Invalid Token
+        SDK->>API: 17c. Return 401 Unauthorized
+        API->>SPA: 18. Error response
+        SPA->>User: 19. Show login prompt
+    end
+    
+    Note over SDK,Cache: ⚡ Cached validation: <5ms<br/>🔒 Portal NOT in runtime path
