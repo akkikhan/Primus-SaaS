@@ -251,7 +251,7 @@ app.Run();";
         }
         else
         {
-            return $@"using PrimusSaaS.Logging;
+            return @"using PrimusSaaS.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
