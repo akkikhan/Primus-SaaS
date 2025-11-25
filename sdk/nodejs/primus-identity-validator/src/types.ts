@@ -48,6 +48,11 @@ export interface PrimusIdentityOptions {
   issuers: IssuerConfig[];
 
   /**
+   * Whether to require HTTPS for metadata and JWKS endpoints (default: true)
+   */
+  requireHttpsMetadata?: boolean;
+
+  /**
    * Global clock skew in seconds (default: 300)
    */
   clockSkew?: number;
@@ -69,6 +74,11 @@ export interface PrimusIdentityOptions {
    * Optional function to resolve tenant context from token claims.
    */
   tenantResolver?: (claims: Record<string, unknown>) => TenantContext | Promise<TenantContext>;
+
+  /**
+   * Rate limiting configuration for repeated failed validations.
+   */
+  rateLimiting?: RateLimitingOptions;
 }
 
 /**
@@ -120,6 +130,25 @@ export interface TokenValidationResult {
   claims?: Record<string, unknown>;
   error?: string;
   tenantContext?: TenantContext;
+}
+
+/**
+ * Rate limiting options for failed token validations.
+ */
+export interface RateLimitingOptions {
+  enabled?: boolean;
+  /**
+   * Maximum failed validations per client (windowed).
+   */
+  maxFailuresPerWindow?: number;
+  /**
+   * Optional global ceiling for all clients combined.
+   */
+  maxGlobalFailuresPerWindow?: number;
+  /**
+   * Sliding window length in seconds.
+   */
+  windowSeconds?: number;
 }
 
 /**

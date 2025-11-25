@@ -13,28 +13,147 @@ npm install @primus-saas/logging
 ## Quick Start
 
 ```typescript
-const { createLogger, LogLevel } = require('@primus-saas/logging');
+const { createLogger, LogLevel, primusLoggingMiddleware } = require('@primus-saas/logging');
+const express = require('express');
 
-// Create logger
+const app = express();
+
+// Create logger with multi-target outputs and PII masking
 const logger = createLogger({
-  applicationId: 'PSP-CLI-711224', // From Primus Portal
+  applicationId: 'PSP-CLI-711224',
   environment: 'production',
-  minLevel: LogLevel.INFO
+  minLevel: LogLevel.INFO,
+  targets: [
+    { type: 'console', pretty: true },
+    { type: 'file', path: 'logs/app.log', maxFileSize: 5 * 1024 * 1024, maxRetainedFiles: 5 },
+    { type: 'application-insights', connectionString: process.env.APPINSIGHTS_CONNECTION_STRING }
+  ],
+  masking: {
+    enabled: true,
+    maskEmails: true,
+    maskCreditCards: true,
+    customSensitiveKeys: ['password', 'apiKey']
+  },
+  buffering: {
+    enabled: true,
+    bufferSize: 200,
+    flushIntervalMs: 1000
+  }
 });
 
-// Log messages
-logger.info('User logged in', { userId: '12345' });
-logger.error('Operation failed', { error: 'Database timeout' });
+// Add Express middleware for request/tenant/user enrichment
+app.use(primusLoggingMiddleware(logger));
+
+app.get('/api/users', (req, res) => {
+  req.logger.info('Fetching users'); // Enriched with requestId, path, user/tenant (if present)
+  res.json({ users: [] });
+});
+
+app.listen(3000);
 ```
 
 ## Features
 
-- ✅ **Structured Logging** - Consistent JSON format
-- ✅ **Auto Context Enrichment** - Timestamp, applicationId, environment
-- ✅ **Log Levels** - DEBUG, INFO, WARNING, ERROR, CRITICAL
-- ✅ **Performance Tracking** - Built-in timers
-- ✅ **Correlation IDs** - For distributed tracing
-- ✅ **Log Level Filtering** - Control verbosity
+- ✅ **Structured JSON logging** with app + environment context
+- ✅ **Request/User/Tenant enrichment** via middleware and enrichers
+- ✅ **PII masking** for emails, credit cards, SSNs, and custom keys
+- ✅ **File target with rotation & optional gzip compression**
+- ✅ **Azure Application Insights target**
+- ✅ **Async buffering** for high-throughput services
+- ✅ **Performance timers & correlation IDs**
+- ✅ **Express middleware** with request ID generation and req.logger helper
+- ✅ **Full TypeScript support**
+
+## Express Middleware
+
+```typescript
+import express from 'express';
+import { createLogger, primusLoggingMiddleware } from '@primus-saas/logging';
+
+const app = express();
+const logger = createLogger({
+  applicationId: 'MY-APP',
+  environment: 'production'
+});
+
+app.use(primusLoggingMiddleware(logger));
+
+app.get('/api/orders', (req, res) => {
+  req.logger.info('Order requested', { orderId: 'ORD-123' });
+  res.json({ ok: true });
+});
+```
+
+Adds:
+- Request ID (existing or generated) on every log
+- Method, path, query, IP
+- User/tenant context (from `req.user`, `req.primusUser`, `req.primusTenantContext`)
+- Response status/duration log on finish
+
+## PII Masking
+
+```typescript
+const logger = createLogger({
+  applicationId: 'MY-APP',
+  environment: 'production',
+  masking: {
+    enabled: true,
+    maskEmails: true,
+    maskCreditCards: true,
+    maskSSN: true,
+    customSensitiveKeys: ['password', 'apiKey'],
+    strategy: 'redact' // or 'hash' | 'partial'
+  }
+});
+
+logger.info('Signup', { email: 'user@example.com', password: 'secret' });
+// => context.email / password are masked before hitting any target
+```
+
+## File Target with Rotation
+
+```typescript
+const logger = createLogger({
+  applicationId: 'MY-APP',
+  environment: 'production',
+  targets: [{
+    type: 'file',
+    path: 'logs/app.log',
+    maxFileSize: 10 * 1024 * 1024, // 10MB
+    maxRetainedFiles: 5,
+    compressRotatedFiles: true
+  }]
+});
+```
+
+## Azure Application Insights Target
+
+```typescript
+const logger = createLogger({
+  applicationId: 'MY-APP',
+  environment: 'production',
+  targets: [{
+    type: 'application-insights',
+    connectionString: process.env.APPINSIGHTS_CONNECTION_STRING,
+    roleName: 'api-service'
+  }]
+});
+```
+
+## Async Buffering
+
+```typescript
+const logger = createLogger({
+  applicationId: 'MY-APP',
+  environment: 'production',
+  buffering: {
+    enabled: true,
+    bufferSize: 250,       // flush after 250 entries
+    flushIntervalMs: 1000, // or after 1 second
+    flushOnExit: true
+  }
+});
+```
 
 ## Usage
 

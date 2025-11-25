@@ -1,31 +1,44 @@
 import { LogLevel } from './LogLevel';
+import { Enricher } from '../enrichers/RequestEnricher';
 
 /**
  * Target configuration for output destinations
  */
 export interface TargetConfig {
     type: 'console' | 'file' | 'application-insights';
-    [key: string]: any;
+    pretty?: boolean;
+    path?: string;
+    async?: boolean;
+    maxFileSize?: number;
+    maxRetainedFiles?: number;
+    compressRotatedFiles?: boolean;
+    connectionString?: string;
+    roleName?: string;
 }
 
 /**
  * Masking configuration for PII protection
  */
 export interface MaskingConfig {
-    enabled: boolean;
-    fields: string[];
+    enabled?: boolean;
+    fields?: string[];
     customFields?: string[];
     strategy?: 'redact' | 'hash' | 'partial';
+    maskEmails?: boolean;
+    maskCreditCards?: boolean;
+    maskSSN?: boolean;
+    customSensitiveKeys?: string[];
 }
 
 /**
  * Buffering configuration for async writes
  */
 export interface BufferingConfig {
-    enabled: boolean;
-    bufferSize: number;
-    flushInterval: number;
-    flushOnExit: boolean;
+    enabled?: boolean;
+    bufferSize?: number;
+    flushInterval?: number;
+    flushIntervalMs?: number;
+    flushOnExit?: boolean;
 }
 
 /**
@@ -61,4 +74,7 @@ export interface LoggerOptions {
 
     /** Performance monitoring */
     performance?: PerformanceConfig;
+
+    /** Custom enrichers executed after built-in enrichers */
+    enrichers?: Enricher[];
 }

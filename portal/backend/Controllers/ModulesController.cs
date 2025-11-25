@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PrimusSaaS.Portal.Api.Data;
@@ -6,7 +6,6 @@ using PrimusSaaS.Portal.Api.Models;
 using PrimusSaaS.Portal.Api.Services;
 
 namespace PrimusSaaS.Portal.Api.Controllers;
-
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin")]
@@ -15,11 +14,7 @@ public class ModulesController : ControllerBase
     private readonly PortalDbContext _context;
     private readonly IEmailService _emailService;
     private readonly ILogger<ModulesController> _logger;
-
-    public ModulesController(
-        PortalDbContext context, 
-        IEmailService emailService,
-        ILogger<ModulesController> logger)
+    public ModulesController(PortalDbContext context, IEmailService emailService, ILogger<ModulesController> logger)
     {
         _context = context;
         _emailService = emailService;
@@ -30,37 +25,8 @@ public class ModulesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ModuleDto>>> GetModules()
     {
-        var modulesData = await _context.Modules
-            .Include(m => m.Versions)
-            .Include(m => m.ApplicationModules)
-            .ToListAsync();
-
-        var modules = modulesData.Select(m => new ModuleDto
-        {
-            Id = m.Id,
-            Name = m.Name,
-            ModuleKey = m.ModuleKey,
-            Description = m.Description,
-            LatestVersion = m.Versions.OrderByDescending(v => v.ReleasedAt).FirstOrDefault()?.Version ?? "1.0.0",
-            LatestReleasedAt = m.Versions.OrderByDescending(v => v.ReleasedAt).FirstOrDefault()?.ReleasedAt ?? DateTime.UtcNow,
-            ModuleVersions = m.Versions
-                .OrderByDescending(v => v.ReleasedAt)
-                .Select(v => new VersionDto
-                {
-                    Id = v.Id,
-                    Version = v.Version,
-                    IsBreakingChange = v.IsBreakingChange,
-                    ReleaseNotes = v.ReleaseNotes,
-                    Changelog = v.Changelog,
-                    DemoCode = v.DemoCode,
-                    SupportedStacks = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.SupportedStacksJson) ?? Array.Empty<string>(),
-                    ReleasedAt = v.ReleasedAt
-                }).ToList(),
-            TotalVersions = m.Versions.Count,
-            UsageCount = m.ApplicationModules.Count,
-            Status = "Active"
-        }).ToList();
-
+        var modulesData = await _context.Modules.Include(m => m.Versions).Include(m => m.ApplicationModules).ToListAsync();
+        var modules = modulesData.Select(m => new ModuleDto { Id = m.Id, Name = m.Name, ModuleKey = m.ModuleKey, Description = m.Description, LatestVersion = m.Versions.OrderByDescending(v => v.ReleasedAt).FirstOrDefault()?.Version ?? "1.0.0", LatestReleasedAt = m.Versions.OrderByDescending(v => v.ReleasedAt).FirstOrDefault()?.ReleasedAt ?? DateTime.UtcNow, ModuleVersions = m.Versions.OrderByDescending(v => v.ReleasedAt).Select(v => new VersionDto { Id = v.Id, Version = v.Version, IsBreakingChange = v.IsBreakingChange, ReleaseNotes = v.ReleaseNotes, Changelog = v.Changelog, DemoCode = v.DemoCode, SupportedStacks = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.SupportedStacksJson) ?? Array.Empty<string>(), ReleasedAt = v.ReleasedAt }).ToList(), TotalVersions = m.Versions.Count, UsageCount = m.ApplicationModules.Count, Status = "Active" }).ToList();
         return Ok(modules);
     }
 
@@ -68,33 +34,13 @@ public class ModulesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ModuleDetailDto>> GetModule(int id)
     {
-        var module = await _context.Modules
-            .Include(m => m.Versions)
-            .FirstOrDefaultAsync(m => m.Id == id);
-
+        var module = await _context.Modules.Include(m => m.Versions).FirstOrDefaultAsync(m => m.Id == id);
         if (module == null)
         {
             return NotFound();
         }
 
-        return Ok(new ModuleDetailDto
-        {
-            Id = module.Id,
-            Name = module.Name,
-            ModuleKey = module.ModuleKey,
-            Description = module.Description,
-            Versions = module.Versions.Select(v => new VersionDto
-            {
-                Id = v.Id,
-                Version = v.Version,
-                IsBreakingChange = v.IsBreakingChange,
-                ReleaseNotes = v.ReleaseNotes,
-                Changelog = v.Changelog,
-                DemoCode = v.DemoCode,
-                SupportedStacks = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.SupportedStacksJson) ?? Array.Empty<string>(),
-                ReleasedAt = v.ReleasedAt
-            }).OrderByDescending(v => v.ReleasedAt).ToList()
-        });
+        return Ok(new ModuleDetailDto { Id = module.Id, Name = module.Name, ModuleKey = module.ModuleKey, Description = module.Description, Versions = module.Versions.Select(v => new VersionDto { Id = v.Id, Version = v.Version, IsBreakingChange = v.IsBreakingChange, ReleaseNotes = v.ReleaseNotes, Changelog = v.Changelog, DemoCode = v.DemoCode, SupportedStacks = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.SupportedStacksJson) ?? Array.Empty<string>(), ReleasedAt = v.ReleasedAt }).OrderByDescending(v => v.ReleasedAt).ToList() });
     }
 
     // GET: api/modules/{id}/versions
@@ -107,23 +53,8 @@ public class ModulesController : ControllerBase
             return NotFound();
         }
 
-        var versionsData = await _context.ModuleVersions
-            .Where(v => v.ModuleId == id)
-            .OrderByDescending(v => v.ReleasedAt)
-            .ToListAsync();
-
-        var versions = versionsData.Select(v => new VersionDto
-        {
-            Id = v.Id,
-            Version = v.Version,
-            IsBreakingChange = v.IsBreakingChange,
-            ReleaseNotes = v.ReleaseNotes,
-            Changelog = v.Changelog,
-            DemoCode = v.DemoCode,
-            SupportedStacks = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.SupportedStacksJson) ?? Array.Empty<string>(),
-            ReleasedAt = v.ReleasedAt
-        }).ToList();
-
+        var versionsData = await _context.ModuleVersions.Where(v => v.ModuleId == id).OrderByDescending(v => v.ReleasedAt).ToListAsync();
+        var versions = versionsData.Select(v => new VersionDto { Id = v.Id, Version = v.Version, IsBreakingChange = v.IsBreakingChange, ReleaseNotes = v.ReleaseNotes, Changelog = v.Changelog, DemoCode = v.DemoCode, SupportedStacks = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.SupportedStacksJson) ?? Array.Empty<string>(), ReleasedAt = v.ReleasedAt }).ToList();
         return Ok(versions);
     }
 
@@ -132,8 +63,7 @@ public class ModulesController : ControllerBase
     public async Task<ActionResult<Module>> CreateModule([FromBody] CreateModuleRequest request)
     {
         // Validate uniqueness for name and key to give a clearer error than DB constraint
-        var duplicate = await _context.Modules
-            .AnyAsync(m => m.Name == request.Name || m.ModuleKey == request.ModuleKey);
+        var duplicate = await _context.Modules.AnyAsync(m => m.Name == request.Name || m.ModuleKey == request.ModuleKey);
         if (duplicate)
         {
             return BadRequest(new { message = "Module name and module key must be unique." });
@@ -145,10 +75,8 @@ public class ModulesController : ControllerBase
             ModuleKey = request.ModuleKey,
             Description = request.Description
         };
-
         _context.Modules.Add(module);
         await _context.SaveChangesAsync();
-
         return CreatedAtAction(nameof(GetModule), new { id = module.Id }, module);
     }
 
@@ -156,20 +84,14 @@ public class ModulesController : ControllerBase
     [HttpPost("{moduleId}/versions")]
     public async Task<ActionResult<ModuleVersion>> CreateVersion(int moduleId, [FromBody] CreateVersionRequest request)
     {
-        var module = await _context.Modules
-            .Include(m => m.ApplicationModules)
-                .ThenInclude(am => am.Application)
-                    .ThenInclude(a => a.Owner)
-            .FirstOrDefaultAsync(m => m.Id == moduleId);
-            
+        var module = await _context.Modules.Include(m => m.ApplicationModules).ThenInclude(am => am.Application).ThenInclude(a => a.Owner).FirstOrDefaultAsync(m => m.Id == moduleId);
         if (module == null)
         {
             return NotFound();
         }
 
         // Prevent duplicate version identifiers per module
-        var versionExists = await _context.ModuleVersions
-            .AnyAsync(v => v.ModuleId == moduleId && v.Version == request.Version);
+        var versionExists = await _context.ModuleVersions.AnyAsync(v => v.ModuleId == moduleId && v.Version == request.Version);
         if (versionExists)
         {
             return BadRequest(new { message = $"Version {request.Version} already exists for this module." });
@@ -186,40 +108,26 @@ public class ModulesController : ControllerBase
             SupportedStacksJson = System.Text.Json.JsonSerializer.Serialize(request.SupportedStacks),
             ReleasedAt = request.ReleasedAt ?? DateTime.UtcNow
         };
-
         // Set navigation property for email service
         version.Module = module;
-
         _context.ModuleVersions.Add(version);
         await _context.SaveChangesAsync();
-
         // Send notifications if requested
         if (request.NotifyClients)
         {
-            _logger.LogInformation(
-                "Sending notifications for module {ModuleName} version {Version} to {AppCount} applications",
-                module.Name, version.Version, module.ApplicationModules.Count);
-
-            var apps = module.ApplicationModules
-                .Select(am => am.Application)
-                .Distinct()
-                .ToList();
-
+            _logger.LogInformation("Sending notifications for module {ModuleName} version {Version} to {AppCount} applications", module.Name, version.Version, module.ApplicationModules.Count);
+            var apps = module.ApplicationModules.Select(am => am.Application).Distinct().ToList();
             foreach (var app in apps)
             {
                 try
                 {
                     await _emailService.SendVersionPublishedAsync(app, version);
-                    _logger.LogInformation(
-                        "Notification sent to {AppName} ({Email})",
-                        app.Name, app.Owner.Email);
+                    _logger.LogInformation("Notification sent to {AppName} ({Email})", app.Name, app.Owner.Email);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, 
-                        "Failed to send notification to {AppName} ({Email})",
-                        app.Name, app.Owner.Email);
-                    // Continue sending to other apps even if one fails
+                    _logger.LogError(ex, "Failed to send notification to {AppName} ({Email})", app.Name, app.Owner.Email);
+                // Continue sending to other apps even if one fails
                 }
             }
         }
@@ -231,9 +139,7 @@ public class ModulesController : ControllerBase
     [HttpPatch("{moduleId}/versions/{version}/publish")]
     public async Task<IActionResult> PublishVersion(int moduleId, string version)
     {
-        var moduleVersion = await _context.ModuleVersions
-            .FirstOrDefaultAsync(mv => mv.ModuleId == moduleId && mv.Version == version);
-
+        var moduleVersion = await _context.ModuleVersions.FirstOrDefaultAsync(mv => mv.ModuleId == moduleId && mv.Version == version);
         if (moduleVersion == null)
         {
             return NotFound();
@@ -241,7 +147,6 @@ public class ModulesController : ControllerBase
 
         moduleVersion.ReleasedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
-
         return Ok(new { message = $"Version {version} published", releasedAt = moduleVersion.ReleasedAt });
     }
 
@@ -256,8 +161,7 @@ public class ModulesController : ControllerBase
         }
 
         // Validate uniqueness before applying updates
-        var duplicate = await _context.Modules
-            .AnyAsync(m => m.Id != id && (m.Name == request.Name || m.ModuleKey == request.ModuleKey));
+        var duplicate = await _context.Modules.AnyAsync(m => m.Id != id && (m.Name == request.Name || m.ModuleKey == request.ModuleKey));
         if (duplicate)
         {
             return BadRequest(new { message = "Module name and module key must be unique." });
@@ -266,9 +170,7 @@ public class ModulesController : ControllerBase
         module.Name = request.Name;
         module.ModuleKey = request.ModuleKey;
         module.Description = request.Description;
-
         await _context.SaveChangesAsync();
-
         return NoContent();
     }
 
@@ -284,7 +186,6 @@ public class ModulesController : ControllerBase
 
         _context.Modules.Remove(module);
         await _context.SaveChangesAsync();
-
         return NoContent();
     }
 }
@@ -326,12 +227,4 @@ public record VersionDto
 
 public record CreateModuleRequest(string Name, string ModuleKey, string Description);
 public record UpdateModuleRequest(string Name, string ModuleKey, string Description);
-public record CreateVersionRequest(
-    string Version, 
-    bool IsBreakingChange, 
-    string ReleaseNotes, 
-    string Changelog, 
-    string DemoCode, 
-    string[] SupportedStacks, 
-    DateTime? ReleasedAt = null,
-    bool NotifyClients = false);
+public record CreateVersionRequest(string Version, bool IsBreakingChange, string ReleaseNotes, string Changelog, string DemoCode, string[] SupportedStacks, DateTime? ReleasedAt = null, bool NotifyClients = false);

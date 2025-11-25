@@ -1,6 +1,6 @@
 {
   "name": "@primus-saas/identity-validator",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Multi-issuer JWT/OIDC token validator for Node.js. Supports Azure AD, custom JWT issuers, and any OIDC-compliant identity provider. Works with Express and NestJS.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -36,7 +36,18 @@
     "TOKEN_GENERATION_GUIDE.md",
     "ERROR_REFERENCE.md",
     "PRODUCTION_DEPLOYMENT.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "TENANT_RESOLVER_GUIDE.md",
+    "TESTING_GUIDE.md",
+    "SECRET_MANAGEMENT.md",
+    "CLAIMS_MAPPING.md",
+    "ANGULAR_INTEGRATION.md",
+    "DIAGNOSTICS_AND_TROUBLESHOOTING.md",
+    "AZURE_AD_TROUBLESHOOTING.md",
+    "AZURE_AD_END_TO_END.md",
+    "REFRESH_GUIDE.md",
+    "POLICY_HELPERS_SCOPE.md",
+    "RELEASE_AND_ROADMAP.md"
   ],
   "engines": {
     "node": ">=16.0.0"

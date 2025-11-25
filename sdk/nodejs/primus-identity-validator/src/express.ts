@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrimusIdentityOptions, PrimusUser } from './types';
 import { PrimusIdentityValidator, extractUser } from './validator';
+import { FailedValidationRateLimiter, resolveRateLimitingOptions } from './services/rateLimiter';
 
 /**
  * Extends Express Request to include Primus user
@@ -22,6 +23,7 @@ export function primusIdentityMiddleware(
   options: PrimusIdentityOptions
 ): (req: Request, res: Response, next: NextFunction) => void {
   const validator = new PrimusIdentityValidator(options);
+  const rateLimiter = new FailedValidationRateLimiter(resolveRateLimitingOptions(options.rateLimiting));
 
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -47,6 +49,13 @@ export function primusIdentityMiddleware(
       const result = await validator.validateToken(token);
 
       if (!result.isValid) {
+        const limitResult = rateLimiter.registerFailure(getClientKey(req));
+        if (limitResult.limited) {
+          res.setHeader('Retry-After', limitResult.retryAfterSeconds.toString());
+          res.status(429).json({ error: 'Too many failed authentication attempts. Please retry later.' });
+          return;
+        }
+
         res.status(401).json({ error: result.error || 'Token validation failed' });
         return;
       }
@@ -60,6 +69,7 @@ export function primusIdentityMiddleware(
       // Attach tenant context if available
       if (result.tenantContext) {
         (req as any).tenantContext = result.tenantContext;
+        (req as any).primusTenantContext = result.tenantContext;
       }
 
       next();
@@ -71,6 +81,13 @@ export function primusIdentityMiddleware(
       }
     }
   };
+}
+
+function getClientKey(req: Request): string | undefined {
+  const forwarded = req.headers['x-forwarded-for'];
+  const forwardedValue = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+
+  return (req.ip || forwardedValue || req.socket.remoteAddress || undefined) ?? undefined;
 }
 
 /**

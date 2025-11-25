@@ -12,6 +12,7 @@ export interface ModuleVersion {
   isBreakingChange: boolean;
   moduleId: number;
   supportedStacks?: string[];
+  notifyClients?: boolean;
 }
 
 export interface Module {

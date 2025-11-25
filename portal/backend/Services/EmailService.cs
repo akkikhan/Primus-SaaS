@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
@@ -8,20 +8,18 @@ using PrimusSaaS.Portal.Api.Models;
 using PrimusSaaS.Portal.Api.Services;
 
 namespace PrimusSaaS.Portal.Api.Services;
-
 public class EmailService : IEmailService
 {
     private readonly EmailSettings _settings;
     private readonly ILogger<EmailService> _logger;
     private readonly PortalDbContext _context;
     private readonly string _docsBaseUrl;
-
     public EmailService(IOptions<EmailSettings> options, ILogger<EmailService> logger, PortalDbContext context)
     {
         _settings = options.Value;
         _logger = logger;
         _context = context;
-        _docsBaseUrl = (_settings.DocsBaseUrl ?? "http://localhost:3001").TrimEnd('/');
+        _docsBaseUrl = (_settings.DocsBaseUrl ?? "https://akkikhan.github.io/Primus-SaaS").TrimEnd('/');
     }
 
     private async Task SendEmailAsync(string to, string subject, string body)
@@ -36,13 +34,11 @@ public class EmailService : IEmailService
                 IsBodyHtml = true
             };
             message.To.Add(new MailAddress(to));
-
             using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
             {
                 Credentials = new NetworkCredential(_settings.SmtpUser, _settings.SmtpPass),
                 EnableSsl = _settings.EnableSsl
             };
-
             await client.SendMailAsync(message);
             _logger.LogInformation("Email sent to {To}", to);
         }
@@ -61,6 +57,7 @@ public class EmailService : IEmailService
             _logger.LogWarning("No email address found for application creation notification");
             return;
         }
+
         var subject = "Your new Primus application has been created";
         var body = $@"<p>Hello,</p>
 <p>Your application <strong>{app.Name}</strong> has been created.</p>
@@ -81,15 +78,11 @@ public class EmailService : IEmailService
 
         var moduleName = version.Module.Name;
         var stack = app.Stack.ToString().ToLowerInvariant();
-        
         // Get package name and install command based on module and stack
-        var (packageName, installCommand) = GetPackageInfo(moduleName, stack);
-        
+        var(packageName, installCommand) = GetPackageInfo(moduleName, stack);
         // Generate stack-specific documentation link
         var docLink = GenerateDocLink(moduleName, stack);
-        
         var subject = $"Module {moduleName} assigned to {app.Name}";
-        
         var body = $@"
 <!DOCTYPE html>
 <html>
@@ -131,46 +124,33 @@ public class EmailService : IEmailService
                 </ul>
             </div>
             
-            <p>Need help? Visit our <a href=""{_docsBaseUrl}"">documentation</a> or contact support.</p>
+            <p>Need help? Visit our <a href=""{_docsBaseUrl}/docs"">documentation</a> or contact support.</p>
             
             <p>Best regards,<br/>Primus SaaS Team</p>
         </div>
     </div>
 </body>
 </html>";
-
         await SendEmailAsync(to, subject, body);
     }
 
     private (string packageName, string installCommand) GetPackageInfo(string moduleName, string stack)
     {
         var normalizedStack = stack.ToLowerInvariant();
-        
         return (moduleName.ToLowerInvariant(), normalizedStack) switch
         {
-            ("identity validator", "dotnet") => 
-                ("PrimusSaaS.Identity.Validator", "dotnet add package PrimusSaaS.Identity.Validator"),
-            ("identity validator", "nodejs") or ("identity validator", "nodejs-nest") => 
-                ("@primus-saas/identity-validator", "npm install @primus-saas/identity-validator"),
-            ("logging", "dotnet") or ("logging sdk", "dotnet") => 
-                ("PrimusSaaS.Logging", "dotnet add package PrimusSaaS.Logging"),
-            ("logging", "nodejs") or ("logging", "nodejs-nest") or ("logging sdk", "nodejs") or ("logging sdk", "nodejs-nest") => 
-                ("@primus-saas/logging", "npm install @primus-saas/logging"),
-            _ => ("Unknown", "# Package not found")
-        };
+            ("identity validator", "dotnet") => ("PrimusSaaS.Identity.Validator", "dotnet add package PrimusSaaS.Identity.Validator"),
+            ("identity validator", "nodejs") or ("identity validator", "nodejs-nest") => ("@primus-saas/identity-validator", "npm install @primus-saas/identity-validator"),
+            ("logging", "dotnet") or ("logging sdk", "dotnet") => ("PrimusSaaS.Logging", "dotnet add package PrimusSaaS.Logging"),
+            ("logging", "nodejs") or ("logging", "nodejs-nest") or ("logging sdk", "nodejs") or ("logging sdk", "nodejs-nest") => ("@primus-saas/logging", "npm install @primus-saas/logging"),
+            _ => ("Unknown", "# Package not found")};
     }
 
     private string GenerateDocLink(string moduleName, string stack)
     {
-        var module = moduleName.ToLowerInvariant().Replace(" ", "-");
-        var normalizedStack = stack.ToLowerInvariant() switch
-        {
-            "dotnet" => "dotnet",
-            "nodejs" => "nodejs",
-            "nodejs-nest" => "nodejs",
-            _ => stack.ToLowerInvariant()
-        };
-        return $"https://akkikhan.github.io/Primus-SaaS/docs/modules/{module}-{normalizedStack}";
+        var baseUrl = _docsBaseUrl.TrimEnd('/');
+        var anchor = moduleName.ToLowerInvariant().Contains("log") ? "#add-logging" : "#5-integration-steps";
+        return $"{baseUrl}/docs/modules/client-integration-guide{anchor}";
     }
 
     public async Task SendVersionPublishedAsync(Application app, ModuleVersion version)
@@ -180,10 +160,9 @@ public class EmailService : IEmailService
             _logger.LogInformation("Skipping version email for module {ModuleId} version {Version} (non-major policy)", version.ModuleId, version.Version);
             return;
         }
-        // Check user preferences
-        var pref = await _context.NotificationPreferences
-            .FirstOrDefaultAsync(p => p.UserId == app.OwnerUserId);
 
+        // Check user preferences
+        var pref = await _context.NotificationPreferences.FirstOrDefaultAsync(p => p.UserId == app.OwnerUserId);
         // Default to true if no preference set
         bool shouldSend = true;
         if (pref != null)
@@ -204,16 +183,17 @@ public class EmailService : IEmailService
             return;
         }
 
-        var to = app.Owner.Email;
+        var to = await ResolveOwnerEmailAsync(app);
+        if (string.IsNullOrWhiteSpace(to))
+        {
+            _logger.LogWarning("No owner email found for application {AppId}; skipping version notification", app.Id);
+            return;
+        }
         var subject = $"New version {version.Version} published for module {version.Module.Name}";
-        var npmMapping = await _context.PackageRegistryMappings
-            .FirstOrDefaultAsync(m => m.ModuleId == version.ModuleId && m.RegistryType == "npm");
-        var nugetMapping = await _context.PackageRegistryMappings
-            .FirstOrDefaultAsync(m => m.ModuleId == version.ModuleId && m.RegistryType == "nuget");
-
+        var npmMapping = await _context.PackageRegistryMappings.FirstOrDefaultAsync(m => m.ModuleId == version.ModuleId && m.RegistryType == "npm");
+        var nugetMapping = await _context.PackageRegistryMappings.FirstOrDefaultAsync(m => m.ModuleId == version.ModuleId && m.RegistryType == "nuget");
         var npmPackageName = npmMapping?.PackageName ?? "unknown-package";
         var nugetPackageName = nugetMapping?.PackageName ?? "Unknown.Package";
-
         var body = $@"<p>Hello,</p>
 <p>A new version <strong>{version.Version}</strong> of the module <strong>{version.Module.Name}</strong> has been published.</p>
 
@@ -243,7 +223,6 @@ public class EmailService : IEmailService
 
 <p>Best regards,<br/>Primus SaaS Team</p>";
         await SendEmailAsync(to, subject, body);
-
         // Send to additional emails if configured
         if (pref != null && !string.IsNullOrEmpty(pref.AdditionalEmails))
         {
@@ -262,10 +241,7 @@ public class EmailService : IEmailService
             return app.Owner.Email;
         }
 
-        return await _context.Users
-            .Where(u => u.Id == app.OwnerUserId)
-            .Select(u => u.Email)
-            .FirstOrDefaultAsync();
+        return await _context.Users.Where(u => u.Id == app.OwnerUserId).Select(u => u.Email).FirstOrDefaultAsync();
     }
 
     private async Task<bool> ShouldSendForVersionAsync(ModuleVersion version)
@@ -277,32 +253,21 @@ public class EmailService : IEmailService
             return true;
         }
 
-        var previous = await _context.ModuleVersions
-            .Where(mv => mv.ModuleId == version.ModuleId && mv.Id != version.Id)
-            .OrderByDescending(mv => mv.Id)
-            .Select(mv => mv.Version)
-            .ToListAsync();
-
+        var previous = await _context.ModuleVersions.Where(mv => mv.ModuleId == version.ModuleId && mv.Id != version.Id).OrderByDescending(mv => mv.Id).Select(mv => mv.Version).ToListAsync();
         if (previous.Count == 0)
         {
             return true;
         }
 
-        var latestParsed = previous
-            .Select(v => 
+        var latestParsed = previous.Select(v =>
+        {
+            if (TryParseSemVer(v, out var semVer))
             {
-                if (TryParseSemVer(v, out var semVer))
-                {
-                    return ((int Major, int Minor, int Patch)?)semVer;
-                }
-                return null;
-            })
-            .Where(v => v.HasValue)
-            .OrderByDescending(v => v!.Value.Major)
-            .ThenByDescending(v => v!.Value.Minor)
-            .ThenByDescending(v => v!.Value.Patch)
-            .FirstOrDefault();
+                return ((int Major, int Minor, int Patch)? )semVer;
+            }
 
+            return null;
+        }).Where(v => v.HasValue).OrderByDescending(v => v!.Value.Major).ThenByDescending(v => v!.Value.Minor).ThenByDescending(v => v!.Value.Patch).FirstOrDefault();
         if (!latestParsed.HasValue)
         {
             return true;
@@ -320,7 +285,8 @@ public class EmailService : IEmailService
             return false;
         }
 
-        if (!int.TryParse(parts[0], out var major)) return false;
+        if (!int.TryParse(parts[0], out var major))
+            return false;
         var minor = parts.Length > 1 && int.TryParse(parts[1], out var m) ? m : 0;
         var patch = parts.Length > 2 && int.TryParse(parts[2], out var p) ? p : 0;
         semVer = (major, minor, patch);

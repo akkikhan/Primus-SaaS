@@ -30,26 +30,33 @@ const config = {
         theme: {
           customCss: require.resolve('./src/css/custom.css')
         }
-      },
+      }
+    ]
+  ],
+  plugins: [
+    [
+      '@docusaurus/plugin-client-redirects',
       {
-        redirects: {
-          redirects: [
-            // Legacy identity pages
-            { from: '/docs/modules/identity-validator-nodejs', to: '/docs/modules/client-integration-guide' },
-            { from: '/docs/modules/identity-validator-dotnet', to: '/docs/modules/client-integration-guide' },
-            { from: '/docs/modules/identity-configuration', to: '/docs/modules/client-integration-guide' },
-            { from: '/docs/modules/identity-token-generation', to: '/docs/modules/client-integration-guide' },
-            { from: '/docs/modules/identity-tenant-resolver', to: '/docs/modules/client-integration-guide' },
-            { from: '/docs/modules/identity-error-reference', to: '/docs/modules/client-integration-guide' },
-            // Legacy logging pages
-            { from: '/docs/modules/logging-nodejs', to: '/docs/modules/client-integration-guide' },
-            { from: '/docs/modules/logging-dotnet', to: '/docs/modules/client-integration-guide' },
-            { from: '/docs/modules/logging-configuration', to: '/docs/modules/client-integration-guide' },
-            { from: '/docs/modules/logging-middleware', to: '/docs/modules/client-integration-guide' },
-            { from: '/docs/modules/logging-enterprise-features', to: '/docs/modules/client-integration-guide' },
-            { from: '/docs/modules/logging-targets', to: '/docs/modules/client-integration-guide' }
-          ]
-        }
+        redirects: [
+          // Legacy identity pages
+          { from: '/docs/modules/identity-validator-nodejs', to: '/docs/modules/client-integration-guide' },
+          { from: '/docs/modules/identity-validator-dotnet', to: '/docs/modules/client-integration-guide' },
+          { from: '/docs/modules/identity-configuration', to: '/docs/modules/client-integration-guide' },
+          { from: '/docs/modules/identity-token-generation', to: '/docs/modules/client-integration-guide' },
+          { from: '/docs/modules/identity-tenant-resolver', to: '/docs/modules/client-integration-guide' },
+          { from: '/docs/modules/identity-error-reference', to: '/docs/modules/client-integration-guide' },
+          // Legacy logging pages
+          { from: '/docs/modules/logging-nodejs', to: '/docs/modules/client-integration-guide' },
+          { from: '/docs/modules/logging-dotnet', to: '/docs/modules/client-integration-guide' },
+          { from: '/docs/modules/logging-configuration', to: '/docs/modules/client-integration-guide' },
+          { from: '/docs/modules/logging-middleware', to: '/docs/modules/client-integration-guide' },
+          { from: '/docs/modules/logging-enterprise-features', to: '/docs/modules/client-integration-guide' },
+          { from: '/docs/modules/logging-targets', to: '/docs/modules/client-integration-guide' },
+          // Non-docs-prefixed paths
+          { from: '/modules/client-integration-guide', to: '/docs/modules/client-integration-guide' },
+          { from: '/modules/identity-validator', to: '/docs/modules/identity-validator' },
+          { from: '/modules/logging-module', to: '/docs/modules/logging-module' }
+        ]
       }
     ]
   ],

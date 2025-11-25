@@ -5,6 +5,8 @@ import { createLogger, LogLevel, Logger } from '../index';
 describe('Integration Test', () => {
     const testLogDir = path.join(__dirname, 'integration-logs');
     const testLogFile = path.join(testLogDir, 'integration.log');
+    const rotationLogDir = path.join(__dirname, 'rotation-logs');
+    const rotationLogFile = path.join(rotationLogDir, 'rotate.log');
     let logger: Logger;
 
     beforeEach(() => {
@@ -16,6 +18,14 @@ describe('Integration Test', () => {
                 // Ignore
             }
         }
+
+        if (fs.existsSync(rotationLogDir)) {
+            try {
+                fs.rmSync(rotationLogDir, { recursive: true, force: true });
+            } catch (e) {
+                // Ignore
+            }
+        }
     });
 
     afterEach(async () => {
@@ -23,6 +33,14 @@ describe('Integration Test', () => {
         if (fs.existsSync(testLogDir)) {
             try {
                 fs.rmSync(testLogDir, { recursive: true, force: true });
+            } catch (e) {
+                // Ignore
+            }
+        }
+
+        if (fs.existsSync(rotationLogDir)) {
+            try {
+                fs.rmSync(rotationLogDir, { recursive: true, force: true });
             } catch (e) {
                 // Ignore
             }
@@ -91,5 +109,54 @@ describe('Integration Test', () => {
         }
 
         consoleSpy.mockRestore();
+    });
+
+    it('should mask PII fields when masking is enabled', () => {
+        const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+        const piiLogger = createLogger({
+            applicationId: 'MASK-APP',
+            environment: 'testing',
+            masking: {
+                enabled: true,
+                maskEmails: true,
+                customSensitiveKeys: ['password']
+            },
+            targets: [{ type: 'console' }]
+        });
+
+        piiLogger.info('Mask this', { email: 'secret@example.com', password: 'super-secret' });
+
+        expect(consoleSpy).toHaveBeenCalled();
+        const output = JSON.parse(consoleSpy.mock.calls[0][0]);
+        expect(output.context.email).not.toBe('secret@example.com');
+        expect(output.context.password).not.toBe('super-secret');
+
+        consoleSpy.mockRestore();
+    });
+
+    it('should rotate files when maxFileSize is exceeded', async () => {
+        const rotationLogger = createLogger({
+            applicationId: 'ROTATE-APP',
+            environment: 'testing',
+            targets: [
+                {
+                    type: 'file',
+                    path: rotationLogFile,
+                    maxFileSize: 200,
+                    maxRetainedFiles: 2,
+                    compressRotatedFiles: false
+                }
+            ]
+        });
+
+        for (let i = 0; i < 30; i++) {
+            rotationLogger.info('rotation check', { index: i, payload: 'x'.repeat(50) });
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        expect(fs.existsSync(rotationLogFile)).toBe(true);
+        expect(fs.existsSync(`${rotationLogFile}.1`) || fs.existsSync(`${rotationLogFile}.1.gz`)).toBe(true);
     });
 });

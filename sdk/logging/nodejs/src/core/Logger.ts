@@ -1,10 +1,19 @@
 import { LogLevel, LogLevelValue } from './LogLevel';
 import { LogEntry, createLogEntry } from './LogEntry';
-import { LoggerOptions, TargetConfig } from './LoggerOptions';
+import { BufferingConfig, LoggerOptions, MaskingConfig, TargetConfig } from './LoggerOptions';
 import { Context } from './Context';
 import { Target } from '../targets/Target';
 import { ConsoleTarget } from '../targets/ConsoleTarget';
 import { FileTarget } from '../targets/FileTarget';
+import { ApplicationInsightsTarget } from '../targets/ApplicationInsightsTarget';
+import { Masker, resolveMaskingConfig } from '../masking/Masker';
+
+interface ResolvedBufferingConfig {
+    enabled: boolean;
+    bufferSize: number;
+    flushIntervalMs: number;
+    flushOnExit: boolean;
+}
 
 /**
  * Timer for performance tracking
@@ -22,6 +31,11 @@ export class Logger {
     private contextManager: Context;
     private currentRequest?: any;
     private targets: Target[] = [];
+    private masker: Masker;
+    private buffering: ResolvedBufferingConfig;
+    private buffer: LogEntry[] = [];
+    private flushTimer?: NodeJS.Timeout;
+    private flushing = false;
 
     constructor(options: LoggerOptions) {
         this.options = {
@@ -31,13 +45,23 @@ export class Logger {
         };
 
         this.minLevelValue = LogLevelValue[this.options.minLevel!];
-        this.contextManager = new Context();
+        this.contextManager = new Context(this.options.enrichers ?? []);
+        const maskingConfig = resolveMaskingConfig(this.options.masking as MaskingConfig | undefined);
+        this.masker = new Masker(maskingConfig);
+        this.buffering = resolveBufferingConfig(this.options.buffering);
 
         this.initializeTargets();
+
+        if (this.buffering.enabled && this.buffering.flushOnExit) {
+            this.registerFlushOnExit();
+        }
     }
 
     private initializeTargets(): void {
-        if (!this.options.targets) return;
+        if (!this.options.targets || this.options.targets.length === 0) {
+            this.targets.push(new ConsoleTarget());
+            return;
+        }
 
         for (const config of this.options.targets) {
             const target = this.createTarget(config);
@@ -52,7 +76,26 @@ export class Logger {
             case 'console':
                 return new ConsoleTarget({ pretty: config.pretty });
             case 'file':
-                return new FileTarget({ path: config.path });
+                if (!config.path) {
+                    console.warn('File target requires a path. Falling back to console.');
+                    return new ConsoleTarget({ pretty: config.pretty });
+                }
+                return new FileTarget({
+                    path: config.path,
+                    maxFileSize: config.maxFileSize,
+                    maxRetainedFiles: config.maxRetainedFiles,
+                    compressRotatedFiles: config.compressRotatedFiles
+                });
+            case 'application-insights':
+            case 'applicationInsights':
+                if (!config.connectionString) {
+                    console.warn('Application Insights target requires a connectionString. Skipping target.');
+                    return null;
+                }
+                return new ApplicationInsightsTarget({
+                    connectionString: config.connectionString,
+                    roleName: config.roleName
+                });
             default:
                 console.warn(`Unknown target type: ${config.type}`);
                 return null;
@@ -149,10 +192,19 @@ export class Logger {
         );
 
         // Create log entry
-        const logEntry = createLogEntry(level, message, enrichedContext);
+        const maskedContext = this.masker ? this.masker.mask(enrichedContext) : enrichedContext;
+        const logEntry = createLogEntry(level, message, maskedContext);
 
-        // Write to all targets
-        this.writeToTargets(logEntry);
+        if (this.buffering.enabled) {
+            this.buffer.push(logEntry);
+            if (this.buffer.length >= this.buffering.bufferSize) {
+                void this.flushBuffer();
+            } else {
+                this.scheduleFlush();
+            }
+        } else {
+            void this.writeToTargets(logEntry);
+        }
     }
 
     /**
@@ -168,13 +220,73 @@ export class Logger {
     /**
      * Write log entry to all targets
      */
-    private writeToTargets(logEntry: LogEntry): void {
+    private async writeToTargets(logEntry: LogEntry): Promise<void> {
         for (const target of this.targets) {
             try {
-                target.write(logEntry);
+                const result = target.write(logEntry);
+                if (result instanceof Promise) {
+                    await result;
+                }
             } catch (error) {
                 console.error('Failed to write to log target:', error);
             }
         }
     }
+
+    private scheduleFlush(): void {
+        if (this.flushTimer || !this.buffering.enabled) {
+            return;
+        }
+
+        this.flushTimer = setTimeout(() => {
+            this.flushTimer = undefined;
+            void this.flushBuffer();
+        }, this.buffering.flushIntervalMs);
+    }
+
+    private async flushBuffer(): Promise<void> {
+        if (!this.buffering.enabled || this.buffer.length === 0 || this.flushing) {
+            return;
+        }
+
+        this.flushing = true;
+        const entries = this.buffer.splice(0, this.buffer.length);
+
+        try {
+            for (const entry of entries) {
+                await this.writeToTargets(entry);
+            }
+        } finally {
+            this.flushing = false;
+        }
+    }
+
+    private registerFlushOnExit(): void {
+        const handler = async () => {
+            await this.flushBuffer();
+        };
+
+        process.on('beforeExit', handler);
+        process.on('SIGINT', handler);
+        process.on('SIGTERM', handler);
+    }
+}
+
+function resolveBufferingConfig(config?: BufferingConfig): ResolvedBufferingConfig {
+    const resolved: ResolvedBufferingConfig = {
+        enabled: config?.enabled ?? false,
+        bufferSize: config?.bufferSize ?? 100,
+        flushIntervalMs: config?.flushIntervalMs ?? config?.flushInterval ?? 2000,
+        flushOnExit: config?.flushOnExit ?? true
+    };
+
+    if (resolved.bufferSize <= 0) {
+        resolved.bufferSize = 1;
+    }
+
+    if (resolved.flushIntervalMs <= 0) {
+        resolved.flushIntervalMs = 2000;
+    }
+
+    return resolved;
 }

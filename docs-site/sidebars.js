@@ -7,6 +7,8 @@ const sidebars = {
       label: 'Modules',
       collapsible: true,
       items: [
+        'modules/identity-validator',
+        'modules/logging-module',
         'modules/client-integration-guide'
       ]
     },

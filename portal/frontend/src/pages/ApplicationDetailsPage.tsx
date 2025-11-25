@@ -1,7 +1,7 @@
 import { useParams, Link, Outlet, useNavigate } from 'react-router-dom';
 import { useApplicationsStore, type IntegratedModule } from '../state/applicationsStore';
 import { useModulesStore } from '../state/modulesStore';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import apiClient from '../services/apiClient';
 import './ApplicationDetailsPage.css';
 
@@ -23,6 +23,9 @@ export const ApplicationDetailsPage = () => {
   const [editForm, setEditForm] = useState({ name: '', stack: '', description: '' });
   const [activeTab, setActiveTab] = useState<'overview' | 'integration'>('overview');
   const [activeModuleTab, setActiveModuleTab] = useState<number | null>(null);
+  const docsBaseUrl = (import.meta.env.VITE_DOCS_BASE_URL as string | undefined)?.replace(/\/$/, '') || 'https://akkikhan.github.io/Primus-SaaS';
+  const docsIntegrationUrl = `${docsBaseUrl}/docs/modules/client-integration-guide`;
+  const githubRepoUrl = 'https://github.com/akkikhan/Primus-SaaS';
   const stackInfo: Record<string, { label: string; tone: string }> = {
     DotNet: { label: '.NET', tone: 'tone-dotnet' },
     NodeJS: { label: 'Node.js', tone: 'tone-node' },
@@ -148,6 +151,22 @@ ${getCodeSnippet()}
   const availableModules = modules.filter(m =>
     !currentApplication?.integratedModules?.some(im => im.moduleId === m.id)
   );
+  const sortedModuleVersions = useMemo(() => {
+    if (!selectedModule) return [];
+    const versions = [...(selectedModule.moduleVersions ?? [])];
+    return versions.sort((a, b) => new Date(b.releasedAt || '').getTime() - new Date(a.releasedAt || '').getTime());
+  }, [selectedModule]);
+
+  const latestVersionLabel = (moduleId: number) => {
+    const module = modules.find(m => m.id === moduleId);
+    const latest = module?.latestVersion || module?.moduleVersions?.[0]?.version;
+    return latest ? ` • Latest v${latest}` : '';
+  };
+
+  const getModuleDocLink = (moduleName: string) => {
+    const normalized = moduleName.toLowerCase().includes('log') ? '#add-logging' : '#5-integration-steps';
+    return `${docsIntegrationUrl}${normalized.startsWith('#') ? normalized : `#${normalized}`}`;
+  };
 
   const openEditModal = () => {
     setEditForm({
@@ -481,6 +500,42 @@ export function logOperation(operation: string, data: any) {
   return '';
 };
 
+  const getLoginScript = () => `
+import { PublicClientApplication } from '@azure/msal-browser';
+
+const msalConfig = {
+  auth: {
+    clientId: '<AZURE_AD_CLIENT_ID>',
+    authority: 'https://login.microsoftonline.com/<TENANT_ID>',
+    redirectUri: window.location.origin + '/login'
+  },
+  cache: {
+    cacheLocation: 'localStorage',
+    storeAuthStateInCookie: false
+  }
+};
+
+export const msalInstance = new PublicClientApplication(msalConfig);
+
+export async function signInWithAzure() {
+  const response = await msalInstance.loginPopup({
+    scopes: ['openid', 'profile', 'email'],
+    prompt: 'select_account'
+  });
+
+  if (!response.idToken) {
+    throw new Error('Azure AD did not return an ID token.');
+  }
+
+  // Send the ID token to your backend to create a Primus session
+  await fetch('/api/auth/azure', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idToken: response.idToken })
+  });
+}
+`.trim();
+
   return (
     <section className="app-detail">
       {/* Breadcrumb Navigation */}
@@ -688,8 +743,11 @@ export function logOperation(operation: string, data: any) {
                   Ship-ready steps tuned for {stackInfo[currentApplication.stack]?.label ?? currentApplication.stack} teams.
                 </p>
                 <div className="docs-links">
-                  <a href="https://akkikhan.github.io/Primus-SaaS/docs" target="_blank" rel="noopener noreferrer" className="docs-link-primary">
+                  <a href={docsIntegrationUrl} target="_blank" rel="noopener noreferrer" className="docs-link-primary">
                     View Full Documentation ↗
+                  </a>
+                  <a href={githubRepoUrl} target="_blank" rel="noopener noreferrer" className="docs-link-secondary">
+                    GitHub Repository ↗
                   </a>
                 </div>
               </div>
@@ -709,6 +767,55 @@ export function logOperation(operation: string, data: any) {
                 >
                   {copiedText === 'pdf' ? 'PDF downloaded' : 'Export PDF'}
                 </button>
+              </div>
+            </div>
+
+            <div className="docs-inline-grid">
+              <div className="doc-quick-card">
+                <div className="doc-quick-card__header">
+                  <div>
+                    <p className="eyebrow">Login</p>
+                    <h3>Azure AD login app script</h3>
+                  </div>
+                  <button
+                    type="button"
+                    className="copy-btn copy-btn--solid"
+                    onClick={() => handleCopy(getLoginScript(), 'login-script')}
+                  >
+                    {copiedText === 'login-script' ? 'Copied' : 'Copy script'}
+                  </button>
+                </div>
+                <p className="docs-subtitle">
+                  MSAL starter to sign in with Azure AD and hand the ID token to the Primus portal backend.
+                </p>
+                <div className="code-block-shell code-block-shell--compact">
+                  <div className="code-block-toolbar">
+                    <span className="pill">app-login.ts</span>
+                    <span className="pill pill-muted">MSAL</span>
+                  </div>
+                  <pre className="code-block">
+                    <code>{getLoginScript()}</code>
+                  </pre>
+                </div>
+              </div>
+              <div className="doc-quick-card doc-quick-card--muted">
+                <div className="doc-quick-card__header">
+                  <div>
+                    <p className="eyebrow">Docs source</p>
+                    <h3>Synced with Docusaurus</h3>
+                  </div>
+                </div>
+                <p className="docs-subtitle">
+                  The portal integration guide mirrors the public Docusaurus docs. Open the live page to cross-check identity and logging steps.
+                </p>
+                <div className="docs-links">
+                  <a href={docsIntegrationUrl} target="_blank" rel="noopener noreferrer" className="docs-link-primary">
+                    Open Client Integration Guide ↗
+                  </a>
+                  <a href={githubRepoUrl} target="_blank" rel="noopener noreferrer" className="docs-link-secondary">
+                    View Docs on GitHub ↗
+                  </a>
+                </div>
               </div>
             </div>
 
@@ -815,10 +922,10 @@ export function logOperation(operation: string, data: any) {
                       <div className="step-content">
                         <h3>Complete Integration Guide</h3>
                         <p>View the full documentation for detailed setup instructions, examples, and best practices.</p>
-                        <a 
-                          href={`https://akkikhan.github.io/Primus-SaaS/docs/modules/${module.moduleName.toLowerCase().replace(' ', '-')}-${currentApplication.stack.toLowerCase()}`}
-                          target="_blank" 
-                          rel="noopener noreferrer" 
+                        <a
+                          href={getModuleDocLink(module.moduleName)}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="docs-link-primary"
                         >
                           View {module.moduleName} Documentation ↗
@@ -856,7 +963,9 @@ export function logOperation(operation: string, data: any) {
               >
                 <option value="">Choose a module...</option>
                 {availableModules.map(module => (
-                  <option key={module.id} value={module.id}>{module.name}</option>
+                  <option key={module.id} value={module.id}>
+                    {module.name}{latestVersionLabel(module.id)}
+                  </option>
                 ))}
               </select>
             </div>
@@ -870,9 +979,9 @@ export function logOperation(operation: string, data: any) {
                   onChange={(e) => setSelectedVersionId(Number(e.target.value))}
                 >
                   <option value="">Choose a version...</option>
-                  {selectedModule.moduleVersions?.map(version => (
+                  {sortedModuleVersions.map(version => (
                     <option key={version.id} value={version.id}>
-                      {version.version} {version.isBreakingChange ? '(Breaking change)' : ''}
+                      v{version.version} {version.isBreakingChange ? '(Breaking change)' : ''}
                     </option>
                   ))}
                 </select>

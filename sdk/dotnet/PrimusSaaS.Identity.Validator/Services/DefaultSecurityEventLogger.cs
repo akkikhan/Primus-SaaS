@@ -1,8 +1,7 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
 namespace PrimusSaaS.Identity.Validator.Services;
-
 /// <summary>
 /// Default security event logger that forwards to ILogger.
 /// </summary>
@@ -10,7 +9,6 @@ public class DefaultSecurityEventLogger : ISecurityEventLogger
 {
     private readonly ILogger<DefaultSecurityEventLogger> _logger;
     private readonly SecurityEventMetrics _metrics;
-
     public DefaultSecurityEventLogger(ILogger<DefaultSecurityEventLogger> logger, SecurityEventMetrics metrics)
     {
         _logger = logger;

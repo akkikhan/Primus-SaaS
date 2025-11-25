@@ -33,18 +33,6 @@ export const DashboardPage = () => {
     0
   );
 
-  const modulesPerApp =
-    totalApplications > 0 ? (totalIntegrations / totalApplications).toFixed(1) : '0.0';
-  const versionsPerModule = totalModules > 0 ? (totalVersions / totalModules).toFixed(1) : '0.0';
-  const coverage =
-    totalModules > 0 && totalApplications > 0
-      ? Math.min(
-          100,
-          Math.round((totalIntegrations / (totalModules * totalApplications)) * 100)
-        )
-      : null;
-  const adoptionCopy = `Tracking ${totalIntegrations} live integrations across ${totalApplications} applications.`;
-
   const topModules = [...modules]
     .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
     .slice(0, 5);
@@ -101,27 +89,6 @@ export const DashboardPage = () => {
             platform.
           </p>
         </div>
-        {!isLoading && (
-          <div className="dashboard__quick-stats" aria-label="Key platform ratios">
-            <div className="dashboard__quick-stat">
-              <span className="dashboard__quick-label">Modules per app</span>
-              <strong>{modulesPerApp}</strong>
-              <p>Average integrations across applications</p>
-            </div>
-            <div className="dashboard__quick-stat">
-              <span className="dashboard__quick-label">Versions per module</span>
-              <strong>{versionsPerModule}</strong>
-              <p>Release depth per maintained module</p>
-            </div>
-            {typeof coverage === 'number' && (
-              <div className="dashboard__quick-stat">
-                <span className="dashboard__quick-label">Coverage</span>
-                <strong>{coverage}%</strong>
-                <p>Of all module/app combinations</p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
       {isLoading ? (
         <div className="dashboard__grid">

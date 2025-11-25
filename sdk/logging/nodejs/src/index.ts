@@ -9,6 +9,7 @@ import { TenantEnricher } from './enrichers/TenantEnricher';
 import { Target } from './targets/Target';
 import { ConsoleTarget } from './targets/ConsoleTarget';
 import { FileTarget } from './targets/FileTarget';
+import { ApplicationInsightsTarget } from './targets/ApplicationInsightsTarget';
 import { primusLoggingMiddleware } from './middleware/express';
 
 /**
@@ -31,6 +32,7 @@ export {
     Target,
     ConsoleTarget,
     FileTarget,
+    ApplicationInsightsTarget,
     primusLoggingMiddleware
 };
 

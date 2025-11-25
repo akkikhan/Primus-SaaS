@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1] - 2025-11-25
+
+### Added
+- Application Insights target (`type: 'application-insights'`) with severity mapping.
+- File target rotation (`maxFileSize`, `maxRetainedFiles`, `compressRotatedFiles`) to mirror NuGet behavior.
+- PII masking pipeline with strategies (`redact` | `hash` | `partial`) and smart defaults for emails/credit cards/SSN/custom keys.
+- Async buffering (`bufferSize`, `flushIntervalMs`, `flushOnExit`) for high-throughput services.
+- Express middleware now calls `logger.setRequest` to enrich logs with request/user/tenant context automatically.
+- New docs: Configuration Guide, Troubleshooting, Verification Guide, Quick Reference.
+
+### Changed
+- Default package version bumped to 1.2.1 to align with NuGet Logging 1.2.1.
+- File target now validates path and handles stream errors more defensively.
+
+### Fixed
+- Tenant context from Identity Validator now flows through middleware enrichers (`primusTenantContext` supported).
+- Console/file logs now apply PII masking before reaching any target.
+
+---
+
 ## [1.1.0] - 2025-11-24
 
 ### 🎉 Major Improvements

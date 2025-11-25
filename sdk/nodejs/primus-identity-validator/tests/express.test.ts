@@ -23,14 +23,16 @@ function buildOptions(): PrimusIdentityOptions {
 describe('primusIdentityMiddleware', () => {
   const options = buildOptions();
 
-  const createMockRequest = (authHeader?: string): Partial<Request> => ({
-    headers: authHeader ? { authorization: authHeader } : {}
+  const createMockRequest = (authHeader?: string, ip: string = '127.0.0.1'): Partial<Request> => ({
+    headers: authHeader ? { authorization: authHeader } : {},
+    ip
   });
 
   const createMockResponse = (): Partial<Response> => {
     const res: Partial<Response> = {};
     res.status = jest.fn().mockReturnValue(res);
     res.json = jest.fn().mockReturnValue(res);
+    res.setHeader = jest.fn();
     return res;
   };
 
@@ -110,6 +112,61 @@ describe('primusIdentityMiddleware', () => {
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalled();
     expect(nextFunction).not.toHaveBeenCalled();
+  });
+
+  it('should attach tenant context to primusTenantContext when resolver provided', async () => {
+    const payload = {
+      sub: 'user-123',
+      email: 'test@example.com',
+      name: 'Test User',
+      role: 'Admin',
+      iss: 'https://auth.local',
+      aud: 'test-client'
+    };
+
+    const token = sign(payload, 'test-jwt-secret-key', { expiresIn: '1h' });
+    const req = createMockRequest(`Bearer ${token}`) as Request;
+    const res = createMockResponse() as Response;
+
+    const middleware = primusIdentityMiddleware({
+      ...options,
+      tenantResolver: claims => ({
+        tenantId: (claims['iss'] as string) || 'default',
+        roles: ['Admin']
+      })
+    });
+
+    await middleware(req, res, nextFunction);
+
+    expect((req as any).primusTenantContext).toBeDefined();
+    expect((req as any).primusTenantContext?.tenantId).toBe('https://auth.local');
+    expect(nextFunction).toHaveBeenCalled();
+  });
+
+  it('should rate limit repeated failed requests when enabled', async () => {
+    const rateLimitedMiddleware = primusIdentityMiddleware({
+      ...options,
+      rateLimiting: {
+        enabled: true,
+        maxFailuresPerWindow: 1,
+        windowSeconds: 60
+      }
+    });
+
+    const req1 = createMockRequest('Bearer invalid-token') as Request;
+    const res1 = createMockResponse() as Response;
+    await rateLimitedMiddleware(req1, res1, nextFunction);
+    expect(res1.status).toHaveBeenCalledWith(401);
+
+    const req2 = createMockRequest('Bearer another-invalid-token') as Request;
+    const res2 = createMockResponse() as Response;
+    await rateLimitedMiddleware(req2, res2, nextFunction);
+
+    expect(res2.status).toHaveBeenCalledWith(429);
+    expect(res2.setHeader).toHaveBeenCalledWith('Retry-After', expect.any(String));
+    expect(res2.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: expect.stringContaining('Too many failed authentication attempts') })
+    );
   });
 });
 

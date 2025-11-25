@@ -8,12 +8,13 @@ import { TenantEnricher } from '../enrichers/TenantEnricher';
 export class Context {
     private enrichers: Enricher[];
 
-    constructor() {
+    constructor(additionalEnrichers: Enricher[] = []) {
         // Register default enrichers
         this.enrichers = [
             new RequestEnricher(),
             new UserEnricher(),
-            new TenantEnricher()
+            new TenantEnricher(),
+            ...additionalEnrichers
         ];
     }
 

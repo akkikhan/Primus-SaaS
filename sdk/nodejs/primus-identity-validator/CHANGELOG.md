@@ -5,6 +5,22 @@ All notable changes to the Primus Identity Validator for Node.js will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] - 2025-11-25
+
+### Added
+- Rate limiting for repeated failed authentications (429 with `Retry-After`) mirroring NuGet defaults.
+- HTTPS enforcement toggle (`requireHttpsMetadata`) for OIDC metadata/JWKS endpoints.
+- Tenant resolver context now exposed as `req.primusTenantContext` for downstream logging middleware.
+- New documentation: Tenant Resolver Guide, Testing Guide, Secret Management, Claims Mapping, Angular Integration, Diagnostics/Troubleshooting.
+
+### Changed
+- Defaults now set for `validateLifetime` and `requireHttpsMetadata`.
+- Express middleware aligns error responses and tenant context names with .NET implementation.
+
+### Fixed
+- Added IP-aware keying for rate limiter to prevent global throttling collisions.
+- Improved validation errors for missing authority over plain HTTP.
+
 ## [1.0.0] - 2025-01-XX
 
 ### Added

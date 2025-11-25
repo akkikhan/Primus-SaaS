@@ -98,6 +98,10 @@ export class PrimusIdentityValidator {
       return { isValid: false, error: `Authority URL required for OIDC issuer: ${config.name}` };
     }
 
+    if ((this.options.requireHttpsMetadata ?? true) && !config.authority.toLowerCase().startsWith('https://')) {
+      return { isValid: false, error: `HTTPS is required for authority: ${config.authority}` };
+    }
+
     // Extract Tenant ID from Authority URL
     // Expected format: https://login.microsoftonline.com/<tenant-id>/v2.0
     const tenantId = this.extractTenantId(config.authority);
@@ -187,6 +191,8 @@ export class PrimusIdentityValidator {
    * Validates configuration options
    */
   private validateOptions(options: PrimusIdentityOptions): void {
+    const requireHttps = options.requireHttpsMetadata ?? true;
+
     if (!options.issuers || !Array.isArray(options.issuers) || options.issuers.length === 0) {
       throw new Error('At least one issuer configuration is required');
     }
@@ -201,6 +207,12 @@ export class PrimusIdentityValidator {
         throw new Error(`Authority URL is required for OIDC issuer ${issuer.name}`);
       }
 
+      if (issuer.type === 'oidc' && issuer.authority && requireHttps) {
+        if (!issuer.authority.toLowerCase().startsWith('https://')) {
+          throw new Error(`Authority must use HTTPS for OIDC issuer ${issuer.name}`);
+        }
+      }
+
       if (issuer.type === 'jwt' && !issuer.secret && !issuer.jwksUrl) {
         throw new Error(`Secret or JWKS URL is required for JWT issuer ${issuer.name}`);
       }
@@ -213,6 +225,8 @@ export class PrimusIdentityValidator {
   private applyDefaults(options: PrimusIdentityOptions): PrimusIdentityOptions {
     return {
       ...options,
+      validateLifetime: options.validateLifetime ?? true,
+      requireHttpsMetadata: options.requireHttpsMetadata ?? true,
       clockSkew: options.clockSkew ?? 300,
       jwksCacheTtl: options.jwksCacheTtl ?? 24
     };
