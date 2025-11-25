@@ -132,6 +132,7 @@ public class LoggingMiddleware
                 {
                     errorContext["loggingDrops"] = metrics.DroppedEntries;
                     errorContext["loggingWriteFailures"] = metrics.WriteFailures;
+                    errorContext["loggingAdapterForwarded"] = metrics.AdapterForwardedEntries;
                 }
 
                 Generated.LoggingMessages.RequestStart(_loggerAdapter, context.Request.Method, context.Request.Path);

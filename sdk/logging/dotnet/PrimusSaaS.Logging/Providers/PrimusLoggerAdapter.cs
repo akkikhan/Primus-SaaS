@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using PrimusSaaS.Logging.Core;
 using PrimusSaaS.Logging.Generated;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -14,23 +15,43 @@ public class PrimusLoggerAdapter : ILogger
     private readonly string _categoryName;
     private readonly Core.Logger _primusLogger;
     private readonly ILogger _adapterLogger;
+    private readonly LoggingMetrics _metrics;
+    private IExternalScopeProvider? _scopeProvider;
 
-    public PrimusLoggerAdapter(string categoryName, Core.Logger primusLogger)
+    public PrimusLoggerAdapter(string categoryName, Core.Logger primusLogger, IExternalScopeProvider? scopeProvider = null)
     {
         _categoryName = categoryName;
         _primusLogger = primusLogger;
-        _adapterLogger = LoggerFactory.Create(builder => { }).CreateLogger(categoryName);
+        _metrics = primusLogger.Metrics;
+        _scopeProvider = scopeProvider;
+        _adapterLogger = NullLogger.Instance;
     }
 
-    public IDisposable? BeginScope<TState>(TState state) where TState : notnull
+    public IDisposable BeginScope<TState>(TState state) where TState : notnull
+    {
+        return BeginScopeInternal(state);
+    }
+
+    IDisposable ILogger.BeginScope<TState>(TState state)
+    {
+        return BeginScopeInternal(state);
+    }
+
+    private IDisposable BeginScopeInternal<TState>(TState state)
     {
         var scopeDictionary = ToDictionary(state);
-        return _primusLogger.BeginScope(scopeDictionary);
+        var primusScope = _primusLogger.BeginScope(scopeDictionary);
+
+        // Also push to external scope provider so other providers can see it if needed
+        var externalScope = _scopeProvider?.Push(scopeDictionary);
+
+        return new ScopeWrapper(primusScope, externalScope);
     }
 
     public bool IsEnabled(LogLevel logLevel)
     {
-        return logLevel != LogLevel.None;
+        var primusLevel = MapLogLevel(logLevel);
+        return _primusLogger.IsEnabled(primusLevel);
     }
 
     public void Log<TState>(
@@ -40,35 +61,28 @@ public class PrimusLoggerAdapter : ILogger
         Exception? exception, 
         Func<TState, Exception?, string> formatter)
     {
-        if (!IsEnabled(logLevel)) return;
+        if (formatter == null) throw new ArgumentNullException(nameof(formatter));
+
+        var primusLevel = MapLogLevel(logLevel);
+        if (!_primusLogger.IsEnabled(primusLevel)) return;
 
         var message = formatter(state, exception);
-        var primusLevel = MapLogLevel(logLevel);
 
-        var context = new Dictionary<string, object?>
+        var context = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
             ["category"] = _categoryName,
-            ["eventId"] = eventId.Id
         };
 
-        if (eventId.Name != null)
-        {
-            context["eventName"] = eventId.Name;
-        }
+        if (eventId.Id != 0) context["eventId"] = eventId.Id;
+        if (!string.IsNullOrWhiteSpace(eventId.Name)) context["eventName"] = eventId.Name;
 
-        // Extract structured logging state if available
-        if (state is IEnumerable<KeyValuePair<string, object>> structure)
-        {
-            foreach (var property in structure)
-            {
-                // Skip the original format placeholder
-                if (property.Key != "{OriginalFormat}")
-                {
-                    context[property.Key] = property.Value;
-                }
-            }
-        }
+        var stateContext = ToDictionary(state);
+        MergeContext(context, stateContext);
+        MergeExternalScopes(context);
 
+        _metrics.IncrementAdapterForwarded();
+
+        // Log to both the adapter (for consumers that expect Microsoft logging) and Primus Logger
         switch (primusLevel)
         {
             case PrimusLogLevel.Debug:
@@ -133,5 +147,61 @@ public class PrimusLoggerAdapter : ILogger
         }
 
         return dict;
+    }
+
+    internal void SetScopeProvider(IExternalScopeProvider scopeProvider)
+    {
+        _scopeProvider = scopeProvider;
+    }
+
+    private void MergeExternalScopes(Dictionary<string, object?> context)
+    {
+        if (_scopeProvider == null) return;
+
+        var scopes = new List<Dictionary<string, object?>>();
+        _scopeProvider.ForEachScope((scopeObject, state) =>
+        {
+            var scopeDict = ToDictionary(scopeObject);
+            if (scopeDict.Count > 0)
+            {
+                state.Add(scopeDict);
+            }
+        }, scopes);
+
+        // Apply outermost first so inner scopes can override keys
+        for (var i = scopes.Count - 1; i >= 0; i--)
+        {
+            MergeContext(context, scopes[i]);
+        }
+    }
+
+    private static void MergeContext(Dictionary<string, object?> target, Dictionary<string, object?> source)
+    {
+        foreach (var kvp in source)
+        {
+            target[kvp.Key] = kvp.Value;
+        }
+    }
+
+    private sealed class ScopeWrapper : IDisposable
+    {
+        private readonly IDisposable? _primusScope;
+        private readonly IDisposable? _externalScope;
+        private bool _disposed;
+
+        public ScopeWrapper(IDisposable? primusScope, IDisposable? externalScope)
+        {
+            _primusScope = primusScope;
+            _externalScope = externalScope;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+
+            _primusScope?.Dispose();
+            _externalScope?.Dispose();
+        }
     }
 }

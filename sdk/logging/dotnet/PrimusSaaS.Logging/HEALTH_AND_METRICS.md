@@ -5,6 +5,7 @@
   - `WrittenEntries`
   - `DroppedEntries`
   - `WriteFailures`
+  - `AdapterForwardedEntries` (calls that flowed through the ILogger compatibility shim)
 - Async wrapper (`AsyncTargetWrapper`) updates metrics; use small buffer sizes to test backpressure.
 
 ## Health Signals

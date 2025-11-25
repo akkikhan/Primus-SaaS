@@ -33,6 +33,10 @@ public class Logger
         _healthReporter = new Health.LoggingHealthReporter(_metrics, _targets);
     }
 
+    internal LoggingMetrics Metrics => _metrics;
+
+    internal bool IsEnabled(LogLevel level) => level >= _options.MinLevel;
+
     private void InitializeTargets()
     {
         if (_options.CustomTargets is { Count: > 0 })

@@ -38,20 +38,19 @@ var builder = WebApplication.CreateBuilder(args);
 // Replace default logging with PrimusSaaS.Logging
 // Both AddPrimus() and AddPrimusLogging() work (aliases)
 builder.Logging.ClearProviders();
-builder.Logging.AddPrimus(options =>
-{
-    options.ApplicationId = "MY-APP";
-    options.Environment = "production";
-    
-    // Use PrimusLogLevel to avoid ambiguity if Microsoft.Extensions.Logging is imported
-    options.MinLevel = PrimusLogLevel.Info;
-    
-    options.Targets = new List<PrimusSaaS.Logging.Core.TargetConfig>
-    {
-        new() { Type = "console", Pretty = true },
-        new() { Type = "file", Path = "logs/app.log", Async = true }
-    };
-});
+builder.Logging.AddPrimus(builder.Configuration.GetSection("PrimusLogging"));
+// or configure in code:
+// builder.Logging.AddPrimus(options =>
+// {
+//     options.ApplicationId = "MY-APP";
+//     options.Environment = "production";
+//     options.MinLevel = PrimusLogLevel.Info;
+//     options.Targets = new List<PrimusSaaS.Logging.Core.TargetConfig>
+//     {
+//         new() { Type = "console", Pretty = true },
+//         new() { Type = "file", Path = "logs/app.log", Async = true }
+//     };
+// });
 
 var app = builder.Build();
 
@@ -104,6 +103,35 @@ logger.Error("Something went wrong", new Dictionary<string, object>
     ["errorCode"] = "ERR_001",
     ["userId"] = "12345"
 });
+```
+
+## Migrate from Microsoft.Extensions.Logging with No Call-Site Changes
+
+If your controllers/services already use `ILogger<T>`, keep them as-is:
+
+1) Add configuration (appsettings.json):
+```json
+{
+  "PrimusLogging": {
+    "ApplicationId": "MY-APP",
+    "Environment": "production",
+    "MinLevel": 1,
+    "Targets": [
+      { "Type": "console", "Pretty": true },
+      { "Type": "file", "Path": "logs/app.log", "Async": true }
+    ]
+  }
+}
+```
+
+2) Wire up the compatibility shim in Program.cs:
+```csharp
+builder.Logging.ClearProviders();
+builder.Logging.AddPrimus(builder.Configuration.GetSection("PrimusLogging"));
+// existing ILogger<T> injections continue to work
+```
+
+3) (Optional) Add `app.UsePrimusLogging()` for automatic HTTP context enrichment.
 ```
 
 ## Configuration

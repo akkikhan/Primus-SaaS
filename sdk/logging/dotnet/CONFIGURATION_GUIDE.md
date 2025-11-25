@@ -87,25 +87,12 @@ using PrimusSaaS.Logging.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.ClearProviders();
-builder.Logging.AddPrimus(options =>
-{
-    var config = builder.Configuration.GetSection("PrimusLogging");
-    
-    options.ApplicationId = config["ApplicationId"] ?? "APP";
-    options.Environment = config["Environment"] ?? "development";
-    options.MinLevel = (LogLevel)int.Parse(config["MinLevel"] ?? "1");
-    
-    // Bind targets
-    var targetsSection = config.GetSection("Targets");
-    options.Targets = targetsSection.Get<List<TargetConfig>>() ?? new List<TargetConfig>();
-    
-    // Bind PII options
-    var piiSection = config.GetSection("Pii");
-    if (piiSection.Exists())
-    {
-        options.Pii = piiSection.Get<PiiOptions>() ?? new PiiOptions();
-    }
-});
+builder.Logging.AddPrimus(builder.Configuration.GetSection("PrimusLogging"));
+// Optional in-code overrides:
+// builder.Logging.AddPrimus(builder.Configuration.GetSection("PrimusLogging"), options =>
+// {
+//     options.MinLevel = LogLevel.Info;
+// });
 
 var app = builder.Build();
 app.Run();
