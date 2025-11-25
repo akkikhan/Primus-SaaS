@@ -2,6 +2,8 @@
 
 Enterprise-ready structured logging with PII masking and context enrichment.
 
+> Full client integration guide (Node + .NET + Identity + Logging): see `docs-site/docs/modules/client-integration-guide.md`.
+
 ## Installation
 
 ```bash

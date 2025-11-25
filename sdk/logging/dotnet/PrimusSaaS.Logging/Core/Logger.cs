@@ -67,6 +67,8 @@ public class Logger
                 config.CompressRotatedFiles
             ),
             "applicationinsights" => new ApplicationInsightsTarget(config.ConnectionString),
+            "serilog" => new SerilogTarget(),
+            "nlog" => new NLogTarget(),
             _ => null
         };
 

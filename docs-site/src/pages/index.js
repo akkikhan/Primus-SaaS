@@ -22,7 +22,7 @@ export default function Home() {
                 <Link className="button button--primary button--lg" to="/docs" style={{ padding: '0.875rem 2rem', fontSize: '1.1rem', borderRadius: '6px' }}>
                   Get Started
                 </Link>
-                <Link className="button button--secondary button--lg" to="/docs/modules/identity-validator-nodejs" style={{ padding: '0.875rem 2rem', fontSize: '1.1rem', borderRadius: '6px' }}>
+                <Link className="button button--secondary button--lg" to="/docs/modules/client-integration-guide" style={{ padding: '0.875rem 2rem', fontSize: '1.1rem', borderRadius: '6px' }}>
                   View Documentation
                 </Link>
               </div>
@@ -102,8 +102,8 @@ export default function Home() {
                 <pre style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '1.25rem', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
                   <code style={{ color: '#e2e8f0', fontSize: '0.9rem' }}>{`npm install @primus-saas/identity-validator`}</code>
                 </pre>
-                <Link to="/docs/modules/identity-validator-nodejs" style={{ color: '#14b8a6', textDecoration: 'none', fontSize: '1rem', fontWeight: 500 }}>
-                  View Node.js Integration Guide →
+                <Link to="/docs/modules/client-integration-guide" style={{ color: '#14b8a6', textDecoration: 'none', fontSize: '1rem', fontWeight: 500 }}>
+                  View Integration Guide →
                 </Link>
               </div>
             </div>
@@ -113,8 +113,8 @@ export default function Home() {
                 <pre style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '1.25rem', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
                   <code style={{ color: '#e2e8f0', fontSize: '0.9rem' }}>{`dotnet add package PrimusSaaS.Identity.Validator`}</code>
                 </pre>
-                <Link to="/docs/modules/identity-validator-dotnet" style={{ color: '#14b8a6', textDecoration: 'none', fontSize: '1rem', fontWeight: 500 }}>
-                  View .NET Integration Guide →
+                <Link to="/docs/modules/client-integration-guide" style={{ color: '#14b8a6', textDecoration: 'none', fontSize: '1rem', fontWeight: 500 }}>
+                  View Integration Guide →
                 </Link>
               </div>
             </div>

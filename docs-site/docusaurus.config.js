@@ -30,6 +30,26 @@ const config = {
         theme: {
           customCss: require.resolve('./src/css/custom.css')
         }
+      },
+      {
+        redirects: {
+          redirects: [
+            // Legacy identity pages
+            { from: '/docs/modules/identity-validator-nodejs', to: '/docs/modules/client-integration-guide' },
+            { from: '/docs/modules/identity-validator-dotnet', to: '/docs/modules/client-integration-guide' },
+            { from: '/docs/modules/identity-configuration', to: '/docs/modules/client-integration-guide' },
+            { from: '/docs/modules/identity-token-generation', to: '/docs/modules/client-integration-guide' },
+            { from: '/docs/modules/identity-tenant-resolver', to: '/docs/modules/client-integration-guide' },
+            { from: '/docs/modules/identity-error-reference', to: '/docs/modules/client-integration-guide' },
+            // Legacy logging pages
+            { from: '/docs/modules/logging-nodejs', to: '/docs/modules/client-integration-guide' },
+            { from: '/docs/modules/logging-dotnet', to: '/docs/modules/client-integration-guide' },
+            { from: '/docs/modules/logging-configuration', to: '/docs/modules/client-integration-guide' },
+            { from: '/docs/modules/logging-middleware', to: '/docs/modules/client-integration-guide' },
+            { from: '/docs/modules/logging-enterprise-features', to: '/docs/modules/client-integration-guide' },
+            { from: '/docs/modules/logging-targets', to: '/docs/modules/client-integration-guide' }
+          ]
+        }
       }
     ]
   ],

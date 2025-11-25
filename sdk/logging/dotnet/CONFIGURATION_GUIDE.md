@@ -250,6 +250,28 @@ new TargetConfig
 }
 ```
 
+### Serilog Bridge Target
+
+**Purpose:** Forward Primus logs into an existing Serilog pipeline (and its sinks like Elasticsearch/Seq/Splunk/Application Insights). Configure Serilog as usual; Primus will reuse `Log.Logger`.
+
+```csharp
+new TargetConfig
+{
+    Type = "serilog"
+}
+```
+
+### NLog Bridge Target
+
+**Purpose:** Forward Primus logs into an existing NLog configuration (targets/layouts defined in NLog.config or code).
+
+```csharp
+new TargetConfig
+{
+    Type = "nlog"
+}
+```
+
 ---
 
 ## PII Masking

@@ -51,7 +51,7 @@ Multi-issuer JWT/OIDC token validation middleware for securing your APIs with su
 - **Node.js**: `@primus-saas/identity-validator` (npm)
 - **.NET**: `PrimusSaaS.Identity.Validator` (NuGet)
 
-[Learn more about Identity Validator](modules/identity-validator-nodejs)
+See the unified integration guide: [Client Integration Guide](modules/client-integration-guide)
 
 ### Logging Module
 
@@ -193,11 +193,7 @@ Primus modules are designed to work alongside your existing authentication infra
 
 ### Module Guides
 
-- **[Identity Validator - Node.js](modules/identity-validator-nodejs)**: Complete integration guide for Express and NestJS
-- **[Identity Validator - .NET](modules/identity-validator-dotnet)**: Complete integration guide for .NET applications
-- **[Configuration Reference](modules/identity-configuration)**: Detailed configuration options and patterns
-- **[Error Reference](modules/identity-error-reference)**: Troubleshooting common errors
-- **[Token Generation Guide](modules/identity-token-generation)**: How to generate test tokens for development
+- **[Client Integration Guide](modules/client-integration-guide)**: Complete integration for Node.js and .NET (Identity + Logging)
 
 ### Integration Patterns
 
@@ -224,9 +220,7 @@ Report bugs or request features on our [GitHub repository](https://github.com/ak
 
 Choose your platform to get started:
 
-1. **Node.js Developers**: [Identity Validator - Node.js Guide](modules/identity-validator-nodejs)
-2. **.NET Developers**: [Identity Validator - .NET Guide](modules/identity-validator-dotnet)
-3. **Configuration Deep Dive**: [Configuration Reference](modules/identity-configuration)
+1. **Node.js & .NET Developers**: [Client Integration Guide](modules/client-integration-guide)
 
 ---
 

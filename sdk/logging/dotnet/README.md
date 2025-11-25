@@ -2,6 +2,8 @@
 
 Enterprise-grade structured logging library for .NET applications with automatic context enrichment, PII masking, and multiple output targets.
 
+> Full client integration guide (Node + .NET + Identity + Logging): see `docs-site/docs/modules/client-integration-guide.md`.
+
 ## Features
 
 - ✅ **Structured Logging** - JSON-formatted logs with rich context
@@ -12,6 +14,7 @@ Enterprise-grade structured logging library for .NET applications with automatic
 - ✅ **Async Buffering** - High-performance non-blocking logging
 - ✅ **Custom Enrichers** - Add dynamic context to every log
 - ✅ **Standard ILogger** - Full compatibility with Microsoft.Extensions.Logging
+- ✅ **Serilog/NLog Bridge** - Forward enriched logs into existing sink ecosystems
 - ✅ **ASP.NET Core Integration** - Middleware for automatic HTTP context enrichment
 - ✅ **Thread-Safe** - Safe for concurrent use
 
@@ -195,6 +198,24 @@ new TargetConfig
 }
 ```
 
+#### Bridge to Serilog or NLog
+
+- Reuse an existing Serilog pipeline (and its sinks like Elasticsearch/Seq/Splunk/App Insights):
+```csharp
+options.Targets = new List<TargetConfig>
+{
+    new() { Type = "serilog" }
+};
+```
+
+- Reuse an existing NLog configuration (targets/layouts from NLog.config or code):
+```csharp
+options.Targets = new List<TargetConfig>
+{
+    new() { Type = "nlog" }
+};
+```
+
 ## Enterprise Features
 
 ### PII Masking
@@ -368,6 +389,9 @@ See the `Examples/` directory:
 - [CUSTOM_ENRICHERS_GUIDE.md](./PrimusSaaS.Logging/CUSTOM_ENRICHERS_GUIDE.md) - Guide to creating custom enrichers
 - [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Common issues and solutions
 - [VERIFICATION_GUIDE.md](./VERIFICATION_GUIDE.md) - Verification steps
+- [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) - Moving from Microsoft.Extensions.Logging to Primus
+- [ROLLOUT_RUNBOOK.md](./ROLLOUT_RUNBOOK.md) - Canary/dual/cutover steps + monitoring
+- Call-site converter (dry-run by default): `dotnet run --project ./PrimusSaaS.Logging.CallsiteConverter/PrimusSaaS.Logging.CallsiteConverter.csproj -- --path <root> [--write]`
 
 ## License
 

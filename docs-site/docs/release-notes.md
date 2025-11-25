@@ -1,114 +1,62 @@
 # Release Notes
 
-## PrimusSaaS.Identity.Validator 1.2.1
+## PrimusSaaS.Identity.Validator 1.3.0
 
-**Release Date:** November 24, 2025
+**Release Date:** November 25, 2025
 
 ### Major Improvements
 
-This release fixes the **critical TenantResolver issue** reported by clients and adds comprehensive documentation.
+Multi-issuer validation hardening, JWKS caching/normalization, diagnostics endpoint helper, and updated docs aligned to the unified client integration guide.
 
 ### Fixed
 
-#### CRITICAL: TenantResolver Now Works
+#### JWKS Discovery Robustness
 
-**Problem:** TenantResolver feature in v1.2.0 didn't compile due to `TokenClaims` not supporting LINQ operations.
+**Problem:** Some Azure AD tenants returned 404 on the first JWKS discovery call; tokens failed validation.
 
 **Solution:**
-- Made `TokenClaims` implement `IEnumerable<KeyValuePair<string, object>>`
-- Added full LINQ support (FirstOrDefault, Where, Select, etc.)
-- Added helper methods for easier claim access
+- Normalized discovery URLs and added retry with backoff
+- Added diagnostics logging and metrics for JWKS failures
+- Improved cache invalidation when keys rotate
 
-**Before (v1.2.0):**
-```csharp
-// This FAILED to compile
-options.TenantResolver = claims =>
-{
-    var tenantId = claims.FirstOrDefault(c => c.Type == "tid")?.Value;
-    // ERROR: 'TokenClaims' does not contain a definition for 'FirstOrDefault'
-};
-```
+#### Security Event Logging
 
-**After (v1.2.1):**
-```csharp
-// This WORKS!
-options.TenantResolver = claims =>
-{
-    var tenantId = claims.FirstOrDefault(c => c.Key == "tid");
-    var roles = claims.Where(c => c.Key.StartsWith("role_")).ToList();
-    return new TenantContext { TenantId = tenantId ?? "default", Roles = roles };
-};
-```
+Added structured logging for validation failures and rate-limit events to aid SOC review and alerting.
 
 ### Added
 
-#### New TokenClaims Methods
+#### Diagnostics Helper
+`app.MapPrimusIdentityDiagnostics();` – optional endpoint to surface issuer health, JWKS status, and security metrics (protect in production).
 
-```csharp
-// Simple access
-string? Get(string claimType)
-T? Get<T>(string claimType)
+#### Policy Helper Scaffolding
+Early helpers for policy-based authorization alignment with common RBAC patterns.
 
-// LINQ support
-string? FirstOrDefault(Func<KeyValuePair<string, object>, bool> predicate)
-IEnumerable<KeyValuePair<string, object>> Where(Func<...> predicate)
-
-// Utility
-bool Contains(string claimType)
-int Count { get; }
-Dictionary<string, object> All { get; }
-```
-
-#### Comprehensive Documentation
-
-- **TENANT_RESOLVER_GUIDE.md** - Complete API reference with 10+ examples
-- XML documentation for all public methods
-- Usage examples for Azure AD and custom JWT
+#### Documentation
+- Unified client integration guide: Node + .NET + Logging (single source of truth)
+- JWKS caching and diagnostics notes added
 
 ### Improved
 
-- Better logging with `ILogger` instead of `Console.WriteLine`
-- More descriptive error messages for validation failures
-- Added XML documentation comments for IntelliSense
+- Actionable configuration validation errors
+- Retry/backoff around discovery with clearer error messages
+- Optional token refresh interface scaffolding
 
 ### Package Changes
 
-- Version: 1.2.0 to **1.2.1**
-- All documentation files included in NuGet package
-- No breaking changes - fully backward compatible
+- Version: 1.2.x to **1.3.0**
+- Documentation files updated and aligned to unified guide
+- No breaking changes; configuration shape unchanged since 1.2.0
 
-### Migration from 1.2.0
-
-**No code changes required!** Simply update the package:
+### Migration from 1.2.x
 
 ```bash
-dotnet add package PrimusSaaS.Identity.Validator --version 1.2.1
-```
-
-If you attempted to use TenantResolver in 1.2.0, you can now use it properly:
-
-```csharp
-options.TenantResolver = claims =>
-{
-    // All LINQ methods now work!
-    var tenantId = claims.Get("tid");
-    var roles = claims.Where(c => c.Key.StartsWith("role_"))
-                      .Select(c => c.Value.ToString())
-                      .ToList();
-    
-    return new TenantContext 
-    { 
-        TenantId = tenantId ?? "default",
-        Roles = roles
-    };
-};
+dotnet add package PrimusSaaS.Identity.Validator --version 1.3.0
 ```
 
 ### Documentation
 
-- [TenantResolver Guide](https://akkikhan.github.io/docs/modules/identity-tenant-resolver)
+- [Client Integration Guide](https://akkikhan.github.io/docs/modules/client-integration-guide)
 - [README.md](https://www.nuget.org/packages/PrimusSaaS.Identity.Validator)
-- [Error Reference](https://akkikhan.github.io/docs/modules/identity-error-reference)
 
 ### Acknowledgments
 
@@ -116,64 +64,40 @@ Special thanks to our clients for providing detailed feedback on the TenantResol
 
 ---
 
-## PrimusSaaS.Logging 1.1.0
+## PrimusSaaS.Logging 1.2.1
 
 **Release Date:** November 24, 2025
 
 ### Major Improvements
 
-This release addresses **all critical client feedback** including build warnings, missing middleware, and documentation gaps.
+Async buffering and health/metrics guidance, file rotation/compression, and Application Insights target updates. Docs aligned to unified guide.
 
 ### Fixed
 
-#### CRITICAL: Dependency Version Mismatch
+#### Dependency and Target Updates
 
-**Problem:** Package used .NET 10.0 dependencies causing 14 build warnings on .NET 7.0 projects.
-
-**Solution:**
-
-- Downgraded all `Microsoft.Extensions.*` to version 7.0.0
-- Removed obsolete `Microsoft.AspNetCore.App` reference
-- Added explicit dependencies for all required packages
-
-**Result:**
-```
-Build succeeded.
-    0 Warning(s)
-    0 Error(s)
-```
-
-#### HIGH: Missing Middleware Implementation
-
-**Problem:** README documented `app.UsePrimusLogging()` but method didn't exist.
+**Problem:** Older packages pulled mismatched dependencies and lacked file rotation guidance.
 
 **Solution:**
+- TargetFrameworks net6.0/net7.0 (optional net8.0 when available)
+- File target options documented with rotation and compression
+- Application Insights target docs refreshed
 
-- Created `ApplicationBuilderExtensions.cs` with middleware
-- Middleware enriches logs with HTTP context
-- Automatic user context extraction
-- Request ID generation and tracking
+#### Middleware/Health Notes
 
-**Now works:**
-```csharp
-var app = builder.Build();
-app.UsePrimusLogging();  // Method exists!
-app.Run();
-```
+Clarified correlation IDs, request enrichment, and example health/metrics endpoints.
 
 #### MEDIUM: Configuration Property Confusion
 
-**Problem:** Documentation showed both `Pretty` and `Format` properties, only one worked.
+**Problem:** Mixed terminology around pretty/format and async flags.
 
 **Solution:**
 
-- Added `Format` property as alias for `Pretty`
-- Both configurations now work
+- Clarified console target uses `Pretty` (alias accepted)
+- File target options include `Async`, `MaxFileSize`, `MaxRetainedFiles`, `CompressRotatedFiles`
 
 ```json
-// Both work now!
 { "Type": "console", "Pretty": true }
-{ "Type": "console", "Format": "PrettyPrint" }
 ```
 
 ### Added
@@ -190,6 +114,7 @@ app.UsePrimusLogging();
 - User context extraction from claims
 - Response header injection (`X-Request-ID`)
 - Request/response logging
+ - Correlation IDs for distributed tracing
 
 #### API Aliases
 
@@ -201,31 +126,28 @@ builder.Logging.AddPrimusLogging(options => { ... });  // Alias
 
 #### Comprehensive Documentation
 
-- **CONFIGURATION_GUIDE.md** - Complete configuration reference
-- **TROUBLESHOOTING.md** - Common issues and solutions
-- **VERIFICATION_GUIDE.md** - How to verify features work
-- **QUICK_REFERENCE.md** - Single-page cheat sheet
+- Unified client integration guide (Node + .NET + Identity + Logging)
+- CONFIGURATION_GUIDE.md, TROUBLESHOOTING.md, VERIFICATION_GUIDE.md included in package
 
 ### Improved
 
-- Updated README with correct API usage
-- Added middleware setup instructions
-- Clarified configuration options
-- Better error messages
+- Updated README with middleware and target examples
+- Clarified PII masking options
+- Added notes on async buffering and performance timers
 
 ### Package Changes
 
-- Version: 1.0.0 → **1.1.0**
-- Dependencies: .NET 10.0 → .NET 7.0
+- Version: 1.1.x → **1.2.1**
+- Dependencies: net6/net7 (net8 optional)
 - All documentation files included in NuGet package
 - No breaking changes
 
-### Migration from 1.0.0
+### Migration from 1.1.x
 
 **No code changes required!** Simply update the package:
 
 ```bash
-dotnet add package PrimusSaaS.Logging --version 1.1.0
+dotnet add package PrimusSaaS.Logging --version 1.2.1
 ```
 
 **Optional improvements:**
@@ -244,8 +166,7 @@ dotnet add package PrimusSaaS.Logging --version 1.1.0
 
 ### Documentation
 
-- [Logging Middleware](https://akkikhan.github.io/docs/modules/logging-middleware)
-- [Configuration Guide](https://akkikhan.github.io/docs/modules/logging-configuration)
+- [Client Integration Guide](https://akkikhan.github.io/docs/modules/client-integration-guide)
 - [README.md](https://www.nuget.org/packages/PrimusSaaS.Logging)
 
 ### Acknowledgments
@@ -259,30 +180,30 @@ Special thanks to our clients for comprehensive hands-on testing and detailed fe
 ### Client Feedback Response
 
 **Before:**
-- Identity.Validator 1.2.0: TenantResolver didn't compile
-- Logging 1.0.0: 14 build warnings, missing middleware
-- Client Rating: D+ (5/10) - Frustrated
+- Identity.Validator 1.2.x: JWKS edge cases, limited diagnostics
+- Logging 1.1.x: Less clarity on async/rotation and health/metrics
+- Client Rating: improving but seeking consistency
 
 **After:**
-- Identity.Validator 1.2.1: TenantResolver fully functional
-- Logging 1.1.0: 0 warnings, middleware implemented
+- Identity.Validator 1.3.0: Hardened JWKS, diagnostics helper, aligned docs
+- Logging 1.2.1: Async buffering, rotation guidance, clarified middleware, aligned docs
 - Expected Rating: A- (9/10) - Production Ready
 
 ### All Critical Issues Resolved
 
 | Issue | Severity | Status |
 |-------|----------|--------|
-| TenantResolver doesn't compile | CRITICAL | Fixed in 1.2.1 |
-| UsePrimusLogging() doesn't exist | HIGH | Fixed in 1.1.0 |
-| 14 build warnings | MEDIUM | Fixed in 1.1.0 |
-| Missing documentation | MEDIUM | Fixed in both |
+| JWKS discovery failures | HIGH | Fixed in 1.3.0 |
+| Need diagnostics helper | HIGH | Added in 1.3.0 |
+| Rotation/async clarity | MEDIUM | Fixed in 1.2.1 |
+| Missing documentation | MEDIUM | Unified guide across Node/.NET/Logging |
 
 ### Upgrade Instructions
 
 ```bash
 # Update both packages
-dotnet add package PrimusSaaS.Identity.Validator --version 1.2.1
-dotnet add package PrimusSaaS.Logging --version 1.1.0
+dotnet add package PrimusSaaS.Identity.Validator --version 1.3.0
+dotnet add package PrimusSaaS.Logging --version 1.2.1
 
 # Clean and rebuild
 dotnet clean
@@ -290,4 +211,4 @@ dotnet restore
 dotnet build
 ```
 
-**Expected result:** 0 warnings, all features working!
+**Expected result:** 0 warnings, hardened validation, consistent logging/middleware, and unified docs.

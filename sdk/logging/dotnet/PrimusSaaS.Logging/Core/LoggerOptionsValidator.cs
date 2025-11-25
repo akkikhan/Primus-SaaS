@@ -79,6 +79,8 @@ public static class LoggerOptionsValidator
         {
             case "console":
             case "applicationinsights":
+            case "serilog":
+            case "nlog":
                 break;
             case "file":
                 if (config.MaxFileSize <= 0)
