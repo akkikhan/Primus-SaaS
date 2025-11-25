@@ -110,100 +110,6 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Modules Section */}
-      <section style={{ padding: '4.75rem 0', background: '#f8fafc' }}>
-        <div className="container">
-          <h2
-            style={{
-              textAlign: 'center',
-              marginBottom: '0.85rem',
-              fontSize: '2.6rem',
-              fontWeight: 600,
-              color: '#0f172a',
-              letterSpacing: '-0.01em'
-            }}
-          >
-            Modules
-          </h2>
-          <p
-            style={{
-              textAlign: 'center',
-              marginBottom: '2.75rem',
-              fontSize: '1.08rem',
-              color: '#475569',
-              maxWidth: '880px',
-              marginLeft: 'auto',
-              marginRight: 'auto',
-              lineHeight: 1.8
-            }}
-          >
-            Two modules, one platform: Identity Validator keeps authentication local with multi-issuer JWT/OIDC. Logging delivers structured, enriched logs with PII protection and bridges to your existing sinks.
-          </p>
-          <div className="row" style={{ gap: '1.4rem' }}>
-            <div className="col col--6" style={{ minWidth: '280px' }}>
-              <div
-                style={{
-                  padding: '1.9rem',
-                  background: '#ffffff',
-                  borderRadius: '14px',
-                  border: '1px solid #e2e8f0',
-                  height: '100%',
-                  boxShadow: '0 10px 26px rgba(15,23,42,0.05)'
-                }}
-              >
-                <h3 style={{ fontSize: '1.45rem', marginBottom: '0.65rem', color: '#0f172a', fontWeight: 700 }}>Identity Validator</h3>
-                <p style={{ color: '#475569', lineHeight: '1.75', marginBottom: '0.9rem' }}>
-                  Multi-issuer JWT/OIDC (Azure AD + Local) with RBAC and typed user context. No Primus-hosted auth; zero PII leaves your app.
-                </p>
-                <ul style={{ color: '#334155', lineHeight: '1.7', paddingLeft: '1.1rem', marginBottom: '1.1rem' }}>
-                  <li>Express/NestJS and ASP.NET Core ready</li>
-                  <li>JWKS caching, clock skew tolerance, diagnostics helper</li>
-                  <li>Role-based authorization helpers</li>
-                </ul>
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <Link to="/docs/modules/identity-validator" className="button button--primary button--sm">
-                    Identity Docs
-                  </Link>
-                  <Link to="/docs/modules/client-integration-guide" className="button button--secondary button--sm">
-                    Integration Guide
-                  </Link>
-                </div>
-              </div>
-            </div>
-            <div className="col col--6" style={{ minWidth: '280px' }}>
-              <div
-                style={{
-                  padding: '1.9rem',
-                  background: '#ffffff',
-                  borderRadius: '14px',
-                  border: '1px solid #e2e8f0',
-                  height: '100%',
-                  boxShadow: '0 10px 26px rgba(15,23,42,0.05)'
-                }}
-              >
-                <h3 style={{ fontSize: '1.45rem', marginBottom: '0.65rem', color: '#0f172a', fontWeight: 700 }}>Logging Module</h3>
-                <p style={{ color: '#475569', lineHeight: '1.75', marginBottom: '0.9rem' }}>
-                  Structured logging with request/user/tenant enrichment, correlation IDs, timers, and PII masking. Targets include console, file (rotation), Application Insights, and Serilog/NLog bridge.
-                </p>
-                <ul style={{ color: '#334155', lineHeight: '1.7', paddingLeft: '1.1rem', marginBottom: '1.1rem' }}>
-                  <li>Express middleware with request context</li>
-                  <li>ILogger provider with async buffering and rotation</li>
-                  <li>Health/metrics hooks for production dashboards</li>
-                </ul>
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <Link to="/docs/modules/logging-module" className="button button--primary button--sm">
-                    Logging Docs
-                  </Link>
-                  <Link to="/docs/modules/client-integration-guide" className="button button--secondary button--sm">
-                    Integration Guide
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Value Section */}
       <section style={{ padding: '4.75rem 0', background: '#ffffff' }}>
         <div className="container">
@@ -266,8 +172,8 @@ export default function Home() {
           >
             Install Primus modules with your preferred package manager and integrate into your application.
           </p>
-          <div className="row" style={{ rowGap: '1.5rem' }}>
-            <div className="col col--4">
+          <div className="row" style={{ rowGap: '1.5rem', alignItems: 'stretch' }}>
+            <div className="col col--6">
               <div
                 style={{
                   padding: '2.25rem',
@@ -277,16 +183,27 @@ export default function Home() {
                   height: '100%'
                 }}
               >
-                <h3 style={{ fontSize: '1.4rem', marginBottom: '1rem', color: '#e2e8f0', fontWeight: 500 }}>Identity – Node.js</h3>
-                <pre style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '1.2rem', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid rgba(148,163,184,0.1)' }}>
-                  <code style={{ color: '#e2e8f0', fontSize: '0.95rem' }}>{`npm install @primus-saas/identity-validator`}</code>
-                </pre>
-                <Link to="/docs/modules/identity-validator" style={{ color: '#14b8a6', textDecoration: 'none', fontSize: '1rem', fontWeight: 500 }}>
-                  View Identity Docs →
+                <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: '#e2e8f0', fontWeight: 600 }}>Identity Validator</h3>
+                <div style={{ display: 'grid', gap: '0.9rem' }}>
+                  <div>
+                    <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.35rem' }}>npm</div>
+                    <pre style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '1.05rem', borderRadius: '10px', margin: 0, border: '1px solid rgba(148,163,184,0.1)' }}>
+                      <code style={{ color: '#e2e8f0', fontSize: '0.95rem' }}>{`npm install @primus-saas/identity-validator`}</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.35rem' }}>dotnet</div>
+                    <pre style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '1.05rem', borderRadius: '10px', margin: 0, border: '1px solid rgba(148,163,184,0.1)' }}>
+                      <code style={{ color: '#e2e8f0', fontSize: '0.95rem' }}>{`dotnet add package PrimusSaaS.Identity.Validator --version 1.3.0`}</code>
+                    </pre>
+                  </div>
+                </div>
+                <Link to="/docs/modules/client-integration-guide" style={{ color: '#14b8a6', textDecoration: 'none', fontSize: '1rem', fontWeight: 500, display: 'inline-block', marginTop: '1rem' }}>
+                  View Integration Guide →
                 </Link>
               </div>
             </div>
-            <div className="col col--4">
+            <div className="col col--6">
               <div
                 style={{
                   padding: '2.25rem',
@@ -296,31 +213,23 @@ export default function Home() {
                   height: '100%'
                 }}
               >
-                <h3 style={{ fontSize: '1.4rem', marginBottom: '1rem', color: '#e2e8f0', fontWeight: 500 }}>Identity – .NET</h3>
-                <pre style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '1.2rem', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid rgba(148,163,184,0.1)' }}>
-                  <code style={{ color: '#e2e8f0', fontSize: '0.95rem' }}>{`dotnet add package PrimusSaaS.Identity.Validator`}</code>
-                </pre>
-                <Link to="/docs/modules/identity-validator" style={{ color: '#14b8a6', textDecoration: 'none', fontSize: '1rem', fontWeight: 500 }}>
-                  View Identity Docs →
-                </Link>
-              </div>
-            </div>
-            <div className="col col--4">
-              <div
-                style={{
-                  padding: '2.25rem',
-                  background: 'rgba(30, 41, 59, 0.55)',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(148, 163, 184, 0.12)',
-                  height: '100%'
-                }}
-              >
-                <h3 style={{ fontSize: '1.4rem', marginBottom: '1rem', color: '#e2e8f0', fontWeight: 500 }}>Logging – .NET</h3>
-                <pre style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '1.2rem', borderRadius: '10px', marginBottom: '1.25rem', border: '1px solid rgba(148,163,184,0.1)' }}>
-                  <code style={{ color: '#e2e8f0', fontSize: '0.95rem' }}>{`dotnet add package PrimusSaaS.Logging`}</code>
-                </pre>
-                <Link to="/docs/modules/logging-module" style={{ color: '#14b8a6', textDecoration: 'none', fontSize: '1rem', fontWeight: 500 }}>
-                  View Logging Docs →
+                <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: '#e2e8f0', fontWeight: 600 }}>Logging Module</h3>
+                <div style={{ display: 'grid', gap: '0.9rem' }}>
+                  <div>
+                    <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.35rem' }}>npm</div>
+                    <pre style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '1.05rem', borderRadius: '10px', margin: 0, border: '1px solid rgba(148,163,184,0.1)' }}>
+                      <code style={{ color: '#e2e8f0', fontSize: '0.95rem' }}>{`npm install @primus-saas/logging`}</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.35rem' }}>dotnet</div>
+                    <pre style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '1.05rem', borderRadius: '10px', margin: 0, border: '1px solid rgba(148,163,184,0.1)' }}>
+                      <code style={{ color: '#e2e8f0', fontSize: '0.95rem' }}>{`dotnet add package PrimusSaaS.Logging --version 1.2.1`}</code>
+                    </pre>
+                  </div>
+                </div>
+                <Link to="/docs/modules/client-integration-guide" style={{ color: '#14b8a6', textDecoration: 'none', fontSize: '1rem', fontWeight: 500, display: 'inline-block', marginTop: '1rem' }}>
+                  View Integration Guide →
                 </Link>
               </div>
             </div>

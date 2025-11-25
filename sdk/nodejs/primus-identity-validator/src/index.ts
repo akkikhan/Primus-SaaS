@@ -1,5 +1,5 @@
 // Export types
-export {
+export type {
   PrimusIdentityOptions,
   IssuerConfig,
   IssuerType,

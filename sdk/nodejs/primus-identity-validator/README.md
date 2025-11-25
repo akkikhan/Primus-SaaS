@@ -1,6 +1,6 @@
 # Primus SaaS Identity Validator - Node.js SDK
 
-**Version:** 1.3.1
+**Version:** 1.3.2
 
 Library-only validator for JWT/OIDC tokens from your configured issuers (Azure AD, local, or any JWT provider). No Primus-hosted login or Primus-issued tokens.
 
@@ -461,6 +461,6 @@ MIT
 
 ## Support
 
-- Documentation: https://docs.primus-saas.com
+- Documentation: https://akkikhan.github.io/Primus-SaaS/docs/modules/client-integration-guide
 - Issues: https://github.com/akkikhan/Primus-SaaS/issues
 - Email: support@primus-saas.com

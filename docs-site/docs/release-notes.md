@@ -60,7 +60,7 @@ dotnet add package PrimusSaaS.Identity.Validator --version 1.3.0
 
 ### Documentation
 
-- [Client Integration Guide](https://akkikhan.github.io/docs/modules/client-integration-guide)
+- [Client Integration Guide](https://akkikhan.github.io/Primus-SaaS/docs/modules/client-integration-guide)
 - [README.md](https://www.nuget.org/packages/PrimusSaaS.Identity.Validator)
 
 ### Acknowledgments

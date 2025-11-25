@@ -190,10 +190,13 @@ ${getCodeSnippet()}
 
   // Generate integration documentation based on stack and module
   const getInstallCommand = (moduleName?: string) => {
-    const module = moduleName || 'Identity Validator';
+    const module = (moduleName || 'Identity Validator').toLowerCase();
     const stack = currentApplication.stack;
-    
-    if (module.toLowerCase() === 'identity validator') {
+
+    const isIdentity = module.includes('identity');
+    const isLogging = module.includes('log');
+
+    if (isIdentity) {
       switch (stack) {
         case 'DotNet':
           return 'dotnet add package PrimusSaaS.Identity.Validator';
@@ -201,13 +204,12 @@ ${getCodeSnippet()}
         case 'NodeJS-Nest':
         case 'TypeScriptLib':
           return 'npm install @primus-saas/identity-validator';
-        case 'Python':
-        case 'Python-FastAPI':
-          return 'pip install primus-identity-validator';
         default:
           return '';
       }
-    } else if (module.toLowerCase() === 'logging' || module.toLowerCase() === 'logging sdk') {
+    }
+
+    if (isLogging) {
       switch (stack) {
         case 'DotNet':
           return 'dotnet add package PrimusSaaS.Logging';
@@ -215,9 +217,6 @@ ${getCodeSnippet()}
         case 'NodeJS-Nest':
         case 'TypeScriptLib':
           return 'npm install @primus-saas/logging';
-        case 'Python':
-        case 'Python-FastAPI':
-          return 'pip install primus-logging';
         default:
           return '';
       }
@@ -334,7 +333,7 @@ app.Run();`;
       case 'NodeJS':
         return `// server.ts
 import express from "express";
-import { primusIdentityMiddleware } from "primus-identity-validator";
+import { primusIdentityMiddleware } from "@primus-saas/identity-validator";
 
 const app = express();
 
@@ -356,7 +355,7 @@ app.get("/api/me", primusAuth, (req, res) => {
       case 'NodeJS-Nest':
         return `// auth.module.ts
 import { Module, MiddlewareConsumer, NestModule } from "@nestjs/common";
-import { primusIdentityMiddleware } from "primus-identity-validator";
+import { primusIdentityMiddleware } from "@primus-saas/identity-validator";
 
 const primusAuth = primusIdentityMiddleware({
   issuers: [
@@ -381,7 +380,7 @@ export class AuthModule implements NestModule {
 }`;
       case 'TypeScriptLib':
         return `// validator.ts
-import { PrimusIdentityValidator } from "primus-identity-validator";
+import { PrimusIdentityValidator } from "@primus-saas/identity-validator";
 
 export const validator = new PrimusIdentityValidator({
   issuers: [
@@ -466,26 +465,37 @@ app.Run();`;
       case 'NodeJS':
       case 'NodeJS-Nest':
         return `// logger.ts
-import { createPrimusLogger } from "@primus-saas/logging";
+import express from "express";
+import { createLogger, primusLoggingMiddleware } from "@primus-saas/logging";
 
-export const logger = createPrimusLogger({
+const app = express();
+const logger = createLogger({
+  applicationId: process.env.PRIMUS_APP_ID || "APP-UNKNOWN",
+  environment: process.env.NODE_ENV === "production" ? "production" : "development",
   targets: [
-    { type: "console", format: "pretty" },
-    { type: "file", path: "logs/app.log" }
+    { type: "console", pretty: true },
+    { type: "file", path: "logs/app.log", async: true }
   ]
 });
 
-// Usage
-logger.info("User logged in", { userId: "123" });
-logger.error("Failed to process", { error: err });`;
+app.use(primusLoggingMiddleware(logger));
+
+app.get("/api/orders", (req, res) => {
+  const timer = req.logger.startTimer();
+  req.logger.info("Listing orders");
+  timer.done("Orders fetched", { count: 0 });
+  res.json({ items: [] });
+});`;
       case 'TypeScriptLib':
         return `// logger.ts
-import { PrimusLogger } from "@primus-saas/logging";
+import { createLogger } from "@primus-saas/logging";
 
-export const logger = new PrimusLogger({
+export const logger = createLogger({
+  applicationId: "APP-UNKNOWN",
+  environment: "development",
   targets: [
-    { type: "console", format: "json" },
-    { type: "file", path: "logs/lib.log" }
+    { type: "console", pretty: true },
+    { type: "file", path: "logs/lib.log", async: true }
   ]
 });
 

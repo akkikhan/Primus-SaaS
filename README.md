@@ -1,13 +1,13 @@
 # Primus SaaS Platform
 
-**Version**: 1.1 MVP  
-**Type**: Developer Platform for Reusable Backend Modules
+**Version**: Identity (Node) 1.3.2 · Identity (.NET) 1.3.0 · Logging (Node/.NET) 1.2.1  
+**Type**: Developer Platform for reusable backend modules (Identity + Logging)
 
 ---
 
 ## Overview
 
-Primus SaaS Platform is a developer-focused platform that provides horizontally scoped, reusable backend modules as NuGet and NPM packages. The first module is **Identity Validator** for authentication.
+Primus SaaS Platform ships reusable backend modules as NuGet and npm packages (Identity Validator + Logging) for Node.js and .NET. All logic runs inside your app—no Primus-hosted runtime or PII storage.
 
 ### Key Principles
 
@@ -22,21 +22,16 @@ Primus SaaS Platform is a developer-focused platform that provides horizontally 
 
 ```text
 primus-saas-platform/
-├── portal/                    # Primus SaaS Platform Portal (internal control plane)
-│   ├── backend/              # .NET 8 Web API
-│   └── frontend/             # React + TypeScript SPA
-├── modules/                   # SDK Modules
-│   ├── identity-validator-dotnet/   # .NET package
-│   └── identity-validator-node/     # Node/TS package
-├── examples/                  # Example client applications
-│   ├── dotnet-api-example/
-│   └── node-api-example/
-├── docs/                      # Documentation
-│   ├── PRD.md
-│   ├── ARCHITECTURE.md
-│   └── FAQ.md
-└── .github/
-    └── workflows/             # CI/CD pipelines
+├── portal/                      # Internal control plane (ASP.NET Core API + React SPA)
+├── sdk/                         # Published SDKs
+│   ├── nodejs/primus-identity-validator
+│   ├── logging/nodejs
+│   ├── dotnet/PrimusSaaS.Identity.Validator
+│   └── logging/dotnet
+├── docs-site/                   # Docusaurus public docs
+├── docs/                        # Product/architecture docs
+├── examples/                    # Example client applications
+└── test-apps/                   # Validation apps and scripts
 ```
 
 ---
@@ -57,42 +52,27 @@ Internal web application for:
 
 **Note**: Client developers do not log into the portal in v1. Admins generate Documentation bundles and share them with clients via email/PDF.
 
-### 2. Identity Validator SDKs
+### 2. SDK Modules
 
-JWT authentication packages for securing your APIs with Primus Portal integration.
+- **Identity Validator** — Multi-issuer JWT/OIDC validation with RBAC (Azure AD + Local JWT).  
+  - npm: `@primus-saas/identity-validator@1.3.2`  
+  - NuGet: `PrimusSaaS.Identity.Validator` 1.3.0
+- **Logging Module** — Structured logging with enrichment, correlation IDs, timers, file/AI targets, PII masking.  
+  - npm: `@primus-saas/logging@1.2.1`  
+  - NuGet: `PrimusSaaS.Logging` 1.2.1
 
-#### 📦 Packages
-
-**.NET SDK**: `PrimusSaaS.Identity.Validator` ![NuGet](https://img.shields.io/badge/v1.0.0-ready-green)
-- Target Framework: .NET 7.0+
-- Package Size: ~11 KB
-- [Documentation](sdk/dotnet/PrimusSaaS.Identity.Validator/README.md) | [Example](examples/dotnet-api/README.md)
-
-**Node.js SDK**: `primus-identity-validator` ![npm](https://img.shields.io/badge/v1.0.0-published-blue)
-- Runtime: Node.js 16+
-- Package Size: 18.9 KB
-- [NPM Package](https://www.npmjs.com/package/primus-identity-validator) | [Documentation](sdk/nodejs/primus-identity-validator/README.md) | [Example](examples/nodejs-express/README.md)
-
-#### ✨ Features
-
-- ✅ JWT Bearer authentication
-- ✅ Role-based access control (RBAC)
-- ✅ User information extraction
-- ✅ Automatic token validation
-- ✅ TypeScript support (Node.js)
-- ✅ 43 comprehensive tests (100% passing)
-
-#### 🚀 Quick Install
-
+🚀 **Quick install**
 ```bash
-# .NET
-dotnet add package PrimusSaaS.Identity.Validator
+# Identity
+npm install @primus-saas/identity-validator
+dotnet add package PrimusSaaS.Identity.Validator --version 1.3.0
 
-# Node.js
-npm install primus-identity-validator
+# Logging
+npm install @primus-saas/logging
+dotnet add package PrimusSaaS.Logging --version 1.2.1
 ```
 
-For detailed integration guides, see the [SDK documentation](sdk/) and [example projects](examples/).
+For detailed integration steps, see the unified [Client Integration Guide](docs-site/docs/modules/client-integration-guide.md) and the example apps under `examples/`.
 
 ---
 
@@ -111,14 +91,16 @@ For detailed integration guides, see the [SDK documentation](sdk/) and [example 
 
 1. Receive Documentation from Primus admin
 2. Note your assigned `PrimusClientId` and credentials
-3. Install the SDK package (v1.0.0 released):
+3. Install the SDK packages:
 
    ```bash
-   # .NET
-   dotnet add package PrimusSaaS.Identity.Validator --version 1.2.0
-   
-   # Node.js
-   npm install @primus-saas/identity-validator@1.3.0
+   # Identity
+   npm install @primus-saas/identity-validator
+   dotnet add package PrimusSaaS.Identity.Validator --version 1.3.0
+
+   # Logging
+   npm install @primus-saas/logging
+   dotnet add package PrimusSaaS.Logging --version 1.2.1
    ```
 
 4. Configure authentication using provided Portal URL, ClientId, and JwtSecret
@@ -194,46 +176,12 @@ See individual README files in each component directory:
 
 ## Azure AD Configuration
 
-The Identity Validator SDKs support **dual-mode authentication**:
-- **Local Mode**: Symmetric key validation using JwtSecret (HS256)
-- **Azure AD Mode**: JWKS-based validation using Azure AD public keys (RS256)
+See the unified client integration guide (`docs-site/docs/modules/client-integration-guide.md`) for Azure AD registration, multi-issuer (Azure AD + Local JWT) setup, and ready-to-run Node.js/.NET samples. Example projects live in `examples/`.
 
 ### Configuring Azure AD Mode
 
-#### For .NET Applications
-
-Update your `appsettings.json`:
-
-```json
-{
-  "PrimusIdentity": {
-    "PortalUrl": "https://your-portal-url.com",
-    "ClientId": "your-client-id",
-    "ClientSecret": "your-client-secret",
-    "Mode": "AzureAd",  // Options: "Local", "AzureAd", or "Hybrid"
-    "TenantId": "<YOUR_AZURE_AD_TENANT_ID>",  // Required for Azure AD mode
-    "JwksCacheTtl": 24  // Optional: Cache TTL in hours (default: 24)
-  }
-}
-```
-
-#### For Node.js Applications
-
-```javascript
-const { IdentityValidator } = require('primus-identity-validator');
-
-const config = {
-  portalUrl: 'https://your-portal-url.com',
-  clientId: 'your-client-id',
-  clientSecret: 'your-client-secret',
-  mode: 'AzureAd',  // Options: 'Local', 'AzureAd', or 'Hybrid'
-  tenantId: process.env.AZURE_TENANT_ID,  // Required for Azure AD mode
-  jwksCacheTtl: 24  // Optional: Cache TTL in hours
-};
-
-const validator = new IdentityValidator(config);
-app.use(validator.middleware());
-```
+- **.NET:** Configure issuers in `PrimusIdentity` and wire `AddPrimusIdentity` + `UseAuthentication`. See integration guide samples for multi-issuer (Azure + Local) config.
+- **Node.js:** Pass issuers to `primusIdentityMiddleware` from `@primus-saas/identity-validator`; use Azure AD authority/issuer and your API audience. See the integration guide for the full Express/Nest snippets.
 
 ### Setting Up Azure AD App Registration
 

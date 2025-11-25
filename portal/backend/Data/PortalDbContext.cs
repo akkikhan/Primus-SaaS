@@ -178,9 +178,9 @@ public class PortalDbContext : DbContext
         {
             Id = 1,
             ModuleId = 1,
-            Version = "1.0.0",
+            Version = "1.3.0",
             IsBreakingChange = false,
-            ReleaseNotes = "Initial release of IdentityValidator module",
+            ReleaseNotes = "Multi-issuer JWT/OIDC with JWKS hardening, diagnostics helper, and RBAC docs.",
             SupportedStacksJson = "[\"DotNet\",\"NodeJS\"]",
             ReleasedAt = DateTime.UtcNow
         },
@@ -188,10 +188,10 @@ public class PortalDbContext : DbContext
         {
             Id = 2,
             ModuleId = 1,
-            Version = "1.1.0",
+            Version = "1.3.2",
             IsBreakingChange = false,
-            ReleaseNotes = "Added JWKS caching and improved Azure AD validation defaults",
-            Changelog = "Added: in-memory JWKS cache with configurable TTL\nChanged: default audience parsing now trims api:// prefix\nFixed: null reference when openid config is temporarily unavailable",
+            ReleaseNotes = "Node patch aligned to 1.3.0 with rate limiting and diagnostics updates.",
+            Changelog = "Added: JWKS retry/backoff + diagnostics helper\nChanged: clearer config validation errors\nFixed: discovery edge-case failures",
             SupportedStacksJson = "[\"DotNet\",\"NodeJS\"]",
             ReleasedAt = DateTime.UtcNow.AddDays(7)
         },
@@ -199,9 +199,9 @@ public class PortalDbContext : DbContext
         {
             Id = 100,
             ModuleId = 2,
-            Version = "1.0.0",
+            Version = "1.2.1",
             IsBreakingChange = false,
-            ReleaseNotes = "Initial release of Logging module",
+            ReleaseNotes = "Structured logging with enrichment, PII masking, async buffering, file/App Insights targets.",
             SupportedStacksJson = "[\"DotNet\",\"NodeJS\"]",
             ReleasedAt = DateTime.UtcNow
         });

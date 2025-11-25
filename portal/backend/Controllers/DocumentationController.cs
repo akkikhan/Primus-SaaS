@@ -49,8 +49,8 @@ public class DocumentationController : ControllerBase
                 Version = am.ModuleVersion.Version,
                 IsBreakingChange = am.ModuleVersion.IsBreakingChange,
                 ReleaseNotes = am.ModuleVersion.ReleaseNotes,
-                IntegrationSteps = GenerateIntegrationSteps(application.Stack.ToString(), am.Module.Name, am.ConfigJson),
-                CodeSnippets = GenerateCodeSnippets(application.Stack.ToString(), am.Module.Name, application.PrimusClientId, am.ConfigJson)
+                IntegrationSteps = GenerateIntegrationSteps(application.Stack.ToString(), am.Module.Name, am.ModuleVersion.Version, am.ConfigJson),
+                CodeSnippets = GenerateCodeSnippets(application.Stack.ToString(), am.Module.Name, am.ModuleVersion.Version, application.PrimusClientId, am.ConfigJson)
             }).ToList()
         };
 
@@ -74,21 +74,26 @@ public class DocumentationController : ControllerBase
         return File(pdfBytes, "application/pdf", fileName);
     }
 
-    private List<string> GenerateIntegrationSteps(string stack, string moduleName, string configJson)
+    private List<string> GenerateIntegrationSteps(string stack, string moduleName, string version, string configJson)
     {
         var steps = new List<string>();
 
+        var isIdentity = moduleName.Equals("IdentityValidator", StringComparison.OrdinalIgnoreCase) || moduleName.Contains("Identity", StringComparison.OrdinalIgnoreCase);
+        var isLogging = moduleName.Equals("Logging", StringComparison.OrdinalIgnoreCase);
+
         if (stack == "DotNet")
         {
-            steps.Add($"Install NuGet package: Primus.SaaS.{moduleName}");
+            var packageName = isIdentity ? "PrimusSaaS.Identity.Validator" : isLogging ? "PrimusSaaS.Logging" : $"PrimusSaaS.{moduleName}";
+            steps.Add($"Install NuGet package: {packageName} --version {version}");
             steps.Add("Update appsettings.json with module configuration");
             steps.Add("Register middleware in Program.cs");
             steps.Add("Run your application and test the integration");
         }
         else if (stack == "NodeJS")
         {
-            steps.Add($"Install NPM package: @primus-saas/{moduleName.ToLower()}");
-            steps.Add("Create configuration file or environment variables");
+            var packageName = isIdentity ? "@primus-saas/identity-validator" : isLogging ? "@primus-saas/logging" : $"@primus-saas/{moduleName.ToLower()}";
+            steps.Add($"Install NPM package: {packageName}@{version}");
+            steps.Add("Create environment variables for issuers (Azure AD and/or Local JWT)");
             steps.Add("Import and configure middleware in your app entry point");
             steps.Add("Run your application and test the integration");
         }
@@ -96,9 +101,12 @@ public class DocumentationController : ControllerBase
         return steps;
     }
 
-    private Dictionary<string, string> GenerateCodeSnippets(string stack, string moduleName, string primusClientId, string configJson)
+    private Dictionary<string, string> GenerateCodeSnippets(string stack, string moduleName, string version, string primusClientId, string configJson)
     {
         var snippets = new Dictionary<string, string>();
+
+        var isIdentity = moduleName.Equals("IdentityValidator", StringComparison.OrdinalIgnoreCase) || moduleName.Contains("Identity", StringComparison.OrdinalIgnoreCase);
+        var isLogging = moduleName.Equals("Logging", StringComparison.OrdinalIgnoreCase);
 
         if (stack == "DotNet")
         {
@@ -111,10 +119,10 @@ public class DocumentationController : ControllerBase
         else if (stack == "NodeJS")
         {
             // package.json snippet
-            snippets["package.json"] = GenerateNodePackageJson(moduleName);
+            snippets["package.json"] = GenerateNodePackageJson(moduleName, version, isIdentity, isLogging);
 
             // index.js snippet
-            snippets["index.js"] = GenerateNodeIndexJs(moduleName, primusClientId, configJson);
+            snippets["index.js"] = GenerateNodeIndexJs(moduleName, primusClientId, configJson, isIdentity, isLogging);
         }
 
         return snippets;
@@ -243,44 +251,55 @@ app.Run();";
         }
         else
         {
-            return $@"using Primus.SaaS.{moduleName};
+            return $@"using PrimusSaaS.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add Primus {moduleName} middleware
-builder.Services.AddPrimus{moduleName}(builder.Configuration.GetSection(""Primus{moduleName}""));
+builder.Logging.ClearProviders();
+builder.Logging.AddPrimus(options =>
+{
+    options.ApplicationId = builder.Configuration[""PrimusLogging:ApplicationId""] ?? ""APP-UNKNOWN"";
+    options.Environment = builder.Environment.IsProduction() ? ""production"" : ""development"";
+    options.Targets = new()
+    {
+        new() { Type = ""console"", Pretty = builder.Environment.IsDevelopment() },
+        new() { Type = ""file"", Path = ""logs/app.log"", Async = true }
+    };
+});
 
 var app = builder.Build();
 
-// Use Primus {moduleName}
-app.UsePrimus{moduleName}();
+app.UsePrimusLogging();
 
 app.Run();";
         }
     }
 
-    private string GenerateNodePackageJson(string moduleName)
+    private string GenerateNodePackageJson(string moduleName, string version, bool isIdentity, bool isLogging)
     {
+        var packageName = isIdentity ? "@primus-saas/identity-validator" : isLogging ? "@primus-saas/logging" : $"@primus-saas/{moduleName.ToLower()}";
         return $@"{{
   ""dependencies"": {{
-    ""@primus-saas/{moduleName.ToLower()}"": ""^1.0.0""
+    ""{packageName}"": ""^{version}""
   }}
 }}";
     }
 
-    private string GenerateNodeIndexJs(string moduleName, string primusClientId, string configJson)
+    private string GenerateNodeIndexJs(string moduleName, string primusClientId, string configJson, bool isIdentity, bool isLogging)
     {
         var sb = new StringBuilder();
         
         // For IdentityValidator module, generate multi-issuer configuration
-        if (moduleName == "IdentityValidator")
+        if (isIdentity)
         {
             var config = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(configJson) ?? new();
             
-            sb.AppendLine("const { primusIdentityValidator } = require('primus-identity-validator');");
+            sb.AppendLine("const express = require('express');");
+            sb.AppendLine("const { primusIdentityMiddleware } = require('@primus-saas/identity-validator');");
+            sb.AppendLine("const app = express();");
             sb.AppendLine();
             sb.AppendLine("// Multi-Issuer Configuration");
-            sb.AppendLine("const primusAuth = primusIdentityValidator({");
+            sb.AppendLine("const primusAuth = primusIdentityMiddleware({");
             sb.AppendLine("  issuers: [");
             
             // Generate issuer configurations from configJson
@@ -344,29 +363,38 @@ app.Run();";
             sb.AppendLine("    tenant: req.tenantContext");
             sb.AppendLine("  });");
             sb.AppendLine("});");
+            sb.AppendLine();
+            sb.AppendLine("app.listen(3000);");
         }
-        else
+        else if (isLogging)
         {
-            // Generic module configuration (for future modules)
-            var config = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(configJson) ?? new();
-            sb.AppendLine($"const {{ {moduleName} }} = require('@primus-saas/{moduleName.ToLower()}');");
+            sb.AppendLine("const express = require('express');");
+            sb.AppendLine("const { createLogger, primusLoggingMiddleware } = require('@primus-saas/logging');");
+            sb.AppendLine("const app = express();");
             sb.AppendLine();
-            sb.AppendLine($"const {moduleName.ToLower()}Config = {{");
-            sb.AppendLine($"  primusTrackingId: '{primusClientId}',");
-
-            foreach (var (key, value) in config)
-            {
-                sb.AppendLine($"  {key}: '{value}',");
-            }
-
-            sb.AppendLine("}");
+            sb.AppendLine("const logger = createLogger({");
+            sb.AppendLine("  applicationId: process.env.PRIMUS_APP_ID || 'APP-UNKNOWN',");
+            sb.AppendLine("  environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',");
+            sb.AppendLine("  targets: [");
+            sb.AppendLine("    { type: 'console', pretty: true },");
+            sb.AppendLine("    { type: 'file', path: 'logs/app.log', async: true }");
+            sb.AppendLine("  ]");
+            sb.AppendLine("});");
             sb.AppendLine();
-            sb.AppendLine($"// Initialize {moduleName}");
-            sb.AppendLine($"const {moduleName.ToLower()}Middleware = {moduleName}.initialize({moduleName.ToLower()}Config);");
+            sb.AppendLine("app.use(primusLoggingMiddleware(logger));");
             sb.AppendLine();
-            sb.AppendLine("// Use in Express app");
-            sb.AppendLine($"app.use({moduleName.ToLower()}Middleware);");
+            sb.AppendLine("app.get('/api/orders', (req, res) => {");
+            sb.AppendLine("  const timer = req.logger.startTimer();");
+            sb.AppendLine("  req.logger.info('Listing orders');");
+            sb.AppendLine("  timer.done('Orders fetched', { count: 0 });");
+            sb.AppendLine("  res.json({ items: [] });");
+            sb.AppendLine("});");
+            sb.AppendLine();
+            sb.AppendLine("app.listen(3000);");
         }
+
+        sb.AppendLine();
+        sb.AppendLine("module.exports = app;");
 
         return sb.ToString();
     }

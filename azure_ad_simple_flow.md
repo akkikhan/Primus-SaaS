@@ -28,9 +28,6 @@ sequenceDiagram
         Database->>Application: Here's the data
         Application->>User: Here's your data
     end
-
-    Note left of Primus: Primus Role:<br/>Validates security<br/>tokens automatically
-    Note right of Database: Your Data:<br/>Stays in your database<br/>Never accessed by Primus
 ```
 
 ---
