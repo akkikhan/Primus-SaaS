@@ -255,6 +255,27 @@ interface LoggerOptions {
   
   /** Minimum log level (default: INFO) */
   minLevel?: LogLevel;
+
+  /** Output targets */
+  targets?: TargetConfig[];
+
+  /** PII masking */
+  masking?: {
+    enabled?: boolean;
+    maskEmails?: boolean;
+    maskCreditCards?: boolean;
+    maskSSN?: boolean;
+    customSensitiveKeys?: string[];
+    strategy?: 'redact' | 'hash' | 'partial';
+  };
+
+  /** Async buffering */
+  buffering?: {
+    enabled?: boolean;
+    bufferSize?: number;
+    flushIntervalMs?: number;
+    flushOnExit?: boolean;
+  };
 }
 ```
 

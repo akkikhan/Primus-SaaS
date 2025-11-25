@@ -1,4 +1,4 @@
-import { useParams, Link, Outlet, useNavigate } from 'react-router-dom';
+import { useParams, Link, Outlet } from 'react-router-dom';
 import { useApplicationsStore, type IntegratedModule } from '../state/applicationsStore';
 import { useModulesStore } from '../state/modulesStore';
 import { useEffect, useMemo, useState } from 'react';
@@ -7,7 +7,6 @@ import './ApplicationDetailsPage.css';
 
 export const ApplicationDetailsPage = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { currentApplication, fetchApplication, addModule, removeModule, changeModuleVersion, updateApplication, isLoading } = useApplicationsStore();
   const { modules, fetchModules } = useModulesStore();
   const [showAddModule, setShowAddModule] = useState(false);
@@ -48,6 +47,30 @@ export const ApplicationDetailsPage = () => {
       setActiveModuleTab(currentApplication.integratedModules[0].moduleId);
     }
   }, [activeTab, currentApplication, activeModuleTab]);
+
+  const selectedModule = modules.find(m => m.id === selectedModuleId);
+  const changingModule = currentApplication?.integratedModules?.find(m => m.moduleId === changingModuleId);
+
+  // Filter out already assigned modules
+  const availableModules = modules.filter(m =>
+    !currentApplication?.integratedModules?.some(im => im.moduleId === m.id)
+  );
+  const sortedModuleVersions = useMemo(() => {
+    if (!selectedModule) return [];
+    const versions = [...(selectedModule.moduleVersions ?? [])];
+    return versions.sort((a, b) => new Date(b.releasedAt || '').getTime() - new Date(a.releasedAt || '').getTime());
+  }, [selectedModule]);
+
+  const latestVersionLabel = (moduleId: number) => {
+    const module = modules.find(m => m.id === moduleId);
+    const latest = module?.latestVersion || module?.moduleVersions?.[0]?.version;
+    return latest ? ` • Latest v${latest}` : '';
+  };
+
+  const getModuleDocLink = (moduleName: string) => {
+    const normalized = moduleName.toLowerCase().includes('log') ? '#add-logging' : '#5-integration-steps';
+    return `${docsIntegrationUrl}${normalized.startsWith('#') ? normalized : `#${normalized}`}`;
+  };
 
   if (isLoading || !currentApplication) {
     return <p>Loading application...</p>;
@@ -142,30 +165,6 @@ ${getCodeSnippet()}
     } catch (error) {
       console.error('Failed to download PDF', error);
     }
-  };
-
-  const selectedModule = modules.find(m => m.id === selectedModuleId);
-  const changingModule = currentApplication?.integratedModules?.find(m => m.moduleId === changingModuleId);
-
-  // Filter out already assigned modules
-  const availableModules = modules.filter(m =>
-    !currentApplication?.integratedModules?.some(im => im.moduleId === m.id)
-  );
-  const sortedModuleVersions = useMemo(() => {
-    if (!selectedModule) return [];
-    const versions = [...(selectedModule.moduleVersions ?? [])];
-    return versions.sort((a, b) => new Date(b.releasedAt || '').getTime() - new Date(a.releasedAt || '').getTime());
-  }, [selectedModule]);
-
-  const latestVersionLabel = (moduleId: number) => {
-    const module = modules.find(m => m.id === moduleId);
-    const latest = module?.latestVersion || module?.moduleVersions?.[0]?.version;
-    return latest ? ` • Latest v${latest}` : '';
-  };
-
-  const getModuleDocLink = (moduleName: string) => {
-    const normalized = moduleName.toLowerCase().includes('log') ? '#add-logging' : '#5-integration-steps';
-    return `${docsIntegrationUrl}${normalized.startsWith('#') ? normalized : `#${normalized}`}`;
   };
 
   const openEditModal = () => {

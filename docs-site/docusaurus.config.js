@@ -55,7 +55,9 @@ const config = {
           // Non-docs-prefixed paths
           { from: '/modules/client-integration-guide', to: '/docs/modules/client-integration-guide' },
           { from: '/modules/identity-validator', to: '/docs/modules/identity-validator' },
-          { from: '/modules/logging-module', to: '/docs/modules/logging-module' }
+          { from: '/modules/logging-module', to: '/docs/modules/logging-module' },
+          // Redirect /docs root to intro
+          { from: '/docs', to: '/docs/intro' }
         ]
       }
     ]
@@ -66,7 +68,7 @@ const config = {
       logo: {
         alt: 'Primus Logo',
         src: 'img/logo.png',
-        href: '/docs',
+        href: '/docs/intro',
         width: 120,
         height: 40
       },

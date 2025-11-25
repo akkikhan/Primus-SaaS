@@ -8,12 +8,13 @@ const TenantEnricher_1 = require("../enrichers/TenantEnricher");
  * Context manager that applies enrichers
  */
 class Context {
-    constructor() {
+    constructor(additionalEnrichers = []) {
         // Register default enrichers
         this.enrichers = [
             new RequestEnricher_1.RequestEnricher(),
             new UserEnricher_1.UserEnricher(),
-            new TenantEnricher_1.TenantEnricher()
+            new TenantEnricher_1.TenantEnricher(),
+            ...additionalEnrichers
         ];
     }
     /**

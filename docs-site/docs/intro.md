@@ -1,7 +1,7 @@
 ---
 id: intro
 title: Primus SaaS Platform
-slug: /
+slug: /intro
 ---
 
 # Welcome to Primus SaaS Platform
@@ -51,7 +51,7 @@ Multi-issuer JWT/OIDC token validation middleware for securing your APIs with su
 - **Node.js**: `@primus-saas/identity-validator` (npm)
 - **.NET**: `PrimusSaaS.Identity.Validator` (NuGet)
 
-See the unified integration guide: [Client Integration Guide](modules/client-integration-guide)
+See the unified integration guide: [Client Integration Guide](/docs/modules/client-integration-guide)
 
 ### Logging Module
 
@@ -220,7 +220,7 @@ Report bugs or request features on our [GitHub repository](https://github.com/ak
 
 Choose your platform to get started:
 
-1. **Node.js & .NET Developers**: [Client Integration Guide](modules/client-integration-guide)
+1. **Node.js & .NET Developers**: [Client Integration Guide](/docs/modules/client-integration-guide)
 
 ---
 

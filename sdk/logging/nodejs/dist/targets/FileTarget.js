@@ -36,40 +36,67 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FileTarget = void 0;
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
+const zlib = __importStar(require("zlib"));
 /**
- * Target that writes logs to a file
+ * Target that writes logs to a file with optional rotation and compression.
+ * Uses synchronous file I/O for determinism and to mirror the NuGet behavior.
  */
 class FileTarget {
     constructor(options) {
         this.options = options;
+        this.maxFileSize = options.maxFileSize;
+        this.maxRetainedFiles = options.maxRetainedFiles ?? 5;
+        this.compressRotatedFiles = options.compressRotatedFiles ?? false;
         this.ensureDirectoryExists(options.path);
-        // Explicitly create file to ensure it exists before stream creation
         if (!fs.existsSync(options.path)) {
             fs.writeFileSync(options.path, '');
         }
-        this.stream = fs.createWriteStream(options.path, { flags: 'a' });
-        // Handle stream errors to prevent process crash
-        this.stream.on('error', (err) => {
-            console.error(`FileTarget stream error (${options.path}):`, err);
-        });
     }
-    write(logEntry) {
-        if (this.stream.writable) {
-            const line = JSON.stringify(logEntry) + '\n';
-            this.stream.write(line);
-        }
+    async write(logEntry) {
+        const line = JSON.stringify(logEntry) + '\n';
+        const lineLength = Buffer.byteLength(line);
+        this.rotateIfNeeded(lineLength);
+        fs.appendFileSync(this.options.path, line);
     }
     close() {
-        return new Promise((resolve) => {
-            if (this.stream && !this.stream.destroyed) {
-                this.stream.end(() => {
-                    resolve();
-                });
+        return Promise.resolve();
+    }
+    rotateIfNeeded(nextLength) {
+        if (!this.maxFileSize) {
+            return;
+        }
+        const currentSize = fs.existsSync(this.options.path) ? fs.statSync(this.options.path).size : 0;
+        if (currentSize + nextLength <= this.maxFileSize) {
+            return;
+        }
+        this.rotateFiles();
+    }
+    rotateFiles() {
+        // Shift existing rotated files
+        for (let i = this.maxRetainedFiles; i >= 1; i--) {
+            const rotatedPath = `${this.options.path}.${i}`;
+            const nextPath = `${this.options.path}.${i + 1}`;
+            if (fs.existsSync(rotatedPath)) {
+                if (i === this.maxRetainedFiles) {
+                    fs.rmSync(rotatedPath, { force: true });
+                }
+                else {
+                    fs.renameSync(rotatedPath, nextPath);
+                }
             }
-            else {
-                resolve();
-            }
-        });
+        }
+        const rotatedFirst = `${this.options.path}.1`;
+        if (fs.existsSync(this.options.path)) {
+            fs.renameSync(this.options.path, rotatedFirst);
+        }
+        if (this.compressRotatedFiles && fs.existsSync(rotatedFirst)) {
+            const data = fs.readFileSync(rotatedFirst);
+            const compressed = zlib.gzipSync(data);
+            fs.writeFileSync(`${rotatedFirst}.gz`, compressed);
+            fs.rmSync(rotatedFirst, { force: true });
+        }
+        // Recreate base file
+        fs.writeFileSync(this.options.path, '');
     }
     ensureDirectoryExists(filePath) {
         const dir = path.dirname(filePath);

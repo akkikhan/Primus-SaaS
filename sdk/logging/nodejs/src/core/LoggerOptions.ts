@@ -5,7 +5,7 @@ import { Enricher } from '../enrichers/RequestEnricher';
  * Target configuration for output destinations
  */
 export interface TargetConfig {
-    type: 'console' | 'file' | 'application-insights';
+    type: 'console' | 'file' | 'application-insights' | 'applicationInsights';
     pretty?: boolean;
     path?: string;
     async?: boolean;

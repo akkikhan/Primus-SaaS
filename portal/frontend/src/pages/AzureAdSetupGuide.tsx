@@ -1,6 +1,6 @@
 import React from 'react';
-import { Container, Typography, Box, Paper, Stepper, Step, StepLabel, StepContent, Button, Alert, Code } from '@mui/material';
-import { ContentCopy, OpenInNew } from '@mui/icons-material';
+import { Container, Typography, Box, Paper, Stepper, Step, StepLabel, StepContent, Button, Alert } from '@mui/material';
+import { OpenInNew } from '@mui/icons-material';
 
 const AzureAdSetupGuide = () => {
     const [activeStep, setActiveStep] = React.useState(0);

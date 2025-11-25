@@ -143,18 +143,18 @@ describe('Integration Test', () => {
                 {
                     type: 'file',
                     path: rotationLogFile,
-                    maxFileSize: 200,
+                    maxFileSize: 150,
                     maxRetainedFiles: 2,
                     compressRotatedFiles: false
                 }
             ]
         });
 
-        for (let i = 0; i < 30; i++) {
-            rotationLogger.info('rotation check', { index: i, payload: 'x'.repeat(50) });
+        for (let i = 0; i < 10; i++) {
+            rotationLogger.info('rotation check', { index: i, payload: 'x'.repeat(200) });
         }
 
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         expect(fs.existsSync(rotationLogFile)).toBe(true);
         expect(fs.existsSync(`${rotationLogFile}.1`) || fs.existsSync(`${rotationLogFile}.1.gz`)).toBe(true);

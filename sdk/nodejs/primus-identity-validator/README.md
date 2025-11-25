@@ -82,7 +82,9 @@ Each issuer in the issuers array accepts:
 |----------|------|---------|-------------|
 | clockSkew | number | 300 | Clock tolerance in seconds |
 | validateLifetime | boolean | true | Validate token expiration |
+| requireHttpsMetadata | boolean | true | Require HTTPS for OIDC metadata/JWKS (set false for local dev only) |
 | jwksCacheTtl | number | 24 | JWKS cache TTL in hours |
+| rateLimiting | object | disabled | Throttle repeated failed validations (maxFailuresPerWindow, windowSeconds, maxGlobalFailuresPerWindow) |
 
 ## Usage Examples
 
@@ -237,6 +239,8 @@ Creates Express middleware that validates tokens and attaches user to req.primus
 - Routes to correct validator based on iss claim
 - Returns 401 if validation fails
 - Attaches PrimusUser to req.primusUser on success
+- Attaches tenant context to req.primusTenantContext (and req.tenantContext) when a tenantResolver is provided
+- Optional rate limiting (429 + Retry-After) for repeated failures via `rateLimiting`
 
 ### requireRoles(...roles: string[])
 

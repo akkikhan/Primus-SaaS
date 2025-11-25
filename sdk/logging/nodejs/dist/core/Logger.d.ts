@@ -14,6 +14,11 @@ export declare class Logger {
     private contextManager;
     private currentRequest?;
     private targets;
+    private masker;
+    private buffering;
+    private buffer;
+    private flushTimer?;
+    private flushing;
     constructor(options: LoggerOptions);
     private initializeTargets;
     private createTarget;
@@ -66,5 +71,8 @@ export declare class Logger {
      * Write log entry to all targets
      */
     private writeToTargets;
+    private scheduleFlush;
+    private flushBuffer;
+    private registerFlushOnExit;
 }
 //# sourceMappingURL=Logger.d.ts.map

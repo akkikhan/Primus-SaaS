@@ -23,6 +23,8 @@ exports.primusLoggingMiddleware = primusLoggingMiddleware;
  */
 function primusLoggingMiddleware(logger) {
     return (req, res, next) => {
+        // Attach request to logger so default enrichers can access it
+        logger.setRequest(req);
         // Generate or extract request ID
         const requestId = req.headers['x-request-id'] ||
             `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -59,13 +61,20 @@ function primusLoggingMiddleware(logger) {
         const startTime = Date.now();
         res.on('finish', () => {
             const duration = Date.now() - startTime;
-            const level = res.statusCode >= 500 ? 'error' :
-                res.statusCode >= 400 ? 'warn' : 'info';
-            logger[level](`Request completed with status ${res.statusCode}`, {
+            const logFn = res.statusCode >= 500
+                ? logger.error.bind(logger)
+                : res.statusCode >= 400
+                    ? logger.warn.bind(logger)
+                    : logger.info.bind(logger);
+            logFn(`Request completed with status ${res.statusCode}`, {
                 ...requestContext,
                 statusCode: res.statusCode,
                 duration
             });
+            logger.clearRequest();
+        });
+        res.on('close', () => {
+            logger.clearRequest();
         });
         next();
     };

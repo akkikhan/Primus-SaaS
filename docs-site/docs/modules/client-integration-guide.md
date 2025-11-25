@@ -14,9 +14,9 @@ Audience: first-time developers integrating Primus SaaS modules into their own A
 ## 2) Supported Stacks & Versions
 | Module | Runtime | Package | Version | Notes |
 |--------|---------|---------|---------|-------|
-| Identity Validator | Node.js 16+ | `@primus-saas/identity-validator` | 1.3.1 | Express/NestJS middleware + direct validator |
+| Identity Validator | Node.js 16+ | `@primus-saas/identity-validator` | 1.3.2 | Express/NestJS middleware + direct validator |
 | Identity Validator | .NET 6/7/8 | `PrimusSaaS.Identity.Validator` | 1.3.0 | ASP.NET Core authentication handler + helpers |
-| Logging | Node.js 16+ | `@primus-saas/logging` | 1.1.1 | Structured logger + Express middleware |
+| Logging | Node.js 16+ | `@primus-saas/logging` | 1.2.1 | Structured logger + Express middleware |
 | Logging | .NET 6/7/8 | `PrimusSaaS.Logging` | 1.2.1 | ILogger provider, middleware, file/App Insights targets |
 
 ## 3) Getting Started / Setup
@@ -250,7 +250,7 @@ app.Run();
 - Custom enrichers (Node/.NET) to attach tenant/user/request metadata.
 
 ## 10) Versioning
-- Aligned with: Node Identity 1.3.1, .NET Identity 1.3.0, Node Logging 1.1.1, .NET Logging 1.2.1.
+- Aligned with: Node Identity 1.3.2, .NET Identity 1.3.0, Node Logging 1.2.1, .NET Logging 1.2.1.
 - SemVer: MAJOR breaking, MINOR features, PATCH fixes. Keep docs in sync with releases.
 
 ## 11) Validation Checklist

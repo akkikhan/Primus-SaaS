@@ -1,6 +1,6 @@
 # Release Notes
 
-## PrimusSaaS.Identity.Validator 1.3.0
+## PrimusSaaS.Identity.Validator 1.3.2 (Node) / 1.3.0 (.NET)
 
 **Release Date:** November 25, 2025
 
@@ -43,13 +43,18 @@ Early helpers for policy-based authorization alignment with common RBAC patterns
 
 ### Package Changes
 
-- Version: 1.2.x to **1.3.0**
+- Node: **1.3.2** (rate limiting + HTTPS metadata toggle + tenant context docs)
+- .NET: **1.3.0** (unchanged in this drop)
 - Documentation files updated and aligned to unified guide
 - No breaking changes; configuration shape unchanged since 1.2.0
 
 ### Migration from 1.2.x
 
 ```bash
+# Node
+npm install @primus-saas/identity-validator@1.3.2
+
+# .NET
 dotnet add package PrimusSaaS.Identity.Validator --version 1.3.0
 ```
 

@@ -4,7 +4,7 @@ import { Enricher } from '../enrichers/RequestEnricher';
  */
 export declare class Context {
     private enrichers;
-    constructor();
+    constructor(additionalEnrichers?: Enricher[]);
     /**
      * Enrich context with all registered enrichers
      */

@@ -1,4 +1,4 @@
-import appInsights, { Contracts, TelemetryClient } from 'applicationinsights';
+import appInsights, { KnownSeverityLevel, TelemetryClient } from 'applicationinsights';
 import { LogEntry } from '../core/LogEntry';
 import { LogLevel } from '../core/LogLevel';
 import { Target } from './Target';
@@ -15,11 +15,12 @@ export class ApplicationInsightsTarget implements Target {
   private client: TelemetryClient;
 
   constructor(options: ApplicationInsightsTargetOptions) {
+    const client = appInsights.defaultClient ?? new TelemetryClient(options.connectionString);
     if (!appInsights.defaultClient) {
       appInsights
         .setup(options.connectionString)
         .setAutoCollectRequests(false)
-        .setAutoCollectPerformance(false)
+        .setAutoCollectPerformance(false, false)
         .setAutoCollectExceptions(false)
         .setAutoCollectDependencies(false)
         .setAutoDependencyCorrelation(false)
@@ -28,8 +29,8 @@ export class ApplicationInsightsTarget implements Target {
         .start();
     }
 
-    this.client = appInsights.defaultClient;
-    this.client.config.connectionString = options.connectionString;
+    client.config.connectionString = options.connectionString;
+    this.client = client;
 
     if (options.roleName) {
       this.client.context.tags[this.client.context.keys.cloudRole] = options.roleName;
@@ -53,19 +54,19 @@ export class ApplicationInsightsTarget implements Target {
   }
 }
 
-function mapSeverity(level: LogLevel): Contracts.SeverityLevel {
+function mapSeverity(level: LogLevel): KnownSeverityLevel {
   switch (level) {
     case LogLevel.DEBUG:
-      return Contracts.SeverityLevel.Verbose;
+      return KnownSeverityLevel.Verbose;
     case LogLevel.INFO:
-      return Contracts.SeverityLevel.Information;
+      return KnownSeverityLevel.Information;
     case LogLevel.WARNING:
-      return Contracts.SeverityLevel.Warning;
+      return KnownSeverityLevel.Warning;
     case LogLevel.ERROR:
-      return Contracts.SeverityLevel.Error;
+      return KnownSeverityLevel.Error;
     case LogLevel.CRITICAL:
-      return Contracts.SeverityLevel.Critical;
+      return KnownSeverityLevel.Critical;
     default:
-      return Contracts.SeverityLevel.Information;
+      return KnownSeverityLevel.Information;
   }
 }

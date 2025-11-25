@@ -13,10 +13,9 @@ export interface FileTargetOptions {
 
 /**
  * Target that writes logs to a file with optional rotation and compression.
+ * Uses synchronous file I/O for determinism and to mirror the NuGet behavior.
  */
 export class FileTarget implements Target {
-    private stream: fs.WriteStream;
-    private currentSize: number;
     private readonly maxFileSize?: number;
     private readonly maxRetainedFiles: number;
     private readonly compressRotatedFiles: boolean;
@@ -31,50 +30,35 @@ export class FileTarget implements Target {
         if (!fs.existsSync(options.path)) {
             fs.writeFileSync(options.path, '');
         }
-
-        this.currentSize = fs.statSync(options.path).size;
-        this.stream = this.createStream();
     }
 
     async write(logEntry: LogEntry): Promise<void> {
         const line = JSON.stringify(logEntry) + '\n';
         const lineLength = Buffer.byteLength(line);
 
-        await this.rotateIfNeeded(lineLength);
-
-        if (this.stream.writable) {
-            this.stream.write(line);
-            this.currentSize += lineLength;
-        }
+        this.rotateIfNeeded(lineLength);
+        fs.appendFileSync(this.options.path, line);
     }
 
     close(): Promise<void> {
-        return new Promise((resolve) => {
-            if (this.stream && !this.stream.destroyed) {
-                this.stream.end(() => {
-                    resolve();
-                });
-            } else {
-                resolve();
-            }
-        });
+        return Promise.resolve();
     }
 
-    private async rotateIfNeeded(nextLength: number): Promise<void> {
+    private rotateIfNeeded(nextLength: number): void {
         if (!this.maxFileSize) {
             return;
         }
 
-        if (this.currentSize + nextLength <= this.maxFileSize) {
+        const currentSize = fs.existsSync(this.options.path) ? fs.statSync(this.options.path).size : 0;
+
+        if (currentSize + nextLength <= this.maxFileSize) {
             return;
         }
 
-        await this.rotateFiles();
+        this.rotateFiles();
     }
 
-    private async rotateFiles(): Promise<void> {
-        await this.close();
-
+    private rotateFiles(): void {
         // Shift existing rotated files
         for (let i = this.maxRetainedFiles; i >= 1; i--) {
             const rotatedPath = `${this.options.path}.${i}`;
@@ -95,30 +79,14 @@ export class FileTarget implements Target {
         }
 
         if (this.compressRotatedFiles && fs.existsSync(rotatedFirst)) {
-            await this.compress(rotatedFirst);
+            const data = fs.readFileSync(rotatedFirst);
+            const compressed = zlib.gzipSync(data);
+            fs.writeFileSync(`${rotatedFirst}.gz`, compressed);
+            fs.rmSync(rotatedFirst, { force: true });
         }
 
-        // Reset base file
-        this.stream = this.createStream(true);
-        this.currentSize = fs.existsSync(this.options.path) ? fs.statSync(this.options.path).size : 0;
-    }
-
-    private async compress(filePath: string): Promise<void> {
-        const gzipPath = `${filePath}.gz`;
-        return new Promise((resolve, reject) => {
-            const source = fs.createReadStream(filePath);
-            const destination = fs.createWriteStream(gzipPath);
-            const gzip = zlib.createGzip();
-
-            source.pipe(gzip).pipe(destination);
-
-            destination.on('finish', () => {
-                fs.rmSync(filePath, { force: true });
-                resolve();
-            });
-
-            destination.on('error', reject);
-        });
+        // Recreate base file
+        fs.writeFileSync(this.options.path, '');
     }
 
     private ensureDirectoryExists(filePath: string): void {
@@ -126,13 +94,5 @@ export class FileTarget implements Target {
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
-    }
-
-    private createStream(truncate: boolean = false): fs.WriteStream {
-        const stream = fs.createWriteStream(this.options.path, { flags: truncate ? 'w' : 'a' });
-        stream.on('error', (err) => {
-            console.error(`FileTarget stream error (${this.options.path}):`, err);
-        });
-        return stream;
     }
 }
