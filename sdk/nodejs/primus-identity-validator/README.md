@@ -312,6 +312,22 @@ const primusAuth = primusIdentityMiddleware({
 
 ### Quick Example
 
+```typescript
+import { signLocalToken } from '@primus-saas/identity-validator';
+
+const token = signLocalToken({
+  userId: '123',
+  email: 'admin@example.com',
+  roles: ['Admin'],
+  issuer: 'https://auth.example.com',
+  audience: 'api://my-app',
+  secret: process.env.LOCAL_JWT_SECRET || '',
+  expiresInSeconds: 3600
+});
+```
+
+### Manual Example
+
 ```javascript
 const jwt = require('jsonwebtoken');
 

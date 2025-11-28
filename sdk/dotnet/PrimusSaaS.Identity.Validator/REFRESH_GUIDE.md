@@ -16,18 +16,25 @@ builder.Services.AddPrimusIdentity(options =>
     };
 });
 ```
-This registers `InMemoryTokenRefreshService` and a no-op service when disabled.
+This registers an in-memory refresh service (dev-only) and a no-op service when disabled.
 
 ## Production Guidance
-- Implement `ITokenRefreshService` using durable storage (e.g., Redis/SQL) with:
+- Use a durable store (`UseDurableStore = true`) and register an `IRefreshTokenStore` (e.g., Redis/SQL):
+```csharp
+builder.Services.AddSingleton<IRefreshTokenStore, DistributedRefreshTokenStore>(); // requires IDistributedCache (Redis/SQL)
+builder.Services.Configure<TokenRefreshOptions>(opt =>
+{
+    opt.Enabled = true;
+    opt.UseDurableStore = true;
+    opt.AccessTokenTtl = TimeSpan.FromMinutes(15);
+    opt.RefreshTokenTtl = TimeSpan.FromDays(30);
+});
+```
+- Durable store recommendations:
   - Token rotation on each refresh
   - Revocation support (e.g., logout, compromise)
   - Short-lived access tokens; longer-lived refresh tokens
   - Anti-replay (rotate and invalidate previous refresh token)
-- Register your implementation:
-```csharp
-builder.Services.AddSingleton<ITokenRefreshService, YourDurableRefreshService>();
-```
 
 ## API Contract
 - `IssueRefreshTokenAsync(userId)` → returns a new refresh token for a user identifier.

@@ -23,6 +23,11 @@ public enum IssuerType
     Google = Oidc,
 
     /// <summary>
+    /// Cognito issuer (alias for OIDC to keep DX discoverable).
+    /// </summary>
+    Cognito = Oidc,
+
+    /// <summary>
     /// Azure AD issuer (alias for OIDC to improve discoverability).
     /// </summary>
     AzureAD = Oidc,

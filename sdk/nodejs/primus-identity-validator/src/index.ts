@@ -21,6 +21,9 @@ export { primusIdentityMiddleware, requireRoles } from './express';
 // Alias for convenience (matches spec)
 export { primusIdentityMiddleware as primusIdentityValidator } from './express';
 
+// Token helper for Local/Hybrid scenarios
+export { signLocalToken, type SignLocalTokenOptions } from './signToken';
+
 // Export validators for advanced usage
 export { LocalValidator } from './validators/localValidator';
 export { AzureAdValidator } from './validators/azureAdValidator';

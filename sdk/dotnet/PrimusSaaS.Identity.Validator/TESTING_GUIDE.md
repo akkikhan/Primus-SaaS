@@ -109,6 +109,18 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
 
 You can also use the "LocalAuth" issuer configuration and generate real JWTs signed with the dev secret. See [LOCAL_DEVELOPMENT_GUIDE.md](./LOCAL_DEVELOPMENT_GUIDE.md) for details.
 
+### Using the built-in fake handler (Primus test harness)
+
+For quick API integration tests without any IdP, register the provided fake handler:
+
+```csharp
+// In your test host setup
+services.AddFakePrimusAuth(); // from PrimusSaaS.Identity.Validator.Tests.IntegrationHarness
+app.UseFakePrimusAuth();
+```
+
+This authenticates requests with a fixed user (`sub`, `email`, `name`) so you can focus on app logic.
+
 ---
 
 ## 3. Local Development

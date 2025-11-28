@@ -64,6 +64,13 @@
     <None Include="REFRESH_GUIDE.md" Pack="true" PackagePath="\" />
     <None Include="POLICY_HELPERS_SCOPE.md" Pack="true" PackagePath="\" />
     <None Include="RELEASE_AND_ROADMAP.md" Pack="true" PackagePath="\" />
+    <None Include="TESTING_GUIDE.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>PrimusSaaS.Identity.Validator.Tests</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
 </Project>

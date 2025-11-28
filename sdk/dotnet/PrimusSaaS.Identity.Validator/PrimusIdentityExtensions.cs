@@ -87,12 +87,23 @@ public static class PrimusIdentityExtensions
             var opt = sp.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
             return opt.TokenRefresh;
         });
+        services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
         services.AddSingleton<ITokenRefreshService>(sp =>
         {
             var options = sp.GetRequiredService<TokenRefreshOptions>();
-            if (options.Enabled && options.UseInMemoryStore)
+            if (options.Enabled)
             {
-                return new InMemoryTokenRefreshService(options);
+                if (options.UseInMemoryStore || options.UseDurableStore)
+                {
+                    var store = sp.GetRequiredService<IRefreshTokenStore>();
+                    return new DurableTokenRefreshService(options, store);
+                }
+
+                var customStore = sp.GetService<IRefreshTokenStore>();
+                if (customStore != null)
+                {
+                    return new DurableTokenRefreshService(options, customStore);
+                }
             }
 
             // If refresh is disabled, register a no-op stub to avoid nulls
@@ -128,7 +139,8 @@ public static class PrimusIdentityExtensions
                         if (jwt == null) return Enumerable.Empty<SecurityKey>();
 
                         var issuer = jwt.Issuer;
-                        var issuerConfig = ResolveIssuerConfig(jwt, primusOptions, context);
+                        // Note: context is null here as TokenValidatedContext is not available in IssuerSigningKeyResolver
+                        var issuerConfig = ResolveIssuerConfig(jwt, primusOptions, null);
 
                         if (issuerConfig == null) return Enumerable.Empty<SecurityKey>();
 
@@ -201,7 +213,8 @@ public static class PrimusIdentityExtensions
                     AudienceValidator = (audiences, securityToken, validationParameters) =>
                     {
                         var jwt = securityToken as System.IdentityModel.Tokens.Jwt.JwtSecurityToken;
-                        var issuerConfig = ResolveIssuerConfig(jwt, primusOptions, context);
+                        // Note: context is null here as TokenValidatedContext is not available in AudienceValidator
+                        var issuerConfig = ResolveIssuerConfig(jwt, primusOptions, null);
                         
                         if (issuerConfig == null) return false;
                         
@@ -238,6 +251,12 @@ public static class PrimusIdentityExtensions
                                     context.Fail("Email verification is required.");
                                     return;
                                 }
+                            }
+
+                            if (primusIdentityOptions.Logging.LogValidationSteps && logger != null && context.SecurityToken is JwtSecurityToken jwtToken)
+                            {
+                                var logData = IdentityLogHelper.BuildValidationLogData(jwtToken, context.Principal, primusIdentityOptions.Logging);
+                                logger.Log(primusIdentityOptions.Logging.MinimumLevel, "Primus Identity: Token validated", logData);
                             }
                         }
 

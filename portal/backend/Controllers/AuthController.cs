@@ -5,9 +5,11 @@ using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using PrimusSaaS.Portal.Api.Data;
+using PrimusSaaS.Portal.Api.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Extensions.Options;
 
 namespace PrimusSaaS.Portal.Api.Controllers;
 
@@ -21,11 +23,13 @@ public class AuthController : ControllerBase
     private readonly string? _azureTenantId;
     private readonly string? _azureClientId;
     private readonly string? _azureAudience;
+    private readonly JwtOptions _jwtOptions;
 
-    public AuthController(PortalDbContext context, IConfiguration configuration)
+    public AuthController(PortalDbContext context, IConfiguration configuration, IOptions<JwtOptions> jwtOptions)
     {
         _context = context;
         _configuration = configuration;
+        _jwtOptions = jwtOptions.Value;
 
         _azureTenantId = _configuration["AzureAd:TenantId"];
         _azureClientId = _configuration["AzureAd:ClientId"];
@@ -73,24 +77,18 @@ public class AuthController : ControllerBase
     [HttpPost("azure")]
     public async Task<ActionResult<LoginResponse>> AzureLogin([FromBody] AzureLoginRequest request, CancellationToken cancellationToken)
     {
-        Console.WriteLine("[Azure Login] Endpoint called");
-        Console.WriteLine($"[Azure Login] IdToken present: {!string.IsNullOrWhiteSpace(request?.IdToken)}");
-        
         if (_azureConfigManager == null || string.IsNullOrWhiteSpace(_azureTenantId) || string.IsNullOrWhiteSpace(_azureClientId))
         {
-            Console.WriteLine("[Azure Login] Azure AD not configured");
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Azure AD login is not configured." });
         }
 
         if (request == null || string.IsNullOrWhiteSpace(request.IdToken))
         {
-            Console.WriteLine("[Azure Login] IdToken missing");
             return BadRequest(new { message = "Azure AD ID token is required." });
         }
 
         try
         {
-            Console.WriteLine("[Azure Login] Validating Azure AD token...");
             var configuration = await _azureConfigManager.GetConfigurationAsync(cancellationToken);
 
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -119,19 +117,10 @@ public class AuthController : ControllerBase
                 return Unauthorized(new { message = "Invalid Azure AD token algorithm." });
             }
 
-            Console.WriteLine("[Azure Login] Token validated successfully");
-            
-            // Log all claims for debugging
-            var claims = principal.Claims.Select(c => $"{c.Type}={c.Value}");
-            Console.WriteLine($"[Azure Login] All claims: {string.Join(", ", claims)}");
-            
             var tokenTenant = principal.FindFirst("tid")?.Value;
-            Console.WriteLine($"[Azure Login] Token tenant (tid): {tokenTenant}");
-            Console.WriteLine($"[Azure Login] Expected tenant: {_azureTenantId}");
             
             if (!string.IsNullOrWhiteSpace(tokenTenant) && !string.Equals(tokenTenant, _azureTenantId, StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine("[Azure Login] Tenant mismatch");
                 return Unauthorized(new { message = "Token tenant does not match configured tenant." });
             }
 
@@ -139,24 +128,18 @@ public class AuthController : ControllerBase
                         ?? principal.FindFirst("preferred_username")?.Value
                         ?? principal.FindFirst(ClaimTypes.Upn)?.Value;
 
-            Console.WriteLine($"[Azure Login] Extracted email: {email}");
-            
             if (string.IsNullOrWhiteSpace(email))
             {
-                Console.WriteLine("[Azure Login] Email missing from token");
                 return Unauthorized(new { message = "Azure AD token is missing an email claim." });
             }
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
             if (user == null)
             {
-                Console.WriteLine($"[Azure Login] User not found in database: {email}");
                 return Unauthorized(new { message = "No matching portal user found for Azure AD account." });
             }
 
-            Console.WriteLine($"[Azure Login] User found: {user.Email} (Role: {user.Role})");
             var token = GenerateJwtToken(user.Id, user.Email, user.Role.ToString());
-            Console.WriteLine("[Azure Login] Session token generated successfully");
 
             return Ok(new LoginResponse
             {
@@ -167,14 +150,11 @@ public class AuthController : ControllerBase
         }
         catch (SecurityTokenException ex)
         {
-            Console.WriteLine($"[Azure Login] SecurityTokenException: {ex.Message}");
             return Unauthorized(new { message = $"Invalid Azure AD token: {ex.Message}" });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"[Azure Login] Exception: {ex.Message}");
-            Console.WriteLine($"[Azure Login] Stack trace: {ex.StackTrace}");
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = $"Azure AD login failed: {ex.Message}" });
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Azure AD login failed. Please try again." });
         }
     }
 
@@ -185,7 +165,7 @@ public class AuthController : ControllerBase
 
     private string GenerateJwtToken(int userId, string email, string role)
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.EffectiveKey!));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
@@ -197,10 +177,10 @@ public class AuthController : ControllerBase
         };
 
         var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
+            issuer: _jwtOptions.Issuer,
+            audience: _jwtOptions.Audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["Jwt:ExpiryInMinutes"])),
+            expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_jwtOptions.ExpiryInMinutes)),
             signingCredentials: credentials
         );
 

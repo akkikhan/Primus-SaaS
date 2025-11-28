@@ -18,17 +18,27 @@ ASP.NET Core 7.0 Web API for the Primus SaaS Platform portal.
 
 ## Getting Started
 
-### 1. Update Database Connection String
+### 1. Configure Database Provider and Connection
 
-Edit `appsettings.json` if needed:
+The API now reads `ConnectionStrings__DefaultConnection` and `DatabaseProvider` (`SqlServer` by default, `Postgres` or `Sqlite` for local dev). Update `appsettings*.json` or environment variables accordingly:
 
 ```json
 "ConnectionStrings": {
-  "DefaultConnection": "Server=localhost;Database=PrimusSaasPortal;Trusted_Connection=True;TrustServerCertificate=True"
-}
+  "DefaultConnection": "Server=localhost;Database=PrimusSaasPortal;User Id=sa;Password=ChangeMe123!;TrustServerCertificate=True;"
+},
+"DatabaseProvider": "SqlServer"
 ```
 
-### 2. Create Database
+### 2. Seed an Admin User
+
+Provide credentials via configuration (recommended: environment variables) before first run:
+
+```
+SeedAdmin__Email=admin@example.com
+SeedAdmin__Password=StrongPasswordHere
+```
+
+### 3. Create Database
 
 Run EF Core migrations to create the database:
 
@@ -37,7 +47,7 @@ dotnet ef migrations add InitialCreate
 dotnet ef database update
 ```
 
-### 3. Run the API
+### 4. Run the API
 
 ```bash
 dotnet run
@@ -50,7 +60,7 @@ The API will start at:
 
 Swagger UI available at: `https://localhost:7001/swagger`
 
-### 4. Email/Docs configuration
+### 5. Email/Docs configuration
 
 - Set SMTP and docs host in `appsettings.json`:
   ```json
@@ -64,13 +74,6 @@ Swagger UI available at: `https://localhost:7001/swagger`
     "DocsBaseUrl": "http://localhost:3001" // update when docs are hosted
   }
   ```
-
-## Default Credentials
-
-- **Email**: `admin@primussaas.com`
-- **Password**: `Admin123!`
-
-> ⚠️ **Security Note**: This is for development only. In production, implement proper BCrypt password hashing.
 
 ## API Endpoints
 
@@ -178,7 +181,7 @@ options.AddPolicy("AllowAll", policy =>
 3. **Build React frontend** to consume this API
 4. **Add email notification service** for update alerts
 5. **Implement rate limiting** for API endpoints
-6. **Add logging and monitoring** (Application Insights, Serilog)
+6. **Add logging and monitoring** (Application Insights, Serilog) — see `OBSERVABILITY.md` for setup and alert templates.
 
 ## Development
 

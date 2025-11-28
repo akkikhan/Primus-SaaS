@@ -145,6 +145,19 @@ builder.Services.AddPrimusIdentity(options =>
     // Add other providers as needed (AzureAD/Auth0/Local)
 });
 
+// AWS Cognito user pool
+builder.Services.AddPrimusIdentity(options =>
+{
+    options.UseCognito(
+        region: "us-east-1",
+        userPoolId: "us-east-1_ABC123",
+        audience: "<app-client-id>",
+        cognito =>
+        {
+            cognito.RoleClaimName = "cognito:groups"; // optional, maps into ClaimTypes.Role
+        });
+});
+
 // Machine-to-machine & email verification (Auth0 example)
 builder.Services.AddPrimusIdentity(options =>
 {
@@ -175,6 +188,16 @@ var token = TestTokenBuilder.Create()
     .Build();
 ```
 
+### Using the built-in fake handler (for integration tests)
+
+```csharp
+// In your test host setup (WebApplicationFactory, minimal API, etc.)
+services.AddFakePrimusAuth(); // from PrimusSaaS.Identity.Validator.Tests.IntegrationHarness
+app.UseFakePrimusAuth();
+```
+
+This authenticates requests with a fixed user (`sub`, `email`, `name`) so you can test APIs without an external IdP. See `examples/dotnet-api/FakeAuthApi` for a runnable sample.
+
 ### Logging & diagnostics
 - Configure logging verbosity and redaction via `options.Logging`:
   - `MinimumLevel` (default: Information)
@@ -182,6 +205,8 @@ var token = TestTokenBuilder.Create()
   - `LogValidationSteps` (default: true)
   - `LogClaimMapping` (default: false)
 - Expose diagnostics endpoint with `app.MapPrimusIdentityDiagnostics();`
+- Structured logging: when `LogValidationSteps` is true, issuer/audience/kid are logged; subjects are hashed when redaction is on.
+- Refresh tokens: set `TokenRefresh.UseDurableStore = true` and register `IRefreshTokenStore` (e.g., `DistributedRefreshTokenStore` for Redis/SQL via `IDistributedCache`).
 
 ### Multi-provider (Azure AD + Auth0 + Local)
 
@@ -427,6 +452,37 @@ For detailed troubleshooting, see [ERROR_REFERENCE.md](./ERROR_REFERENCE.md)
 - You can swap existing `AddJwtBearer` Auth0 config for `options.UseAuth0(domain, audience, ...)` without changing your controllers; permissions/roles map into standard claims.
 - Auth0 namespaced roles: set `RoleClaimName` to your namespaced roles claim and `[Authorize(Roles = "...")]` will work.
 - Permissions: use policies (`RequireAuth0Permissions/RequireAnyAuth0Permission`) or attributes (`Auth0Permission/Auth0Permissions/Auth0AnyPermission`).
+- Minimal migration snippet:
+  ```csharp
+  // Before
+  builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+      .AddJwtBearer(opt =>
+      {
+          opt.Authority = "https://your-tenant.auth0.com/";
+          opt.Audience = "https://your-api-identifier";
+      });
+
+  // After
+  builder.Services.AddPrimusIdentity(options =>
+  {
+      options.UseAuth0("your-tenant.auth0.com", "https://your-api-identifier", auth0 =>
+      {
+          auth0.RoleClaimName = "https://your-api-identifier/roles"; // if you had roles mapped
+      });
+  });
+  builder.Services.AddAuthorization();
+  ```
+- Migration helper:
+  ```csharp
+  var auth0 = JwtBearerMigrationHelper.ToAuth0Options(new JwtBearerMigrationHelper.JwtBearerConfig
+  {
+      Authority = "https://your-tenant.auth0.com/",
+      Audience = "https://your-api-identifier",
+      RoleClaimName = "https://your-api-identifier/roles"
+  });
+  var options = new PrimusIdentityOptions();
+  options.Issuers.Add(auth0.ToIssuerConfig());
+  ```
 
 ## Production Deployment
 

@@ -1,0 +1,96 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "actionGroupId": {
+      "type": "string",
+      "metadata": { "description": "Resource ID of the Action Group (email)" }
+    },
+    "appInsightsResourceId": {
+      "type": "string",
+      "metadata": { "description": "Resource ID of the Application Insights component" }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Insights/scheduledQueryRules",
+      "apiVersion": "2022-09-01-preview",
+      "name": "PrimusPortal-5xxRate",
+      "location": "[parameters('location')]",
+      "properties": {
+        "description": "Alert when 5xx error rate exceeds 1% over 5 minutes.",
+        "enabled": true,
+        "source": {
+          "query": "requests\n| where timestamp > ago(5m)\n| summarize total=count(), failures=countif(success == false)\n| extend failureRate = todouble(failures) / todouble(total)\n| where total > 0 and failureRate > 0.01",
+          "dataSourceId": "[parameters('appInsightsResourceId')]",
+          "queryType": "ResultCount"
+        },
+        "schedule": {
+          "frequencyInMinutes": 5,
+          "timeWindowInMinutes": 5
+        },
+        "action": {
+          "severity": "2",
+          "aznsAction": {
+            "actionGroup": [
+              "[parameters('actionGroupId')]"
+            ]
+          }
+        },
+        "criteria": {
+          "allOf": [
+            {
+              "query": "requests\n| where timestamp > ago(5m)\n| summarize total=count(), failures=countif(success == false)\n| extend failureRate = todouble(failures) / todouble(total)\n| where total > 0 and failureRate > 0.01",
+              "timeWindow": "PT5M",
+              "timeAggregation": "Count",
+              "operator": "GreaterThan",
+              "threshold": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Insights/scheduledQueryRules",
+      "apiVersion": "2022-09-01-preview",
+      "name": "PrimusPortal-P95Latency",
+      "location": "[parameters('location')]",
+      "properties": {
+        "description": "Alert when p95 request duration exceeds 1s over 5 minutes.",
+        "enabled": true,
+        "source": {
+          "query": "requests\n| where timestamp > ago(5m)\n| summarize p95Duration = percentile(duration, 95)\n| where p95Duration > 1000",
+          "dataSourceId": "[parameters('appInsightsResourceId')]",
+          "queryType": "ResultCount"
+        },
+        "schedule": {
+          "frequencyInMinutes": 5,
+          "timeWindowInMinutes": 5
+        },
+        "action": {
+          "severity": "2",
+          "aznsAction": {
+            "actionGroup": [
+              "[parameters('actionGroupId')]"
+            ]
+          }
+        },
+        "criteria": {
+          "allOf": [
+            {
+              "query": "requests\n| where timestamp > ago(5m)\n| summarize p95Duration = percentile(duration, 95)\n| where p95Duration > 1000",
+              "timeWindow": "PT5M",
+              "timeAggregation": "Count",
+              "operator": "GreaterThan",
+              "threshold": 0
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

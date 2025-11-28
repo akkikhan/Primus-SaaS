@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,18 +17,18 @@ namespace Primus.Notifications.Core;
 public class NotificationBackgroundService : BackgroundService
 {
     private readonly InMemoryNotificationQueue _queue;
-    private readonly NotificationService _notificationService;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly NotificationQueueOptions _options;
     private readonly ILogger<NotificationBackgroundService> _logger;
 
     public NotificationBackgroundService(
         InMemoryNotificationQueue queue,
-        NotificationService notificationService,
+        IServiceScopeFactory scopeFactory,
         IOptions<NotificationQueueOptions> options,
         ILogger<NotificationBackgroundService> logger)
     {
         _queue = queue;
-        _notificationService = notificationService;
+        _scopeFactory = scopeFactory;
         _options = options.Value ?? new NotificationQueueOptions();
         _logger = logger;
     }
@@ -63,7 +64,10 @@ public class NotificationBackgroundService : BackgroundService
         {
             try
             {
-                await _notificationService.SendAsync(notification, ct);
+                // Create a scope for each notification processing to get scoped services
+                using var scope = _scopeFactory.CreateScope();
+                var notificationService = scope.ServiceProvider.GetRequiredService<NotificationService>();
+                await notificationService.SendAsync(notification, ct);
                 return;
             }
             catch (Exception ex)

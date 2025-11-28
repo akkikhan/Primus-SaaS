@@ -7,6 +7,7 @@ public enum IdentityProvider
 {
     AzureAD,
     Auth0,
+    Cognito,
     Google,
     Local
 }

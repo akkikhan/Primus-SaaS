@@ -12,7 +12,7 @@ public class TestTokenBuilderTests
     [Fact]
     public void Build_CreatesSignedToken_WithClaims()
     {
-        var secret = "unit-test-secret-value";
+        var secret = "unit-test-secret-value-32bytes!!";
         var tokenString = TestTokenBuilder.Create()
             .WithIssuer("https://test.local")
             .WithAudience("api://test")

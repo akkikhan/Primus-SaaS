@@ -16,6 +16,13 @@ const defaultPrefs: Prefs = {
     additionalEmails: '',
 };
 
+type MetricSnapshot = {
+    sent: number;
+    failed: number;
+    queued: number;
+    avgDispatchDurationMs: number;
+};
+
 export default function Notifications() {
     const { token } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -24,6 +31,10 @@ export default function Notifications() {
     const [logs, setLogs] = useState<string[]>([]);
     const [prefs, setPrefs] = useState<Prefs>(defaultPrefs);
     const [prefsStatus, setPrefsStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+    const [metrics, setMetrics] = useState<MetricSnapshot | null>(null);
+    const [metricsLoading, setMetricsLoading] = useState(false);
+    const [loadTestCount, setLoadTestCount] = useState(100);
+    const [loadTestStatus, setLoadTestStatus] = useState<'idle' | 'running' | 'error' | 'success'>('idle');
 
     useEffect(() => {
         const fetchPrefs = async () => {
@@ -52,6 +63,28 @@ export default function Notifications() {
             fetchPrefs();
         }
     }, [token]);
+
+    const fetchMetrics = async () => {
+        setMetricsLoading(true);
+        try {
+            const res = await fetch('http://localhost:5000/api/notification-preferences/metrics', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error('Failed to load metrics');
+            const data = await res.json();
+            setMetrics({
+                sent: data.sent ?? 0,
+                failed: data.failed ?? 0,
+                queued: data.queued ?? 0,
+                avgDispatchDurationMs: data.avgDispatchDurationMs ?? 0,
+            });
+        } catch (e) {
+            console.error(e);
+            setMetrics(null);
+        } finally {
+            setMetricsLoading(false);
+        }
+    };
 
     const sendTestNotification = async () => {
         setLoading(true);
@@ -105,6 +138,30 @@ export default function Notifications() {
             setPrefsStatus('error');
         } finally {
             setPrefsLoading(false);
+        }
+    };
+
+    const runLoadTest = async () => {
+        setLoadTestStatus('running');
+        try {
+            const res = await fetch('http://localhost:5000/api/notifications/load-test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ count: loadTestCount }),
+            });
+            if (!res.ok) throw new Error('Failed to run load test');
+            const data = await res.json();
+            setLogs((prev) => [
+                `${new Date().toLocaleTimeString()} Queued ${data.queued} notifications in ${data.elapsedMs}ms`,
+                ...prev,
+            ].slice(0, 10));
+            setLoadTestStatus('success');
+        } catch (e) {
+            console.error(e);
+            setLoadTestStatus('error');
         }
     };
 
@@ -271,6 +328,65 @@ export default function Notifications() {
                                 ))
                             )}
                         </div>
+                    </div>
+
+                    <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 space-y-4 text-sm text-gray-200">
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-semibold">Metrics</h3>
+                            <button
+                                onClick={fetchMetrics}
+                                disabled={metricsLoading}
+                                className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-xs"
+                            >
+                                {metricsLoading ? 'Loading...' : 'Refresh'}
+                            </button>
+                        </div>
+                        {metrics ? (
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="bg-gray-900 border border-gray-700 rounded p-3">
+                                    <p className="text-gray-400 text-xs">Sent</p>
+                                    <p className="text-lg font-semibold">{metrics.sent}</p>
+                                </div>
+                                <div className="bg-gray-900 border border-gray-700 rounded p-3">
+                                    <p className="text-gray-400 text-xs">Failed</p>
+                                    <p className="text-lg font-semibold">{metrics.failed}</p>
+                                </div>
+                                <div className="bg-gray-900 border border-gray-700 rounded p-3">
+                                    <p className="text-gray-400 text-xs">Queued</p>
+                                    <p className="text-lg font-semibold">{metrics.queued}</p>
+                                </div>
+                                <div className="bg-gray-900 border border-gray-700 rounded p-3">
+                                    <p className="text-gray-400 text-xs">Avg Dispatch (ms)</p>
+                                    <p className="text-lg font-semibold">{metrics.avgDispatchDurationMs.toFixed(2)}</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 text-xs">No metrics yet.</p>
+                        )}
+                    </div>
+
+                    <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 space-y-3 text-sm text-gray-200">
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-semibold">Load Test</h3>
+                        </div>
+                        <label className="text-gray-300 text-xs">Notifications to queue (1-1000)</label>
+                        <input
+                            type="number"
+                            min={1}
+                            max={1000}
+                            value={loadTestCount}
+                            onChange={(e) => setLoadTestCount(Math.max(1, Math.min(1000, Number(e.target.value))))}
+                            className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white"
+                        />
+                        <button
+                            onClick={runLoadTest}
+                            disabled={loadTestStatus === 'running'}
+                            className="w-full py-2 px-4 rounded-lg font-medium bg-indigo-600 hover:bg-indigo-500 text-white transition-all disabled:bg-gray-700 disabled:text-gray-400"
+                        >
+                            {loadTestStatus === 'running' ? 'Queueing...' : 'Queue Load Test'}
+                        </button>
+                        {loadTestStatus === 'success' && <p className="text-green-400 text-xs">Queued successfully.</p>}
+                        {loadTestStatus === 'error' && <p className="text-red-400 text-xs">Failed to queue notifications.</p>}
                     </div>
                 </div>
             </div>

@@ -34,3 +34,25 @@ portal/frontend/vite.config.d.ts
 portal/frontend/vite.config.js
 portal/frontend/src/vite-env.d.ts
 
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+portal/backend/appsettings.Development.json
+!.env.example
+
+# Test outputs
+**/test_output*.txt
+**/test-output*.txt
+**/*.test-output
+
+# NuGet packages
+*.nupkg
+*.snupkg
+nupkg/
+
+# Credentials and sensitive files
+**/credentials.json
+**/acme-credentials.json
+**/*secret*.txt
+**/*token*.txt

@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using System.Security.Claims;
 
 namespace PrimusSaaS.Identity.Validator.Tests;
@@ -16,7 +17,7 @@ public class PolicyHelpersTests
     }
 
     [Fact]
-    public void AddPrimusClaimPolicy_ShouldAllowMatchingValue()
+    public async Task AddPrimusClaimPolicy_ShouldAllowMatchingValue()
     {
         var options = new AuthorizationOptions();
         options.AddPrimusClaimPolicy("RequireRole", ClaimTypes.Role, "Admin");
@@ -25,13 +26,13 @@ public class PolicyHelpersTests
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, "Admin") }, "test"));
         var assertion = policy.Requirements.OfType<AssertionRequirement>().Single();
         var evalContext = new AuthorizationHandlerContext(policy.Requirements, user, null);
-        var result = assertion.Handler(evalContext);
+        bool result = await assertion.Handler(evalContext);
 
         result.Should().BeTrue();
     }
 
     [Fact]
-    public void RequireAuth0Permissions_AllMustMatch()
+    public async Task RequireAuth0Permissions_AllMustMatch()
     {
         var options = new AuthorizationOptions();
         options.RequireAuth0Permissions("AllPerms", "read:clients", "write:clients");
@@ -46,11 +47,12 @@ public class PolicyHelpersTests
         var assertion = policy.Requirements.OfType<AssertionRequirement>().Single();
         var ctx = new AuthorizationHandlerContext(policy.Requirements, user, null);
 
-        assertion.Handler(ctx).Should().BeTrue();
+        bool result = await assertion.Handler(ctx);
+        result.Should().BeTrue();
     }
 
     [Fact]
-    public void RequireAnyAuth0Permission_AnyMatchSucceeds()
+    public async Task RequireAnyAuth0Permission_AnyMatchSucceeds()
     {
         var options = new AuthorizationOptions();
         options.RequireAnyAuth0Permission("AnyPerm", "read:all", "read:clients");
@@ -64,6 +66,7 @@ public class PolicyHelpersTests
         var assertion = policy.Requirements.OfType<AssertionRequirement>().Single();
         var ctx = new AuthorizationHandlerContext(policy.Requirements, user, null);
 
-        assertion.Handler(ctx).Should().BeTrue();
+        bool result = await assertion.Handler(ctx);
+        result.Should().BeTrue();
     }
 }

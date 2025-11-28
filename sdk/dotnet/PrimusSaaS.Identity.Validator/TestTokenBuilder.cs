@@ -14,7 +14,7 @@ public class TestTokenBuilder
     private readonly List<string> _audiences = new();
     private string _issuer = "https://localhost";
     private DateTimeOffset _expiresAt = DateTimeOffset.UtcNow.AddHours(1);
-    private string _secret = "local-test-secret-please-change";
+    private string _secret = "local-test-secret-please-change-32bytes";
 
     public static TestTokenBuilder Create() => new();
 

@@ -29,10 +29,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: Server=db;Database=PrimusPortal;User Id=sa;Password=${DB_PASSWORD:-YourStrong@Passw0rd};TrustServerCertificate=True;
-      JwtSettings__Secret: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
-      JwtSettings__Issuer: PrimusSaaS
-      JwtSettings__Audience: PrimusSaaS
-      JwtSettings__ExpirationMinutes: 60
+      Jwt__Key: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      Jwt__Issuer: PrimusSaasPortal
+      Jwt__Audience: PrimusSaasPortalUsers
+      Jwt__ExpiryInMinutes: 60
     ports:
       - "5267:80"
     depends_on:

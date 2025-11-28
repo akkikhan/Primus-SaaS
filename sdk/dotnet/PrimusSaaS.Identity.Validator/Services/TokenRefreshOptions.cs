@@ -25,6 +25,11 @@ public class TokenRefreshOptions
     /// </summary>
     public TimeSpan RefreshTokenTtl { get; set; } = TimeSpan.FromDays(30);
 
+    /// <summary>
+    /// When true, a durable store-backed refresh service will be used if available (default false).
+    /// </summary>
+    public bool UseDurableStore { get; set; }
+
     internal void Validate()
     {
         if (AccessTokenTtl <= TimeSpan.Zero)

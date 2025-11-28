@@ -146,17 +146,6 @@ public class PortalDbContext : DbContext
 
     private void SeedData(ModelBuilder modelBuilder)
     {
-        // Seed default admin user (password: Admin123!)
-        modelBuilder.Entity<User>().HasData(new User
-        {
-            Id = 1,
-            Email = "admin@primussaas.com",
-            PasswordHash = "$2a$11$1cpBqvDSeWEpe8eDpouWDude7DsvSAJ6wtI9Ja4guFVMFPvzZmAuO", // BCrypt hash of Admin123!
-            Role = UserRole.Admin,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        });
-
         // Seed IdentityValidator module
         modelBuilder.Entity<Module>().HasData(new Module
         {
