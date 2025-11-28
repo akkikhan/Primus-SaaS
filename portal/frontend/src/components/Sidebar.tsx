@@ -5,6 +5,7 @@ const links = [
   { to: '/', label: 'Dashboard' },
   { to: '/modules', label: 'Modules' },
   { to: '/applications', label: 'Applications' },
+  { to: '/notifications', label: 'Notifications' },
   { to: '/upgrade-manager', label: 'Upgrade Manager' }
 ];
 

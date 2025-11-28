@@ -135,7 +135,7 @@ public class ApplicationsController : ControllerBase
             OwnerEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "",
             ModuleCount = 0,
             CreatedAt = application.CreatedAt,
-            ClientSecret = clientSecret,
+            // ClientSecret = clientSecret, // REMOVED: Only sent via email
             ClientSecretLastRotatedAt = application.ClientSecretLastRotatedAt,
             HasClientSecret = true
         };
@@ -388,7 +388,7 @@ public record ApplicationDto
     public string OwnerEmail { get; init; } = string.Empty;
     public int ModuleCount { get; init; }
     public DateTime CreatedAt { get; init; }
-    public string? ClientSecret { get; init; }
+    // ClientSecret removed from DTO - only sent via email
     public DateTime? ClientSecretLastRotatedAt { get; init; }
     public bool HasClientSecret { get; init; }
 }

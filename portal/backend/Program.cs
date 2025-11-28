@@ -5,6 +5,7 @@ using PrimusSaaS.Portal.Api.Data;
 using PrimusSaaS.Portal.Api.Services;
 using System.Text;
 using AspNetCoreRateLimit;
+using Primus.Notifications;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,28 @@ builder.Services.AddScoped<IWebhookSignatureValidator, WebhookSignatureValidator
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IModuleOwnershipService, ModuleOwnershipService>();
+
+// Register Primus Notifications
+builder.Services.AddPrimusNotifications(config =>
+{
+    var emailSettings = builder.Configuration.GetSection("EmailSettings").Get<EmailSettings>();
+    if (emailSettings != null)
+    {
+        config.UseSmtp(options =>
+        {
+            options.Host = emailSettings.SmtpHost;
+            options.Port = emailSettings.SmtpPort;
+            options.Username = emailSettings.SmtpUser;
+            options.Password = emailSettings.SmtpPass;
+            options.EnableSsl = emailSettings.EnableSsl;
+            options.FromAddress = emailSettings.FromAddress;
+            options.FromName = "Primus SaaS";
+        });
+    }
+    
+    config.UseFileTemplates(Path.Combine(builder.Environment.ContentRootPath, "Templates"));
+    config.UseLogger();
+});
 
 // Add rate limiting
 builder.Services.AddMemoryCache();

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #4CAF50; color: white; padding: 20px; border-radius: 5px 5px 0 0; }
+        .content { padding: 20px; background: #f9f9f9; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        .total { font-size: 1.2em; font-weight: bold; color: #4CAF50; }
+        .status { padding: 5px 10px; border-radius: 3px; }
+        .paid { background: #4CAF50; color: white; }
+        .unpaid { background: #f44336; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Invoice {{ InvoiceId }}</h1>
+        </div>
+        <div class="content">
+            <p>Thank you for your business!</p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in Items %}
+                    <tr>
+                        <td>{{ item.Description }}</td>
+                        <td>${{ item.Price }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <p class="total">Total: ${{ Total }}</p>
+            
+            <p>Status: 
+                {% if IsPaid %}
+                    <span class="status paid">PAID</span>
+                {% else %}
+                    <span class="status unpaid">UNPAID</span>
+                {% endif %}
+            </p>
+            
+            {% if IsPaid == false %}
+            <p><strong>Please remit payment within 30 days.</strong></p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

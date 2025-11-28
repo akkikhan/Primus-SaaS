@@ -305,6 +305,12 @@ public class WebhooksController : ControllerBase
             _context.ModuleVersions.Add(moduleVersion);
             await _context.SaveChangesAsync();
             _logger.LogInformation("Created module version {Version} for module {ModuleId}", payload.Version, mapping.ModuleId);
+            // Notify applications that have this module integrated
+            var apps = await _moduleOwnershipService.GetApplicationsForModuleAsync(mapping.ModuleId);
+            foreach (var app in apps)
+            {
+                await _emailService.SendVersionPublishedAsync(app, moduleVersion);
+            }
             var response = new
             {
                 message = "Version created successfully",

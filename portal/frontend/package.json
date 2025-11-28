@@ -13,8 +13,8 @@
     "test:run": "vitest run"
   },
   "dependencies": {
-    "@azure/msal-browser": "^4.26.1",
-    "@azure/msal-react": "^3.0.21",
+    "@azure/msal-browser": "^4.26.2",
+    "@azure/msal-react": "^3.0.22",
     "@emotion/react": "^11.13.5",
     "@emotion/styled": "^11.13.5",
     "@mui/icons-material": "^7.3.5",

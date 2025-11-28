@@ -7,47 +7,27 @@ using PrimusSaaS.Portal.Api.Data;
 using PrimusSaaS.Portal.Api.Models;
 using PrimusSaaS.Portal.Api.Services;
 
-namespace PrimusSaaS.Portal.Api.Services;
+using PrimusSaaS.Portal.Api.Services;
+using Primus.Notifications.Core;
+using PrimusSaaS.Portal.Api.Notifications;
 public class EmailService : IEmailService
 {
     private readonly EmailSettings _settings;
     private readonly ILogger<EmailService> _logger;
     private readonly PortalDbContext _context;
     private readonly string _docsBaseUrl;
-    public EmailService(IOptions<EmailSettings> options, ILogger<EmailService> logger, PortalDbContext context)
+    private readonly NotificationService _notificationService;
+
+    public EmailService(IOptions<EmailSettings> options, ILogger<EmailService> logger, PortalDbContext context, NotificationService notificationService)
     {
         _settings = options.Value;
         _logger = logger;
         _context = context;
+        _notificationService = notificationService;
         _docsBaseUrl = (_settings.DocsBaseUrl ?? "https://akkikhan.github.io/Primus-SaaS").TrimEnd('/');
     }
 
-    private async Task SendEmailAsync(string to, string subject, string body)
-    {
-        try
-        {
-            var message = new MailMessage
-            {
-                From = new MailAddress(_settings.FromAddress),
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = true
-            };
-            message.To.Add(new MailAddress(to));
-            using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
-            {
-                Credentials = new NetworkCredential(_settings.SmtpUser, _settings.SmtpPass),
-                EnableSsl = _settings.EnableSsl
-            };
-            await client.SendMailAsync(message);
-            _logger.LogInformation("Email sent to {To}", to);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send email to {To}", to);
-            throw;
-        }
-    }
+
 
     public async Task SendApplicationCreatedAsync(Application app, string clientSecret, string? recipientEmail = null)
     {
@@ -58,13 +38,8 @@ public class EmailService : IEmailService
             return;
         }
 
-        var subject = "Your new Primus application has been created";
-        var body = $@"<p>Hello,</p>
-<p>Your application <strong>{app.Name}</strong> has been created.</p>
-<p>Client ID: <code>{app.PrimusClientId}</code></p>
-<p>Modules are not assigned yet. We will send integration steps as soon as your module(s) are added.</p>
-<p>Best regards,<br/>Primus SaaS Team</p>";
-        await SendEmailAsync(to, subject, body);
+        var notification = new ApplicationCreatedNotification(app.Name, app.PrimusClientId, to);
+        await _notificationService.SendAsync(notification);
     }
 
     public async Task SendModuleAssignedAsync(Application app, ModuleVersion version)
@@ -82,56 +57,19 @@ public class EmailService : IEmailService
         var(packageName, installCommand) = GetPackageInfo(moduleName, stack);
         // Generate stack-specific documentation link
         var docLink = GenerateDocLink(moduleName, stack);
-        var subject = $"Module {moduleName} assigned to {app.Name}";
-        var body = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .header {{ background: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }}
-        .content {{ padding: 20px; background: #f9f9f9; border-radius: 0 0 5px 5px; }}
-        .code-block {{ background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; margin: 10px 0; }}
-        .button {{ display: inline-block; padding: 12px 24px; background: #4CAF50; color: white !important; text-decoration: none; border-radius: 5px; margin: 10px 0; }}
-        .info-box {{ background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin: 15px 0; }}
-    </style>
-</head>
-<body>
-    <div class=""container"">
-        <div class=""header"">
-            <h1>🎉 Module Assigned!</h1>
-        </div>
-        <div class=""content"">
-            <h2>Hello!</h2>
-            <p>The <strong>{moduleName}</strong> module (v{version.Version}) has been assigned to your application <strong>{app.Name}</strong>.</p>
-            
-            <h3>📦 Installation</h3>
-            <div class=""code-block"">{installCommand}</div>
-            
-            <h3>📚 Documentation</h3>
-            <p>Get started with our comprehensive {stack.ToUpperInvariant()}-specific integration guide:</p>
-            <a href=""{docLink}"" class=""button"">View Documentation →</a>
-            
-            <div class=""info-box"">
-                <strong>📖 What's included:</strong>
-                <ul>
-                    <li>Quick start guide for {stack.ToUpperInvariant()}</li>
-                    <li>Configuration examples</li>
-                    <li>Code samples</li>
-                    <li>Best practices</li>
-                    <li>Troubleshooting guide</li>
-                </ul>
-            </div>
-            
-            <p>Need help? Visit our <a href=""{_docsBaseUrl}/docs"">documentation</a> or contact support.</p>
-            
-            <p>Best regards,<br/>Primus SaaS Team</p>
-        </div>
-    </div>
-</body>
-</html>";
-        await SendEmailAsync(to, subject, body);
+        
+        var notification = new ModuleAssignedNotification(
+            to, 
+            moduleName, 
+            version.Version, 
+            app.Name, 
+            installCommand, 
+            docLink, 
+            stack, 
+            _docsBaseUrl
+        );
+
+        await _notificationService.SendAsync(notification);
     }
 
     private (string packageName, string installCommand) GetPackageInfo(string moduleName, string stack)
@@ -189,47 +127,42 @@ public class EmailService : IEmailService
             _logger.LogWarning("No owner email found for application {AppId}; skipping version notification", app.Id);
             return;
         }
-        var subject = $"New version {version.Version} published for module {version.Module.Name}";
+        
         var npmMapping = await _context.PackageRegistryMappings.FirstOrDefaultAsync(m => m.ModuleId == version.ModuleId && m.RegistryType == "npm");
         var nugetMapping = await _context.PackageRegistryMappings.FirstOrDefaultAsync(m => m.ModuleId == version.ModuleId && m.RegistryType == "nuget");
         var npmPackageName = npmMapping?.PackageName ?? "unknown-package";
         var nugetPackageName = nugetMapping?.PackageName ?? "Unknown.Package";
-        var body = $@"<p>Hello,</p>
-<p>A new version <strong>{version.Version}</strong> of the module <strong>{version.Module.Name}</strong> has been published.</p>
 
-<h3>📦 Installation</h3>
-<ul>
-<li><strong>npm:</strong> <code>npm install {npmPackageName}@{version.Version}</code></li>
-<li><strong>NuGet:</strong> <code>Install-Package {nugetPackageName} -Version {version.Version}</code></li>
-</ul>
+        var notification = new VersionPublishedNotification(
+            to,
+            version.Version,
+            version.Module.Name,
+            npmPackageName,
+            nugetPackageName,
+            version.ReleaseNotes,
+            version.Changelog,
+            version.IsBreakingChange
+        );
 
-<h3>📝 Release Information</h3>
-<p><strong>Release notes:</strong> {version.ReleaseNotes}</p>
-<p><strong>Changelog:</strong> {version.Changelog}</p>
-{(version.IsBreakingChange ? "<p><strong>⚠️ BREAKING CHANGE:</strong> This version contains breaking changes. Please review the changelog carefully before upgrading.</p>" : "")}
+        await _notificationService.SendAsync(notification);
 
-<h3>⚠️ Important: Azure AD Configuration</h3>
-<p>If you're using Azure AD, remember to configure the <code>audiences</code> array with your <strong>Azure AD Client ID</strong>, not the Primus App ID.</p>
-<p><a href=""https://github.com/akkikhan/Primus-SaaS/blob/main/sdk/nodejs/primus-identity-validator/README.md#%EF%B8%8F-critical-azure-ad-audience-configuration"">View Azure AD Configuration Guide →</a></p>
-
-<h3>📚 Resources</h3>
-<ul>
-<li><a href=""https://github.com/akkikhan/Primus-SaaS/blob/main/sdk/nodejs/primus-identity-validator/README.md"">Full Documentation</a></li>
-<li><a href=""http://localhost:5173/applications"">Portal Dashboard</a></li>
-<li><a href=""https://github.com/akkikhan/Primus-SaaS/tree/main/test-apps/acme-dashboard"">Example Project</a></li>
-</ul>
-
-<p>Need help? Reply to this email or visit our <a href=""https://github.com/akkikhan/Primus-SaaS/issues"">support portal</a>.</p>
-
-<p>Best regards,<br/>Primus SaaS Team</p>";
-        await SendEmailAsync(to, subject, body);
         // Send to additional emails if configured
         if (pref != null && !string.IsNullOrEmpty(pref.AdditionalEmails))
         {
             var emails = pref.AdditionalEmails.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             foreach (var email in emails)
             {
-                await SendEmailAsync(email, subject, body);
+                var additionalNotification = new VersionPublishedNotification(
+                    email,
+                    version.Version,
+                    version.Module.Name,
+                    npmPackageName,
+                    nugetPackageName,
+                    version.ReleaseNotes,
+                    version.Changelog,
+                    version.IsBreakingChange
+                );
+                await _notificationService.SendAsync(additionalNotification);
             }
         }
     }

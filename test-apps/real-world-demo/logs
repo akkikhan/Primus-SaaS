@@ -1,0 +1,2 @@
+{"timestamp":"2025-11-26T08:36:58.441Z","level":"INFO","message":"Application starting...","context":{"applicationId":"primus-demo","port":4000}}
+{"timestamp":"2025-11-26T08:36:58.523Z","level":"INFO","message":"Server started successfully","context":{"applicationId":"primus-demo","port":4000,"endpoints":{"public":["/","/auth/login","/auth/register","/products"],"protected":["/orders"],"admin":["/admin/users","/admin/stats"]}}}
