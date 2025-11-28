@@ -126,24 +126,33 @@ export const ApplicationDetailsPage = () => {
   };
 
   const handleCopyAll = () => {
+    const activeModule = currentApplication.integratedModules?.find(m => m.moduleId === activeModuleTab) || currentApplication.integratedModules?.[0];
+    const moduleName = activeModule?.moduleName || 'Identity Validator';
+    const envSnippet = moduleName.toLowerCase().includes('log')
+      ? `PRIMUS_APP_ID=PSP-CLI-XXXXXX
+NODE_ENV=development`
+      : `AZURE_TENANT_ID=<TENANT_ID>
+AZURE_API_AUDIENCE=${currentApplication.primusClientId}
+LOCAL_ISSUER=http://localhost:4000
+LOCAL_AUDIENCE=${currentApplication.primusClientId}
+LOCAL_SECRET=<LOCAL_DEV_SECRET_32+>
+PRIMUS_APP_ID=PSP-CLI-XXXXXX
+NODE_ENV=development
+PORT=3000`;
     const allDocs = `
-# ${currentApplication.name} - Integration Documentation
+# ${currentApplication.name} - ${moduleName} Integration
 
 ## Install Command
-${getInstallCommand()}
+${getInstallCommand(moduleName)}
 
 ## Required Environment Variables
-API_AUDIENCE=${currentApplication.primusClientId}
-AZURE_AD_ISSUER=https://login.microsoftonline.com/<TENANT_ID>/v2.0
-AZURE_AD_AUTHORITY=https://login.microsoftonline.com/<TENANT_ID>/v2.0
-LOCAL_ISSUER=http://localhost:4000
-LOCAL_SECRET=<LOCAL_DEV_SECRET>
+${envSnippet}
 
 ## Configuration
-${getConfigTemplate()}
+${getConfigTemplate(moduleName)}
 
 ## Code Integration
-${getCodeSnippet()}
+${getCodeSnippet(moduleName)}
     `.trim();
     handleCopy(allDocs, 'all-docs');
   };
@@ -233,34 +242,29 @@ ${getCodeSnippet()}
       switch (stack) {
         case 'DotNet':
           return `{
-  "Primus": {
-    "AzureAd": {
-      "TenantId": "<YOUR_TENANT_ID>"
-    }
+  "Azure": {
+    "TenantId": "<YOUR_TENANT_ID>",
+    "ApiAudience": "api://<AZURE_CLIENT_ID>"
+  },
+  "Local": {
+    "Issuer": "https://auth.local",
+    "Secret": "<LOCAL_DEV_SECRET_32+>",
+    "Audience": "${primusClientId}"
+  },
+  "PrimusLogging": {
+    "ApplicationId": "PSP-CLI-XXXXXX"
   }
 }`;
         case 'NodeJS':
         case 'NodeJS-Nest':
         case 'TypeScriptLib':
-          return `// No configuration file needed.
-// Pass issuers directly to middleware/validator:
-// See code snippet below for inline configuration.`;
-        case 'Python':
-        case 'Python-FastAPI':
-          return `{
-  "Primus": {
-    "ClientId": "${primusClientId}"
-  },
-  "Auth": {
-    "Mode": "AzureAd",
-    "AzureAd": {
-      "TenantId": "<YOUR_TENANT_ID>",
-      "ClientId": "<YOUR_AZURE_CLIENT_ID>",
-      "Audience": "api://<YOUR_AZURE_CLIENT_ID>",
-      "Authority": "https://login.microsoftonline.com/<TENANT_ID>/v2.0"
-    }
-  }
-}`;
+          return `# .env
+AZURE_TENANT_ID=<TENANT_ID>
+AZURE_API_AUDIENCE=${primusClientId}
+LOCAL_ISSUER=http://localhost:4000
+LOCAL_AUDIENCE=${primusClientId}
+LOCAL_SECRET=<LOCAL_DEV_SECRET_32+>
+PRIMUS_APP_ID=PSP-CLI-XXXXXX`;
         default:
           return '';
       }
@@ -268,27 +272,25 @@ ${getCodeSnippet()}
       switch (stack) {
         case 'DotNet':
           return `{
-  "Logging": {
-    "Primus": {
-      "Targets": [
-        {
-          "Type": "console",
-          "Format": "PrettyPrint"
-        },
-        {
-          "Type": "file",
-          "Path": "logs/app.log"
-        }
-      ]
+  "PrimusLogging": {
+    "ApplicationId": "PSP-CLI-XXXXXX",
+    "Environment": "development",
+    "Targets": [
+      { "Type": "console", "Pretty": true },
+      { "Type": "file", "Path": "logs/app.log", "Async": true }
+    ],
+    "Pii": {
+      "MaskEmails": true,
+      "MaskCreditCards": true
     }
   }
 }`;
         case 'NodeJS':
         case 'NodeJS-Nest':
         case 'TypeScriptLib':
-          return `// No configuration file needed.
-// Configure logging in code:
-// See code snippet below for setup.`;
+          return `# .env
+PRIMUS_APP_ID=PSP-CLI-XXXXXX
+NODE_ENV=development`;
         default:
           return '';
       }
@@ -305,7 +307,9 @@ ${getCodeSnippet()}
       switch (stack) {
         case 'DotNet':
           return `// Program.cs
+using Microsoft.AspNetCore.Authorization;
 using PrimusSaaS.Identity.Validator;
+using PrimusSaaS.Identity.Validator.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -313,27 +317,39 @@ builder.Services.AddPrimusIdentity(options =>
 {
     options.Issuers = new List<IssuerConfig>
     {
-        new IssuerConfig
+        new()
         {
             Name = "AzureAD",
             Type = IssuerType.Oidc,
-            Issuer = "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
-            Authority = "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
-            Audiences = new List<string> { "${primusClientId}" }
+            Issuer = $"https://login.microsoftonline.com/{builder.Configuration["Azure:TenantId"]}/v2.0",
+            Authority = $"https://login.microsoftonline.com/{builder.Configuration["Azure:TenantId"]}/v2.0",
+            Audiences = new List<string> { builder.Configuration["Azure:ApiAudience"] ?? "${primusClientId}" }
+        },
+        new()
+        {
+            Name = "LocalAuth",
+            Type = IssuerType.Jwt,
+            Issuer = builder.Configuration["Local:Issuer"] ?? "https://auth.local",
+            Secret = builder.Configuration["Local:Secret"]!,
+            Audiences = new List<string> { builder.Configuration["Local:Audience"] ?? "${primusClientId}" }
         }
     };
     options.RequireHttpsMetadata = builder.Environment.IsProduction();
+    options.ClockSkew = TimeSpan.FromMinutes(5);
 });
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
+app.MapGet("/api/secure", [Authorize] (HttpContext ctx) => Results.Ok(new { user = ctx.GetPrimusUser() }));
+app.MapGet("/api/admin", [Authorize(Roles = "Admin")] () => Results.Ok(new { ok = true }));
 app.Run();`;
       case 'NodeJS':
         return `// server.ts
 import express from "express";
-import { primusIdentityMiddleware } from "@primus-saas/identity-validator";
+import { primusIdentityMiddleware, requireRoles } from "@primus-saas/identity-validator";
 
 const app = express();
 
@@ -342,16 +358,29 @@ const primusAuth = primusIdentityMiddleware({
     {
       name: "AzureAD",
       type: "oidc",
-      issuer: "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
-      authority: "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
-      audiences: ["${primusClientId}"]
+      issuer: \`https://login.microsoftonline.com/\${process.env.AZURE_TENANT_ID}/v2.0\`,
+      authority: \`https://login.microsoftonline.com/\${process.env.AZURE_TENANT_ID}/v2.0\`,
+      audiences: [process.env.AZURE_API_AUDIENCE || "${primusClientId}"]
+    },
+    {
+      name: "LocalAuth",
+      type: "jwt",
+      issuer: process.env.LOCAL_ISSUER || "http://localhost:4000",
+      secret: process.env.LOCAL_SECRET || "<LOCAL_DEV_SECRET_32+>",
+      audiences: [process.env.LOCAL_AUDIENCE || "${primusClientId}"]
     }
-  ]
+  ],
+  jwksCacheTtl: 24,
+  clockSkew: 300
 });
 
 app.get("/api/me", primusAuth, (req, res) => {
   res.json({ user: req.primusUser });
-});`;
+});
+app.get("/api/admin", primusAuth, requireRoles("Admin"), (req, res) => {
+  res.json({ ok: true, user: req.primusUser });
+});
+app.listen(3000);`;
       case 'NodeJS-Nest':
         return `// auth.module.ts
 import { Module, MiddlewareConsumer, NestModule } from "@nestjs/common";
@@ -362,9 +391,16 @@ const primusAuth = primusIdentityMiddleware({
     {
       name: "AzureAD",
       type: "oidc",
-      issuer: "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
-      authority: "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
-      audiences: ["${primusClientId}"]
+      issuer: \`https://login.microsoftonline.com/\${process.env.AZURE_TENANT_ID}/v2.0\`,
+      authority: \`https://login.microsoftonline.com/\${process.env.AZURE_TENANT_ID}/v2.0\`,
+      audiences: [process.env.AZURE_API_AUDIENCE || "${primusClientId}"]
+    },
+    {
+      name: "LocalAuth",
+      type: "jwt",
+      issuer: process.env.LOCAL_ISSUER || "http://localhost:4000",
+      secret: process.env.LOCAL_SECRET || "<LOCAL_DEV_SECRET_32+>",
+      audiences: [process.env.LOCAL_AUDIENCE || "${primusClientId}"]
     }
   ]
 });
@@ -387,9 +423,16 @@ export const validator = new PrimusIdentityValidator({
     {
       name: "AzureAD",
       type: "oidc",
-      issuer: "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
-      authority: "https://login.microsoftonline.com/<YOUR_TENANT_ID>/v2.0",
-      audiences: ["${primusClientId}"]
+      issuer: \`https://login.microsoftonline.com/\${process.env.AZURE_TENANT_ID}/v2.0\`,
+      authority: \`https://login.microsoftonline.com/\${process.env.AZURE_TENANT_ID}/v2.0\`,
+      audiences: [process.env.AZURE_API_AUDIENCE || "${primusClientId}"]
+    },
+    {
+      name: "LocalAuth",
+      type: "jwt",
+      issuer: process.env.LOCAL_ISSUER || "http://localhost:4000",
+      secret: process.env.LOCAL_SECRET || "<LOCAL_DEV_SECRET_32+>",
+      audiences: [process.env.LOCAL_AUDIENCE || "${primusClientId}"]
     }
   ]
 });
@@ -402,43 +445,6 @@ if (result.isValid) {
 } else {
   console.error("Validation failed:", result.error);
 }`;
-      case 'Python':
-        return `# app.py
-from primus_identity_validator import createIdentityValidator
-
-auth = createIdentityValidator(
-    primus_client_id="${primusClientId}",
-    mode="AzureAd",
-    azure_ad={
-        "tenant_id": os.getenv("AZURE_TENANT"),
-        "client_id": os.getenv("AZURE_CLIENT"),
-        "audience": os.getenv("AZURE_AUD")
-    }
-)
-
-@app.route("/api/me")
-@auth.require_auth
-def get_user():
-    return {"user": request.user}`;
-      case 'Python-FastAPI':
-        return `# main.py
-from fastapi import FastAPI, Depends
-from primus_identity_validator import PrimusIdentityValidator
-
-app = FastAPI()
-validator = PrimusIdentityValidator(
-    primus_client_id="${primusClientId}",
-    mode="AzureAd",
-    azure_ad={
-        "tenant_id": "<YOUR_TENANT_ID>",
-        "client_id": "<YOUR_AZURE_CLIENT_ID>",
-        "audience": "api://<YOUR_AZURE_CLIENT_ID>"
-    }
-)
-
-@app.get("/api/me")
-async def get_user(user=Depends(validator.require_auth)):
-    return {"user": user}`;
       default:
         return '';
     }
@@ -446,21 +452,29 @@ async def get_user(user=Depends(validator.require_auth)):
     switch (stack) {
       case 'DotNet':
         return `// Program.cs
-using PrimusSaaS.Logging;
+using PrimusSaaS.Logging.Extensions;
+using PrimusLogLevel = PrimusSaaS.Logging.Core.LogLevel;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Logging.AddPrimusLogging(options =>
+builder.Logging.ClearProviders();
+builder.Logging.AddPrimus(options =>
 {
-    options.Targets = new List<LogTarget>
+    options.ApplicationId = builder.Configuration["PrimusLogging:ApplicationId"] ?? "APP-UNKNOWN";
+    options.Environment = builder.Environment.IsProduction() ? "production" : "development";
+    options.MinLevel = PrimusLogLevel.Info;
+    options.Targets = new()
     {
-        new ConsoleTarget { Format = "PrettyPrint" },
-        new FileTarget { Path = "logs/app.log" }
+        new() { Type = "console", Pretty = builder.Environment.IsDevelopment() },
+        new() { Type = "file", Path = "logs/app.log", Async = true }
     };
+    options.Pii.MaskEmails = true;
+    options.Pii.MaskCreditCards = true;
 });
 
 var app = builder.Build();
 app.UsePrimusLogging();  // Adds HTTP context enrichment
+app.MapGet("/health", () => Results.Ok(new { ok = true }));
 app.Run();`;
       case 'NodeJS':
       case 'NodeJS-Nest':
@@ -482,10 +496,12 @@ app.use(primusLoggingMiddleware(logger));
 
 app.get("/api/orders", (req, res) => {
   const timer = req.logger.startTimer();
-  req.logger.info("Listing orders");
-  timer.done("Orders fetched", { count: 0 });
+  req.logger.info("Listing orders", { correlationId: req.logger.correlationId });
+  timer.done("Orders fetched", { count: 0, correlationId: req.logger.correlationId });
   res.json({ items: [] });
-});`;
+});
+
+app.listen(3000);`;
       case 'TypeScriptLib':
         return `// logger.ts
 import { createLogger } from "@primus-saas/logging";

@@ -234,7 +234,12 @@ app.Run();
   - Node.js Express starter: `examples/nodejs-express` (.env.example).
   - ASP.NET Core starter: `examples/dotnet-api` (appsettings template in README).
 
-## 8) Troubleshooting & FAQs
+## 8) Portal Application Details / PDF
+- The Portal Application Details page mirrors this guide: install commands, env variables (with your `PrimusClientId`), config JSON/.env, and starter code per module/stack.
+- “Copy all” and “Download PDF” in the portal pull from this same content; anchors point to this page (`/docs/modules/client-integration-guide` with `#5-integration-steps` for Identity and `#add-logging` for Logging).
+- If you change package versions, update the portal docs base URL (`VITE_DOCS_BASE_URL`) and module metadata so the integration tab stays in sync.
+
+## 9) Troubleshooting & FAQs
 - No/invalid token → 401; ensure `Authorization: Bearer <token>`.
 - Invalid signature/untrusted issuer → issuer/audience mismatch or secret mismatch.
 - Token expired → re-issue token; adjust `clockSkew` for dev.
@@ -242,18 +247,18 @@ app.Run();
 - PII masking → enable `options.Pii.*` in .NET; avoid logging secrets in Node.
 - Where to store env vars → `.env` (local Node), User Secrets/appsettings (.NET), App Service settings/Key Vault in cloud.
 
-## 9) Advanced / Customization
+## 10) Advanced / Customization
 - Multi-issuer routing for any OIDC + JWT issuers.
 - JWKS cache TTL (`jwksCacheTtl`, default 24h).
 - Tenant resolution: map claims to tenant context via `TenantResolver` (.NET).
 - Logging targets: console/file/App Insights (rotation and compression on .NET file target).
 - Custom enrichers (Node/.NET) to attach tenant/user/request metadata.
 
-## 10) Versioning
+## 11) Versioning
 - Aligned with: Node Identity 1.3.2, .NET Identity 1.3.0, Node Logging 1.2.1, .NET Logging 1.2.1.
 - SemVer: MAJOR breaking, MINOR features, PATCH fixes. Keep docs in sync with releases.
 
-## 11) Validation Checklist
+## 12) Validation Checklist
 - [ ] Azure AD app registered; Tenant ID, Client ID, secret, audience noted.
 - [ ] Environment variables set (no secrets in source control).
 - [ ] Identity Validator installed and middleware registered.

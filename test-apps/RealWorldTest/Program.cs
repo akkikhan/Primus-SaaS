@@ -28,7 +28,7 @@ class Program
             {
                 services.AddPrimusNotifications(config =>
                 {
-                    var templatePath = Path.GetFullPath("../../../Templates");
+                    var templatePath = Path.GetFullPath("Templates");
                     config.UseFileTemplates(templatePath);
                     config.UseLogger();
                     config.UseInMemoryQueue(options =>
