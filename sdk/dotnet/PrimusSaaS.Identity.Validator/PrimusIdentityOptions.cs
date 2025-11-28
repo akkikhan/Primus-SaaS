@@ -13,6 +13,16 @@ public enum IssuerType
     Oidc = 0,
 
     /// <summary>
+    /// Auth0 issuer (alias for OIDC to keep DX discoverable).
+    /// </summary>
+    Auth0 = Oidc,
+
+    /// <summary>
+    /// Google issuer (alias for OIDC to keep DX discoverable).
+    /// </summary>
+    Google = Oidc,
+
+    /// <summary>
     /// Azure AD issuer (alias for OIDC to improve discoverability).
     /// </summary>
     AzureAD = Oidc,
@@ -63,6 +73,57 @@ public class IssuerConfig
     /// Valid audiences for this issuer.
     /// </summary>
     public List<string> Audiences { get; set; } = new();
+
+    /// <summary>
+    /// Optional claim mappings to normalize provider-specific claims into common claim types.
+    /// Key = source claim type, Value = target claim type.
+    /// </summary>
+    public Dictionary<string, string> ClaimMappings { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Optional custom role claim name (mapped into ClaimTypes.Role when provided).
+    /// </summary>
+    public string? RoleClaimName { get; set; }
+
+    /// <summary>
+    /// Optional custom permission claim name (mirrored into PrimusClaimTypes.Permission).
+    /// </summary>
+    public string PermissionClaimName { get; set; } = PrimusClaimTypes.Permission;
+
+    /// <summary>
+    /// Optional organization claim name (mirrored into PrimusClaimTypes.Organization when provided).
+    /// </summary>
+    public string OrganizationClaimName { get; set; } = PrimusClaimTypes.Organization;
+
+    /// <summary>
+    /// Whether to enforce presence (and optionally a specific value) for the organization claim.
+    /// </summary>
+    public bool ValidateOrganization { get; set; }
+
+    /// <summary>
+    /// Optional required organization value when ValidateOrganization is enabled.
+    /// </summary>
+    public string? RequiredOrganization { get; set; }
+
+    /// <summary>
+    /// Whether machine-to-machine tokens (client credentials) are allowed for this issuer.
+    /// </summary>
+    public bool AllowMachineToMachine { get; set; }
+
+    /// <summary>
+    /// Allowed grant types for machine-to-machine tokens (e.g., client-credentials).
+    /// </summary>
+    public List<string> AllowedGrantTypes { get; set; } = new();
+
+    /// <summary>
+    /// Allowed scopes for machine-to-machine tokens (optional). If set, incoming scopes must be a superset.
+    /// </summary>
+    public List<string> AllowedMachineToMachineScopes { get; set; } = new();
+
+    /// <summary>
+    /// Require email_verified=true for user tokens (non-M2M) when true.
+    /// </summary>
+    public bool RequireEmailVerification { get; set; }
 }
 
 /// <summary>
@@ -74,6 +135,16 @@ public class PrimusIdentityOptions
     /// List of trusted identity providers.
     /// </summary>
     public List<IssuerConfig> Issuers { get; set; } = new();
+
+    /// <summary>
+    /// Multi-tenant Auth0 configuration (optional).
+    /// </summary>
+    public Auth0MultiTenantOptions? Auth0MultiTenant { get; set; }
+
+    /// <summary>
+    /// Logging options for authentication events and validation flow.
+    /// </summary>
+    public PrimusIdentityLoggingOptions Logging { get; set; } = new();
 
     /// <summary>
     /// Whether to validate the token lifetime. Default is true.
@@ -151,6 +222,11 @@ public class PrimusIdentityOptions
             errors.Add($"Duplicate issuer claim value '{issuer.Issuer}'. Configure unique 'Issuer' per identity provider.");
         }
 
+        if (!IsHttpsAbsoluteUri(issuer.Issuer))
+        {
+            errors.Add($"Issuer must be an absolute HTTPS URI for '{issuer.Name}'. Example: https://your-tenant.auth0.com/.");
+        }
+
         if (issuer.Audiences == null || !issuer.Audiences.Any() || issuer.Audiences.Any(string.IsNullOrWhiteSpace))
         {
             errors.Add($"At least one non-empty audience is required for '{issuer.Name}'.");
@@ -185,6 +261,35 @@ public class PrimusIdentityOptions
                 errors.Add($"JWKS URL must be an absolute URI for '{issuer.Name}'.");
             }
         }
+
+        if (issuer.ClaimMappings.Any(kvp => string.IsNullOrWhiteSpace(kvp.Key) || string.IsNullOrWhiteSpace(kvp.Value)))
+        {
+            errors.Add($"ClaimMappings for '{issuer.Name}' cannot contain empty keys or values.");
+        }
+
+        if (issuer.ValidateOrganization)
+        {
+            if (string.IsNullOrWhiteSpace(issuer.OrganizationClaimName))
+            {
+                errors.Add($"OrganizationClaimName is required when ValidateOrganization=true for '{issuer.Name}'.");
+            }
+        }
+
+        if (issuer.AllowMachineToMachine && issuer.AllowedGrantTypes.Any(string.IsNullOrWhiteSpace))
+        {
+            errors.Add($"AllowedGrantTypes cannot contain empty entries for '{issuer.Name}'.");
+        }
+
+        if (issuer.AllowMachineToMachine && issuer.AllowedMachineToMachineScopes.Any(string.IsNullOrWhiteSpace))
+        {
+            errors.Add($"AllowedMachineToMachineScopes cannot contain empty entries for '{issuer.Name}'.");
+        }
+    }
+
+    private static bool IsHttpsAbsoluteUri(string value)
+    {
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri)) return false;
+        return uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

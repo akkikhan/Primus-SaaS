@@ -71,6 +71,182 @@ app.MapControllers();
 app.Run();
 ```
 
+### Auth0 (simple helper)
+
+```csharp
+builder.Services.AddPrimusIdentity(options =>
+{
+    // One-liner with sane defaults (issuer/audience/lifetime validation on)
+    options.UseAuth0(
+        domain: "your-tenant.auth0.com",
+        audience: "https://your-api-identifier",
+        auth0 =>
+        {
+            // Optional: map namespaced roles into [Authorize(Roles="...")]
+            auth0.RoleClaimName = "https://your-api-identifier/roles";
+            // Optional: require an organization claim/value
+            auth0.ValidateOrganization = true;
+            auth0.RequiredOrganization = "org_abc123";
+        });
+
+    // Add other providers alongside Auth0
+    options.Issuers.Add(new IssuerConfig
+    {
+        Name = "AzureAD",
+        Type = IssuerType.AzureAD,
+        Issuer = "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+        Authority = "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+        Audiences = new List<string> { "api://your-api-id" }
+    });
+});
+```
+
+### Auth0 permissions/org policies
+
+```csharp
+builder.Services.AddAuthorization(options =>
+{
+    // Require ALL listed permissions
+    options.RequireAuth0Permissions("CanManageClients", "read:clients", "write:clients");
+    // Require ANY listed permission
+    options.RequireAnyAuth0Permission("CanReadClients", "read:clients", "read:all");
+    // Require an organization claim/value (set ValidateOrganization = true in Auth0 config)
+    options.AddPrimusClaimPolicy("RequireOrg", "org_id");
+});
+```
+
+### Auth0 permission attributes (controller-level)
+
+```csharp
+using PrimusSaaS.Identity.Validator;
+
+[Auth0Permission("read:clients")]
+public async Task<IActionResult> GetClients() { ... }
+
+[Auth0Permissions("read:clients", "write:clients")]
+public async Task<IActionResult> UpdateClient() { ... } // requires BOTH
+
+[Auth0AnyPermission("read:clients", "read:all")]
+public async Task<IActionResult> GetClient() { ... } // requires ANY
+
+[RequireOrganization] // requires org claim (default org_id) to be present
+public async Task<IActionResult> OrgScoped() { ... }
+
+[RequireOrganization("org_abc123")] // requires specific org value
+public async Task<IActionResult> SpecificOrgOnly() { ... }
+```
+
+### Google OIDC (ID tokens)
+
+```csharp
+builder.Services.AddPrimusIdentity(options =>
+{
+    options.UseGoogle(audience: "<google-client-id>");
+    // Add other providers as needed (AzureAD/Auth0/Local)
+});
+
+// Machine-to-machine & email verification (Auth0 example)
+builder.Services.AddPrimusIdentity(options =>
+{
+    options.UseAuth0("your-tenant.auth0.com", "https://your-api-identifier", auth0 =>
+    {
+        auth0.AllowMachineToMachine = true;
+        auth0.AllowedGrantTypes.Add("client-credentials");
+        auth0.AllowedMachineToMachineScopes.AddRange(new[] { "read:clients", "write:clients" });
+        auth0.RequireEmailVerification = true; // for user tokens
+    });
+});
+```
+
+### M2M scope enforcement
+- Set `AllowMachineToMachine = true` and `AllowedMachineToMachineScopes` to restrict scopes on client-credentials tokens.
+- Tokens with scopes outside the allowed list will be rejected.
+
+### Local/Test token generation
+
+```csharp
+// Generate a test JWT (HMAC) for local or integration tests
+var token = TestTokenBuilder.Create()
+    .WithIssuer("https://localhost")
+    .WithAudience("api://your-api-id")
+    .WithSecret("local-secret")  // match your IssuerConfig secret when validating
+    .WithClaim("sub", "user-123")
+    .WithClaim("email", "test@example.com")
+    .Build();
+```
+
+### Logging & diagnostics
+- Configure logging verbosity and redaction via `options.Logging`:
+  - `MinimumLevel` (default: Information)
+  - `RedactSensitiveData` (default: true)
+  - `LogValidationSteps` (default: true)
+  - `LogClaimMapping` (default: false)
+- Expose diagnostics endpoint with `app.MapPrimusIdentityDiagnostics();`
+
+### Multi-provider (Azure AD + Auth0 + Local)
+
+```csharp
+builder.Services.AddPrimusIdentity(options =>
+{
+    // Azure AD
+    options.Issuers.Add(new IssuerConfig
+    {
+        Name = "AzureAD",
+        Type = IssuerType.AzureAD,
+        Issuer = "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+        Authority = "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+        Audiences = new List<string> { "api://your-api-id" }
+    });
+
+    // Auth0 (one-line helper)
+    options.UseAuth0("your-tenant.auth0.com", "https://your-api-identifier", auth0 =>
+    {
+        auth0.RoleClaimName = "https://your-api-identifier/roles"; // optional
+        auth0.ValidateOrganization = true;
+        auth0.RequiredOrganization = "org_abc123";
+    });
+
+    // Local JWT (shared secret)
+    options.Issuers.Add(new IssuerConfig
+    {
+        Name = "LocalAuth",
+        Type = IssuerType.Jwt,
+        Issuer = "https://auth.yourcompany.com",
+        Secret = "your-local-secret",
+        Audiences = new List<string> { "api://your-api-id" }
+    });
+});
+```
+
+### Auth0 multi-tenant (resolve per request)
+
+```csharp
+builder.Services.AddPrimusIdentity(options =>
+{
+    options.Auth0MultiTenant = new Auth0MultiTenantOptions
+    {
+        ResolveTenant = ctx =>
+        {
+            // Example: subdomain-based tenant routing
+            var host = ctx.Request.Host.Host;
+            return host.Split('.').FirstOrDefault();
+        }
+    };
+
+    options.Auth0MultiTenant.Tenants["client-a"] = new Auth0Options
+    {
+        Domain = "client-a.auth0.com",
+        Audiences = { "https://api-client-a" }
+    };
+
+    options.Auth0MultiTenant.Tenants["client-b"] = new Auth0Options
+    {
+        Domain = "client-b.auth0.com",
+        Audiences = { "https://api-client-b" }
+    };
+});
+```
+
 ### 2. Protect Your API Endpoints
 
 ```csharp
@@ -154,6 +330,12 @@ if (primusUser != null)
 | JwksUrl | JWT optional | JWKS endpoint (if not using Secret) |
 | Secret | JWT optional | Symmetric key for HMAC tokens |
 | Audiences | Yes | Allowed audience values |
+| ClaimMappings | No | Map provider claims to standard claim types |
+| RoleClaimName | No | If set, mapped into ClaimTypes.Role |
+| PermissionClaimName | No | Permission claim to normalize (defaults to `permissions`) |
+| OrganizationClaimName | No | Organization claim to normalize (defaults to `org_id`) |
+| ValidateOrganization | No | Require org claim presence (and optional value) |
+| RequiredOrganization | No | Specific organization value to require when ValidateOrganization = true |
 
 ## Configuration from appsettings.json
 
@@ -239,6 +421,12 @@ For complete token generation examples, see [TOKEN_GENERATION_GUIDE.md](./TOKEN_
 | Token expired | Token past expiration | Generate new token or increase ClockSkew |
 
 For detailed troubleshooting, see [ERROR_REFERENCE.md](./ERROR_REFERENCE.md)
+
+## Migrating from JwtBearer/Auth0 SDK
+
+- You can swap existing `AddJwtBearer` Auth0 config for `options.UseAuth0(domain, audience, ...)` without changing your controllers; permissions/roles map into standard claims.
+- Auth0 namespaced roles: set `RoleClaimName` to your namespaced roles claim and `[Authorize(Roles = "...")]` will work.
+- Permissions: use policies (`RequireAuth0Permissions/RequireAnyAuth0Permission`) or attributes (`Auth0Permission/Auth0Permissions/Auth0AnyPermission`).
 
 ## Production Deployment
 

@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Primus.Notifications.Abstractions;
 using Primus.Notifications.Channels.Email;
 using Primus.Notifications.Configuration;
@@ -36,20 +37,42 @@ public class PrimusNotificationBuilder
 
     public PrimusNotificationBuilder UseSmtp(Action<SmtpOptions> configureOptions)
     {
-        _services.Configure(configureOptions);
+        _services.Configure<SmtpOptions>(opts =>
+        {
+            configureOptions(opts);
+            opts.Validate();
+        });
         _services.AddScoped<IChannel, SmtpEmailChannel>();
         return this;
     }
 
     public PrimusNotificationBuilder UseFileTemplates(string basePath)
     {
-        _services.AddSingleton<ITemplateService>(new FileTemplateService(basePath));
+        _services.AddSingleton<ITemplateService>(sp =>
+            new FileTemplateService(basePath, sp.GetService<ILogger<FileTemplateService>>()));
         return this;
     }
 
     public PrimusNotificationBuilder UseLogger()
     {
         _services.AddScoped<IChannel, Primus.Notifications.Channels.LoggerChannel>();
+        return this;
+    }
+
+    public PrimusNotificationBuilder UseInMemoryQueue(Action<NotificationQueueOptions>? configureOptions = null)
+    {
+        if (configureOptions != null)
+        {
+            _services.Configure(configureOptions);
+        }
+        else
+        {
+            _services.Configure<NotificationQueueOptions>(_ => { });
+        }
+
+        _services.AddSingleton<InMemoryNotificationQueue>();
+        _services.AddSingleton<INotificationQueue>(sp => sp.GetRequiredService<InMemoryNotificationQueue>());
+        _services.AddHostedService<NotificationBackgroundService>();
         return this;
     }
 }

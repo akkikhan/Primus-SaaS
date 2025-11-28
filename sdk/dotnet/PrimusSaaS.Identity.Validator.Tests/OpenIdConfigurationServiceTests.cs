@@ -313,6 +313,18 @@ public class OpenIdConfigurationServiceTests : IDisposable
         url.Should().Be(expected);
     }
 
+    [Theory]
+    [InlineData("https://demo.auth0.com", "https://demo.auth0.com/.well-known/openid-configuration")]
+    [InlineData("https://login.example.com/basepath", "https://login.example.com/basepath/.well-known/openid-configuration")]
+    public void GetWellKnownUrlFromAuthority_NonAzure_DoesNotAppendV2(string authority, string expected)
+    {
+        // Act
+        var url = OpenIdConfigurationService.GetWellKnownUrlFromAuthority(authority);
+
+        // Assert
+        url.Should().Be(expected);
+    }
+
     [Fact]
     public async Task GetConfigurationAsync_WithExtraFieldsInResponse_DeserializesSuccessfully()
     {

@@ -111,4 +111,37 @@ public class PrimusUserTests
         // Assert
         user.Roles.Should().BeEmpty();
     }
+
+    [Fact]
+    public void FromClaimsPrincipal_SetsIdentityProviderAndSocial()
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, "google-oauth2|abc"),
+            new Claim("sub", "google-oauth2|abc")
+        };
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "test"));
+
+        var user = PrimusUser.FromClaimsPrincipal(principal);
+
+        user.IdentityProvider.Should().Be("google-oauth2");
+        user.IsSocialLogin.Should().BeTrue();
+    }
+
+    [Fact]
+    public void FromClaimsPrincipal_DetectsMachineToMachine()
+    {
+        var claims = new List<Claim>
+        {
+            new Claim("sub", "client-id@clients"),
+            new Claim("gty", "client-credentials"),
+            new Claim("azp", "client-id")
+        };
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "test"));
+
+        var user = PrimusUser.FromClaimsPrincipal(principal);
+
+        user.IsMachineToMachine.Should().BeTrue();
+        user.ClientId.Should().Be("client-id");
+    }
 }

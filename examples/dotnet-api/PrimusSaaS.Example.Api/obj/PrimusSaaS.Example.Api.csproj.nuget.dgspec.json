@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\aakib\\Primus SaaS\\examples\\dotnet-api\\PrimusSaaS.Example.Api\\PrimusSaaS.Example.Api.csproj": {}
+    "C:\\Users\\Akki\\Primus SaaS\\examples\\dotnet-api\\PrimusSaaS.Example.Api\\PrimusSaaS.Example.Api.csproj": {}
   },
   "projects": {
-    "C:\\Users\\aakib\\Primus SaaS\\examples\\dotnet-api\\PrimusSaaS.Example.Api\\PrimusSaaS.Example.Api.csproj": {
+    "C:\\Users\\Akki\\Primus SaaS\\examples\\dotnet-api\\PrimusSaaS.Example.Api\\PrimusSaaS.Example.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\aakib\\Primus SaaS\\examples\\dotnet-api\\PrimusSaaS.Example.Api\\PrimusSaaS.Example.Api.csproj",
+        "projectUniqueName": "C:\\Users\\Akki\\Primus SaaS\\examples\\dotnet-api\\PrimusSaaS.Example.Api\\PrimusSaaS.Example.Api.csproj",
         "projectName": "PrimusSaaS.Example.Api",
-        "projectPath": "C:\\Users\\aakib\\Primus SaaS\\examples\\dotnet-api\\PrimusSaaS.Example.Api\\PrimusSaaS.Example.Api.csproj",
-        "packagesPath": "C:\\Users\\aakib\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\aakib\\Primus SaaS\\examples\\dotnet-api\\PrimusSaaS.Example.Api\\obj\\",
+        "projectPath": "C:\\Users\\Akki\\Primus SaaS\\examples\\dotnet-api\\PrimusSaaS.Example.Api\\PrimusSaaS.Example.Api.csproj",
+        "packagesPath": "C:\\Users\\Akki\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Akki\\Primus SaaS\\examples\\dotnet-api\\PrimusSaaS.Example.Api\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\aakib\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\Akki\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net7.0"
@@ -26,8 +26,8 @@
           "net7.0": {
             "targetAlias": "net7.0",
             "projectReferences": {
-              "C:\\Users\\aakib\\Primus SaaS\\sdk\\dotnet\\PrimusSaaS.Identity.Validator\\PrimusSaaS.Identity.Validator.csproj": {
-                "projectPath": "C:\\Users\\aakib\\Primus SaaS\\sdk\\dotnet\\PrimusSaaS.Identity.Validator\\PrimusSaaS.Identity.Validator.csproj"
+              "C:\\Users\\Akki\\Primus SaaS\\sdk\\dotnet\\PrimusSaaS.Identity.Validator\\PrimusSaaS.Identity.Validator.csproj": {
+                "projectPath": "C:\\Users\\Akki\\Primus SaaS\\sdk\\dotnet\\PrimusSaaS.Identity.Validator\\PrimusSaaS.Identity.Validator.csproj"
               }
             }
           }
@@ -70,22 +70,22 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.410\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Users\\Akki\\AppData\\Local\\Microsoft\\dotnet\\sdk\\7.0.410\\RuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\aakib\\Primus SaaS\\sdk\\dotnet\\PrimusSaaS.Identity.Validator\\PrimusSaaS.Identity.Validator.csproj": {
+    "C:\\Users\\Akki\\Primus SaaS\\sdk\\dotnet\\PrimusSaaS.Identity.Validator\\PrimusSaaS.Identity.Validator.csproj": {
       "version": "1.3.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\aakib\\Primus SaaS\\sdk\\dotnet\\PrimusSaaS.Identity.Validator\\PrimusSaaS.Identity.Validator.csproj",
+        "projectUniqueName": "C:\\Users\\Akki\\Primus SaaS\\sdk\\dotnet\\PrimusSaaS.Identity.Validator\\PrimusSaaS.Identity.Validator.csproj",
         "projectName": "PrimusSaaS.Identity.Validator",
-        "projectPath": "C:\\Users\\aakib\\Primus SaaS\\sdk\\dotnet\\PrimusSaaS.Identity.Validator\\PrimusSaaS.Identity.Validator.csproj",
-        "packagesPath": "C:\\Users\\aakib\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\aakib\\Primus SaaS\\sdk\\dotnet\\PrimusSaaS.Identity.Validator\\obj\\",
+        "projectPath": "C:\\Users\\Akki\\Primus SaaS\\sdk\\dotnet\\PrimusSaaS.Identity.Validator\\PrimusSaaS.Identity.Validator.csproj",
+        "packagesPath": "C:\\Users\\Akki\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Akki\\Primus SaaS\\sdk\\dotnet\\PrimusSaaS.Identity.Validator\\obj\\",
         "projectStyle": "PackageReference",
         "crossTargeting": true,
         "configFilePaths": [
-          "C:\\Users\\aakib\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\Akki\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net6.0",
@@ -160,7 +160,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.410\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Users\\Akki\\AppData\\Local\\Microsoft\\dotnet\\sdk\\7.0.410\\RuntimeIdentifierGraph.json"
         },
         "net7.0": {
           "targetAlias": "net7.0",
@@ -197,7 +197,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.410\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Users\\Akki\\AppData\\Local\\Microsoft\\dotnet\\sdk\\7.0.410\\RuntimeIdentifierGraph.json"
         }
       }
     }

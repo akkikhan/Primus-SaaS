@@ -6,6 +6,7 @@ using PrimusSaaS.Portal.Api.Services;
 using System.Text;
 using AspNetCoreRateLimit;
 using Primus.Notifications;
+using Primus.Notifications.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +40,13 @@ builder.Services.AddPrimusNotifications(config =>
     
     config.UseFileTemplates(Path.Combine(builder.Environment.ContentRootPath, "Templates"));
     config.UseLogger();
+    config.UseInMemoryQueue(options =>
+    {
+        options.BoundedCapacity = 1000;
+        options.MaxParallelHandlers = 4;
+        options.MaxRetryCount = 2;
+        options.BaseRetryDelayMs = 200;
+    });
 });
 
 // Add rate limiting

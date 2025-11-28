@@ -2,10 +2,10 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Primus.Notifications;
 using Primus.Notifications.Abstractions;
-using Primus.Notifications.Core;
 
 namespace RealWorldTest;
 
@@ -13,39 +13,55 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        Console.WriteLine("═══════════════════════════════════════════════════════════");
-        Console.WriteLine("  PRIMUS NOTIFICATION MODULE - REAL WORLD TEST");
-        Console.WriteLine("═══════════════════════════════════════════════════════════\n");
+        Console.WriteLine("==========================================================");
+        Console.WriteLine("  PRIMUS NOTIFICATION MODULE - REAL WORLD QUEUE TEST");
+        Console.WriteLine("==========================================================\n");
 
-        // Setup services
-        var services = new ServiceCollection();
-        services.AddLogging(config => config.AddConsole().SetMinimumLevel(LogLevel.Information));
-
-        services.AddPrimusNotifications(config =>
-        {
-            config.UseSmtp(options =>
+        var host = Host.CreateDefaultBuilder(args)
+            .ConfigureLogging(logging =>
             {
-                options.Host = "smtp.gmail.com";
-                options.Port = 587;
-                options.FromAddress = "noreply@primussaas.com";
-                options.FromName = "Primus SaaS";
-                options.Username = "test@example.com";
-                options.Password = "test-password";
-            });
+                logging.ClearProviders();
+                logging.AddConsole();
+                logging.SetMinimumLevel(LogLevel.Information);
+            })
+            .ConfigureServices(services =>
+            {
+                services.AddPrimusNotifications(config =>
+                {
+                    var templatePath = Path.GetFullPath("../../../Templates");
+                    config.UseFileTemplates(templatePath);
+                    config.UseLogger();
+                    config.UseInMemoryQueue(options =>
+                    {
+                        options.BoundedCapacity = 500;
+                        options.MaxParallelHandlers = 2;
+                        options.MaxRetryCount = 1;
+                        options.BaseRetryDelayMs = 200;
+                    });
 
-            var templatePath = Path.GetFullPath("../../../Templates");
-            config.UseFileTemplates(templatePath);
-            config.UseLogger();
-        });
+                    var smtpHost = Environment.GetEnvironmentVariable("SMTP_HOST");
+                    if (!string.IsNullOrWhiteSpace(smtpHost))
+                    {
+                        config.UseSmtp(options =>
+                        {
+                            options.Host = smtpHost;
+                            options.Port = int.TryParse(Environment.GetEnvironmentVariable("SMTP_PORT"), out var port) ? port : 587;
+                            options.FromAddress = Environment.GetEnvironmentVariable("SMTP_FROM") ?? "noreply@primussaas.com";
+                            options.FromName = Environment.GetEnvironmentVariable("SMTP_FROM_NAME") ?? "Primus SaaS";
+                            options.Username = Environment.GetEnvironmentVariable("SMTP_USER") ?? string.Empty;
+                            options.Password = Environment.GetEnvironmentVariable("SMTP_PASS") ?? string.Empty;
+                            options.EnableSsl = (Environment.GetEnvironmentVariable("SMTP_ENABLE_SSL") ?? "true").Equals("true", StringComparison.OrdinalIgnoreCase);
+                        });
+                    }
+                });
+            })
+            .Build();
 
-        var provider = services.BuildServiceProvider();
-        var notifier = provider.GetRequiredService<NotificationService>();
+        await host.StartAsync();
+        var queue = host.Services.GetRequiredService<INotificationQueue>();
 
-        // Real-World Scenario: New Application Created
-        Console.WriteLine("📋 SCENARIO: New Application Registration");
-        Console.WriteLine("─────────────────────────────────────────────────────────\n");
-
-        var appCreatedNotification = new SimpleNotification(
+        Console.WriteLine("🗂️ SCENARIO: New Application Registration\n--------------------------------------------------");
+        await queue.EnqueueAsync(new SimpleNotification(
             "ApplicationCreated",
             new
             {
@@ -57,17 +73,12 @@ class Program
                 Email = "developer@company.com",
                 Name = "John Developer"
             }
-        );
+        ));
+        await Task.Delay(300);
+        Console.WriteLine("✓ Notification dispatched (queued)\n");
 
-        Console.WriteLine("Dispatching ApplicationCreated notification...");
-        await notifier.SendAsync(appCreatedNotification);
-        Console.WriteLine("✓ Notification dispatched\n");
-
-        // Real-World Scenario: Module Assigned
-        Console.WriteLine("\n📋 SCENARIO: Identity Module Assigned to Application");
-        Console.WriteLine("─────────────────────────────────────────────────────────\n");
-
-        var moduleAssignedNotification = new SimpleNotification(
+        Console.WriteLine("🗂️ SCENARIO: Identity Module Assigned to Application\n--------------------------------------------------");
+        await queue.EnqueueAsync(new SimpleNotification(
             "ModuleAssigned",
             new
             {
@@ -84,17 +95,12 @@ class Program
                 Email = "developer@company.com",
                 Name = "John Developer"
             }
-        );
+        ));
+        await Task.Delay(300);
+        Console.WriteLine("✓ Notification dispatched (queued)\n");
 
-        Console.WriteLine("Dispatching ModuleAssigned notification...");
-        await notifier.SendAsync(moduleAssignedNotification);
-        Console.WriteLine("✓ Notification dispatched\n");
-
-        // Real-World Scenario: New Version Published
-        Console.WriteLine("\n📋 SCENARIO: New Module Version Published");
-        Console.WriteLine("─────────────────────────────────────────────────────────\n");
-
-        var versionPublishedNotification = new SimpleNotification(
+        Console.WriteLine("🗂️ SCENARIO: New Module Version Published\n--------------------------------------------------");
+        await queue.EnqueueAsync(new SimpleNotification(
             "VersionPublished",
             new
             {
@@ -111,17 +117,16 @@ class Program
                 Email = "developer@company.com",
                 Name = "John Developer"
             }
-        );
+        ));
+        await Task.Delay(300);
+        Console.WriteLine("✓ Notification dispatched (queued)\n");
 
-        Console.WriteLine("Dispatching VersionPublished notification...");
-        await notifier.SendAsync(versionPublishedNotification);
-        Console.WriteLine("✓ Notification dispatched\n");
+        Console.WriteLine("\n==========================================================");
+        Console.WriteLine("  ✓ REAL WORLD QUEUE TEST COMPLETE");
+        Console.WriteLine("==========================================================");
+        Console.WriteLine("\nCheck console output for Logger channel dispatch. SMTP is used only if SMTP_* env vars are provided.\n");
 
-        Console.WriteLine("\n═══════════════════════════════════════════════════════════");
-        Console.WriteLine("  ✓ REAL WORLD TEST COMPLETE");
-        Console.WriteLine("═══════════════════════════════════════════════════════════");
-        Console.WriteLine("\nCheck the console output above for Logger channel output.");
-        Console.WriteLine("In production, these would be actual emails sent via SMTP.\n");
+        await host.StopAsync();
     }
 }
 

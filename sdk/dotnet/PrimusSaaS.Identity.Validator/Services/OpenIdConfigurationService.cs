@@ -126,11 +126,28 @@ public class OpenIdConfigurationService
             throw new ArgumentException("Authority cannot be null or empty.", nameof(authority));
         }
 
-        var trimmed = authority.TrimEnd('/');
-        var hasV2Segment = trimmed.EndsWith("/v2.0", StringComparison.OrdinalIgnoreCase);
-        var basePath = hasV2Segment ? trimmed : $"{trimmed}/v2.0";
+        if (!Uri.TryCreate(authority, UriKind.Absolute, out var authorityUri))
+        {
+            throw new ArgumentException("Authority must be an absolute URI.", nameof(authority));
+        }
 
-        return $"{basePath}/.well-known/openid-configuration";
+        var isAzure = authorityUri.Host.Contains("login.microsoftonline.com", StringComparison.OrdinalIgnoreCase)
+                      || authorityUri.Host.Contains("sts.windows.net", StringComparison.OrdinalIgnoreCase);
+
+        var basePath = authorityUri.AbsolutePath.TrimEnd('/');
+        if (isAzure && !basePath.EndsWith("/v2.0", StringComparison.OrdinalIgnoreCase))
+        {
+            basePath = $"{basePath}/v2.0";
+        }
+
+        var wellKnownPath = $"{basePath}/.well-known/openid-configuration";
+        var builder = new UriBuilder(authorityUri)
+        {
+            Path = wellKnownPath,
+            Query = string.Empty
+        };
+
+        return builder.Uri.ToString();
     }
 
     /// <summary>

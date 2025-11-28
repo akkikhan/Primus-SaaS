@@ -9,5 +9,5 @@ internal static class IssuerTypeExtensions
     /// Returns true when the issuer uses OIDC flows (including AzureAD alias).
     /// </summary>
     public static bool IsOidcBased(this IssuerType type) =>
-        type == IssuerType.Oidc || type == IssuerType.AzureAD;
+        type == IssuerType.Oidc || type == IssuerType.AzureAD || type == IssuerType.Auth0;
 }

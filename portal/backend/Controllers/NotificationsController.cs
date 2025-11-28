@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Primus.Notifications.Core;
+using Primus.Notifications.Abstractions;
 using PrimusSaaS.Portal.Api.Notifications;
 using System.Security.Claims;
+using System.Diagnostics;
 
 namespace PrimusSaaS.Portal.Api.Controllers;
 
@@ -11,11 +12,13 @@ namespace PrimusSaaS.Portal.Api.Controllers;
 [Authorize]
 public class NotificationsController : ControllerBase
 {
-    private readonly NotificationService _notificationService;
+    private readonly INotificationQueue _notificationQueue;
+    private readonly ILogger<NotificationsController> _logger;
 
-    public NotificationsController(NotificationService notificationService)
+    public NotificationsController(INotificationQueue notificationQueue, ILogger<NotificationsController> logger)
     {
-        _notificationService = notificationService;
+        _notificationQueue = notificationQueue;
+        _logger = logger;
     }
 
     [HttpPost("test")]
@@ -32,13 +35,47 @@ public class NotificationsController : ControllerBase
             email
         );
 
-        await _notificationService.SendAsync(notification);
+        await _notificationQueue.EnqueueAsync(notification);
 
-        return Ok(new { message = "Notification dispatched successfully", recipient = email });
+        return Ok(new { message = "Notification queued successfully", recipient = email });
+    }
+
+    [HttpPost("load-test")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> LoadTest([FromBody] LoadTestRequest request)
+    {
+        var count = Math.Clamp(request.Count, 1, 1000);
+        var email = User.FindFirst(ClaimTypes.Email)?.Value ?? "test@example.com";
+
+        var sw = Stopwatch.StartNew();
+        for (int i = 0; i < count; i++)
+        {
+            var note = new ApplicationCreatedNotification(
+                $"LoadTestApp-{i}",
+                $"client_test_{i:D5}",
+                email
+            );
+            await _notificationQueue.EnqueueAsync(note);
+        }
+        sw.Stop();
+
+        _logger.LogInformation("Queued {Count} notifications for load test in {ElapsedMs}ms", count, sw.ElapsedMilliseconds);
+
+        return Ok(new
+        {
+            message = "Queued notifications",
+            queued = count,
+            elapsedMs = sw.ElapsedMilliseconds
+        });
     }
 }
 
 public class TestNotificationRequest
 {
     public string Type { get; set; } = "ApplicationCreated";
+}
+
+public class LoadTestRequest
+{
+    public int Count { get; set; } = 100;
 }

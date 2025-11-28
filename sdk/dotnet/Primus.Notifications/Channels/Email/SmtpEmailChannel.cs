@@ -51,24 +51,46 @@ public class SmtpEmailChannel : IChannel
         };
         message.Body = bodyBuilder.ToMessageBody();
 
-        using var client = new SmtpClient();
-        try
-        {
-            // Use Auto to negotiate the best security (StartTLS for 587, SSL/TLS for 465)
-            await client.ConnectAsync(_options.Host, _options.Port, MailKit.Security.SecureSocketOptions.Auto, cancellationToken);
-            
-            if (!string.IsNullOrEmpty(_options.Username))
-            {
-                await client.AuthenticateAsync(_options.Username, _options.Password, cancellationToken);
-            }
+        var secureSocket = _options.EnableSsl ? MailKit.Security.SecureSocketOptions.Auto : MailKit.Security.SecureSocketOptions.None;
 
-            await client.SendAsync(message, cancellationToken);
-            await client.DisconnectAsync(true, cancellationToken);
-        }
-        catch (Exception ex)
+        for (var attempt = 0; attempt <= _options.MaxRetryCount; attempt++)
         {
-            _logger.LogError(ex, "SMTP Send Failed");
-            throw;
+            using var client = new SmtpClient { Timeout = _options.TimeoutSeconds * 1000 };
+            try
+            {
+                await client.ConnectAsync(_options.Host, _options.Port, secureSocket, cancellationToken);
+                
+                if (!string.IsNullOrEmpty(_options.Username))
+                {
+                    await client.AuthenticateAsync(_options.Username, _options.Password, cancellationToken);
+                }
+
+                await client.SendAsync(message, cancellationToken);
+                await client.DisconnectAsync(true, cancellationToken);
+                return;
+            }
+            catch (Exception ex)
+            {
+                var attemptNumber = attempt + 1;
+                var maxAttempts = _options.MaxRetryCount + 1;
+                _logger.LogError(ex, "SMTP send failed (attempt {Attempt}/{MaxAttempts})", attemptNumber, maxAttempts);
+
+                var shouldRetry = attempt < _options.MaxRetryCount && !cancellationToken.IsCancellationRequested;
+                if (!shouldRetry)
+                {
+                    throw;
+                }
+
+                var delayMs = _options.RetryBaseDelayMs * (int)Math.Pow(2, attempt);
+                try
+                {
+                    await Task.Delay(delayMs, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+            }
         }
     }
 }

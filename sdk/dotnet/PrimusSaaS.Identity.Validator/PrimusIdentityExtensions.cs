@@ -69,7 +69,13 @@ public static class PrimusIdentityExtensions
         });
         services.AddSingleton<IdentityDiagnosticsService>();
         services.AddSingleton<SecurityEventMetrics>();
-        services.AddSingleton<ISecurityEventLogger, DefaultSecurityEventLogger>();
+        services.AddSingleton<ISecurityEventLogger>(sp =>
+        {
+            var metrics = sp.GetRequiredService<SecurityEventMetrics>();
+            var logger = sp.GetRequiredService<ILogger<DefaultSecurityEventLogger>>();
+            var loggingOptions = sp.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value.Logging;
+            return new DefaultSecurityEventLogger(logger, metrics, loggingOptions);
+        });
         services.AddSingleton(sp =>
         {
             var opt = sp.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
@@ -122,7 +128,7 @@ public static class PrimusIdentityExtensions
                         if (jwt == null) return Enumerable.Empty<SecurityKey>();
 
                         var issuer = jwt.Issuer;
-                        var issuerConfig = primusOptions.Issuers.FirstOrDefault(i => i.Issuer == issuer);
+                        var issuerConfig = ResolveIssuerConfig(jwt, primusOptions, context);
 
                         if (issuerConfig == null) return Enumerable.Empty<SecurityKey>();
 
@@ -195,12 +201,12 @@ public static class PrimusIdentityExtensions
                     AudienceValidator = (audiences, securityToken, validationParameters) =>
                     {
                         var jwt = securityToken as System.IdentityModel.Tokens.Jwt.JwtSecurityToken;
-                        var issuerConfig = primusOptions.Issuers.FirstOrDefault(i => i.Issuer == jwt?.Issuer);
+                        var issuerConfig = ResolveIssuerConfig(jwt, primusOptions, context);
                         
                         if (issuerConfig == null) return false;
                         
                         // Ensure at least one token audience matches one configured audience
-                        return audiences.Any(a => issuerConfig.Audiences.Contains(a));
+                        return audiences.Any(a => issuerConfig.Audiences.Contains(a, StringComparer.Ordinal));
                     }
                 };
 
@@ -212,6 +218,28 @@ public static class PrimusIdentityExtensions
                         var primusIdentityOptions = context.HttpContext.RequestServices.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
                         var tenantResolver = ResolveTenantResolver(context.HttpContext, primusIdentityOptions);
                         var securityLogger = context.HttpContext.RequestServices.GetService<ISecurityEventLogger>();
+                        var issuerConfig = primusIdentityOptions.Issuers.FirstOrDefault(i => i.Issuer == context.SecurityToken?.Issuer);
+
+                        if (issuerConfig != null)
+                        {
+                            ApplyClaimMappings(context.Principal, issuerConfig, primusIdentityOptions.Logging, logger);
+                            if (!EnsureOrganizationRequirement(context, issuerConfig))
+                            {
+                                return;
+                            }
+                            if (!EnsureMachineToMachineRequirement(context, issuerConfig))
+                            {
+                                return;
+                            }
+                            if (issuerConfig.RequireEmailVerification && !TokenClassification.IsMachineToMachine(context.Principal))
+                            {
+                                if (!TokenClassification.IsEmailVerified(context.Principal))
+                                {
+                                    context.Fail("Email verification is required.");
+                                    return;
+                                }
+                            }
+                        }
 
                         if (tenantResolver == null)
                         {
@@ -310,6 +338,35 @@ public static class PrimusIdentityExtensions
             : null;
     }
 
+    private static IssuerConfig? ResolveIssuerConfig(System.IdentityModel.Tokens.Jwt.JwtSecurityToken? jwt, PrimusIdentityOptions options, TokenValidatedContext? context = null)
+    {
+        if (jwt == null) return null;
+
+        // Multi-tenant Auth0 handling: try request-based resolver first
+        if (options.Auth0MultiTenant?.Tenants.Count > 0)
+        {
+            var tenantKey = options.Auth0MultiTenant.ResolveTenant?.Invoke(context?.HttpContext!);
+            if (!string.IsNullOrWhiteSpace(tenantKey) && options.Auth0MultiTenant.Tenants.TryGetValue(tenantKey!, out var auth0Options))
+            {
+                var cfg = auth0Options.ToIssuerConfig();
+                return cfg.Issuer == jwt.Issuer ? cfg : null;
+            }
+
+            if (options.Auth0MultiTenant.ResolveFromIssuerWhenUnknown)
+            {
+                var match = options.Auth0MultiTenant.Tenants
+                    .Select(kvp => kvp.Value.ToIssuerConfig())
+                    .FirstOrDefault(c => c.Issuer == jwt.Issuer);
+                if (match != null)
+                {
+                    return match;
+                }
+            }
+        }
+
+        return options.Issuers.FirstOrDefault(i => i.Issuer == jwt.Issuer);
+    }
+
     private static Dictionary<string, object> BuildClaimDictionary(ClaimsPrincipal? principal, SecurityToken? securityToken)
     {
         var claimDictionary = new Dictionary<string, object>();
@@ -353,6 +410,106 @@ public static class PrimusIdentityExtensions
         AddClaims(principal?.Claims);
 
         return claimDictionary;
+    }
+
+    private static void ApplyClaimMappings(ClaimsPrincipal? principal, IssuerConfig issuerConfig, PrimusIdentityLoggingOptions loggingOptions, ILogger? logger)
+    {
+        if (principal?.Identity is not ClaimsIdentity identity || issuerConfig == null)
+        {
+            return;
+        }
+
+        foreach (var mapping in issuerConfig.ClaimMappings)
+        {
+            var sourceClaims = identity.FindAll(mapping.Key).ToList();
+            foreach (var claim in sourceClaims)
+            {
+                if (!identity.HasClaim(c => c.Type == mapping.Value && c.Value == claim.Value))
+                {
+                    identity.AddClaim(new Claim(mapping.Value, claim.Value));
+                }
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(issuerConfig.RoleClaimName))
+        {
+            CopyClaims(identity, issuerConfig.RoleClaimName!, ClaimTypes.Role);
+        }
+
+        var permissionType = string.IsNullOrWhiteSpace(issuerConfig.PermissionClaimName)
+            ? PrimusClaimTypes.Permission
+            : issuerConfig.PermissionClaimName;
+        CopyClaims(identity, permissionType, PrimusClaimTypes.Permission);
+
+        var organizationType = string.IsNullOrWhiteSpace(issuerConfig.OrganizationClaimName)
+            ? PrimusClaimTypes.Organization
+            : issuerConfig.OrganizationClaimName;
+        CopyClaims(identity, organizationType, PrimusClaimTypes.Organization);
+
+        if (loggingOptions.LogClaimMapping && logger != null)
+        {
+            logger.Log(loggingOptions.MinimumLevel, "Primus Identity: Claim mapping applied for issuer {Issuer}. Roles from {RoleClaim}, Permissions from {PermClaim}, Org from {OrgClaim}",
+                issuerConfig.Issuer,
+                issuerConfig.RoleClaimName ?? "(none)",
+                permissionType,
+                organizationType);
+        }
+    }
+
+    private static void CopyClaims(ClaimsIdentity identity, string sourceType, string targetType)
+    {
+        if (string.IsNullOrWhiteSpace(sourceType) || string.IsNullOrWhiteSpace(targetType))
+        {
+            return;
+        }
+
+        var sourceClaims = identity.FindAll(sourceType).ToList();
+        foreach (var claim in sourceClaims)
+        {
+            if (!identity.HasClaim(c => c.Type == targetType && c.Value == claim.Value))
+            {
+                identity.AddClaim(new Claim(targetType, claim.Value));
+            }
+        }
+    }
+
+    private static bool EnsureOrganizationRequirement(TokenValidatedContext context, IssuerConfig issuerConfig)
+    {
+        if (!issuerConfig.ValidateOrganization)
+        {
+            return true;
+        }
+
+        var orgClaimType = string.IsNullOrWhiteSpace(issuerConfig.OrganizationClaimName)
+            ? PrimusClaimTypes.Organization
+            : issuerConfig.OrganizationClaimName;
+
+        var orgValues = context.Principal?.FindAll(orgClaimType).Select(c => c.Value).ToList() ?? new List<string>();
+        if (!orgValues.Any())
+        {
+            context.Fail($"Organization claim '{orgClaimType}' is required.");
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(issuerConfig.RequiredOrganization) &&
+            !orgValues.Contains(issuerConfig.RequiredOrganization, StringComparer.Ordinal))
+        {
+            context.Fail($"Organization '{issuerConfig.RequiredOrganization}' is required.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool EnsureMachineToMachineRequirement(TokenValidatedContext context, IssuerConfig issuerConfig)
+    {
+        var isAllowed = TokenClassification.ValidateMachineToMachineAllowed(context.Principal, issuerConfig, out var error);
+        if (!isAllowed)
+        {
+            context.Fail(error ?? "Machine-to-machine token not allowed.");
+            return false;
+        }
+        return true;
     }
 
     private static string? ExtractTenantId(string authority)

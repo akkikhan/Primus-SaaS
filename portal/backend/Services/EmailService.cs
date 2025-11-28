@@ -1,29 +1,28 @@
-﻿using System.Net;
-using System.Net.Mail;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using PrimusSaaS.Portal.Api.Data;
 using PrimusSaaS.Portal.Api.Models;
-using PrimusSaaS.Portal.Api.Services;
-
-using PrimusSaaS.Portal.Api.Services;
-using Primus.Notifications.Core;
+using Primus.Notifications.Abstractions;
 using PrimusSaaS.Portal.Api.Notifications;
+
+namespace PrimusSaaS.Portal.Api.Services;
+
 public class EmailService : IEmailService
 {
     private readonly EmailSettings _settings;
     private readonly ILogger<EmailService> _logger;
     private readonly PortalDbContext _context;
     private readonly string _docsBaseUrl;
-    private readonly NotificationService _notificationService;
+    private readonly INotificationQueue _notificationQueue;
 
-    public EmailService(IOptions<EmailSettings> options, ILogger<EmailService> logger, PortalDbContext context, NotificationService notificationService)
+    public EmailService(IOptions<EmailSettings> options, ILogger<EmailService> logger, PortalDbContext context, INotificationQueue notificationQueue)
     {
         _settings = options.Value;
         _logger = logger;
         _context = context;
-        _notificationService = notificationService;
+        _notificationQueue = notificationQueue;
         _docsBaseUrl = (_settings.DocsBaseUrl ?? "https://akkikhan.github.io/Primus-SaaS").TrimEnd('/');
     }
 
@@ -39,7 +38,7 @@ public class EmailService : IEmailService
         }
 
         var notification = new ApplicationCreatedNotification(app.Name, app.PrimusClientId, to);
-        await _notificationService.SendAsync(notification);
+        await _notificationQueue.EnqueueAsync(notification);
     }
 
     public async Task SendModuleAssignedAsync(Application app, ModuleVersion version)
@@ -69,7 +68,7 @@ public class EmailService : IEmailService
             _docsBaseUrl
         );
 
-        await _notificationService.SendAsync(notification);
+        await _notificationQueue.EnqueueAsync(notification);
     }
 
     private (string packageName, string installCommand) GetPackageInfo(string moduleName, string stack)
@@ -144,7 +143,7 @@ public class EmailService : IEmailService
             version.IsBreakingChange
         );
 
-        await _notificationService.SendAsync(notification);
+        await _notificationQueue.EnqueueAsync(notification);
 
         // Send to additional emails if configured
         if (pref != null && !string.IsNullOrEmpty(pref.AdditionalEmails))
@@ -162,7 +161,7 @@ public class EmailService : IEmailService
                     version.Changelog,
                     version.IsBreakingChange
                 );
-                await _notificationService.SendAsync(additionalNotification);
+                await _notificationQueue.EnqueueAsync(additionalNotification);
             }
         }
     }

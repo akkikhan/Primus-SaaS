@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Primus.Notifications.Abstractions;
+using Primus.Notifications.Diagnostics;
 
 namespace Primus.Notifications.Core;
 
@@ -25,6 +26,9 @@ public class NotificationService
 
         var tasks = new List<Task>();
 
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        NotificationRuntimeStats.RecordQueued();
+
         foreach (var channelName in notification.Channels)
         {
             var channel = _channels.FirstOrDefault(c => c.Name.Equals(channelName, StringComparison.OrdinalIgnoreCase));
@@ -38,6 +42,10 @@ public class NotificationService
         }
 
         await Task.WhenAll(tasks);
+        stopwatch.Stop();
+        NotificationMetrics.DispatchDurationMs.Record(stopwatch.Elapsed.TotalMilliseconds);
+        NotificationMetrics.NotificationsSent.Add(1);
+        NotificationRuntimeStats.RecordSent(stopwatch.Elapsed.TotalMilliseconds);
         _logger.LogInformation("Notification dispatch complete.");
     }
 
@@ -51,6 +59,8 @@ public class NotificationService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send notification via {Channel}", channel.Name);
+            NotificationMetrics.NotificationsFailed.Add(1);
+            NotificationRuntimeStats.RecordFailed();
             // We do not throw here to allow other channels to succeed
         }
     }

@@ -94,3 +94,15 @@ Azure AD tokens often have specific claim formats.
 - **Email**: Often in `email` or `upn`.
 
 The `GetPrimusUser()` helper attempts to find the best match from common variations.
+
+## Auth0 Defaults
+
+- **Subject**: `sub` (e.g., `auth0|user-id` or `google-oauth2|id`) → mapped to `ClaimTypes.NameIdentifier` automatically.
+- **Email/Name**: `email`, `name` → mapped automatically.
+- **Permissions**: `permissions` (array) → mirrored to `PrimusClaimTypes.Permission` for policy checks.
+- **Organization**: `org_id` (or your configured `OrganizationClaimName`) → mirrored to `PrimusClaimTypes.Organization` when present.
+- **Roles (optional)**: If you set `RoleClaimName` (e.g., a namespaced `https://api-id/roles`), values are mirrored into `ClaimTypes.Role` so `[Authorize(Roles = "...")]` works.
+- **Social detection**: `sub` prefix (e.g., `google-oauth2|...`) → `PrimusUser.IdentityProvider` + `IsSocialLogin`.
+- **Machine-to-machine**: `sub` ending with `@clients` or `gty=client-credentials` → `PrimusUser.IsMachineToMachine` + `ClientId` (from `sub`/`azp`).
+
+Namespaced claims are supported—set the exact claim name in `RoleClaimName`, `PermissionClaimName`, or `OrganizationClaimName` to normalize them.
