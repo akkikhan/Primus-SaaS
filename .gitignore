@@ -51,6 +51,14 @@ portal/backend/appsettings.Development.json
 *.snupkg
 nupkg/
 
+# Publish output
+**/publish/
+
+# Local test apps
+test-apps/
+temp-bcrypt-test/
+examples/dotnet-api/FakeAuthApi/
+
 # Credentials and sensitive files
 **/credentials.json
 **/acme-credentials.json
