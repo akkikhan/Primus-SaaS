@@ -1,5 +1,8 @@
 using PrimusSaaS.Logging.Targets;
 using Microsoft.AspNetCore.Http;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 
 namespace PrimusSaaS.Logging.Core;
 
@@ -15,12 +18,16 @@ public class Logger
     private readonly SafeLogFormatter _formatter;
     private readonly LoggingMetrics _metrics;
     private readonly Health.LoggingHealthReporter _healthReporter;
+    private readonly SamplingOptions _sampling;
     private static readonly AsyncLocal<Stack<Dictionary<string, object?>>?> ScopeStack = new();
     private HttpContext? _currentHttpContext;
 
     public Logger(LoggerOptions options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
+        _options.OpenTelemetry ??= new OpenTelemetryOptions();
+        _options.Sampling ??= new SamplingOptions();
+        _options.ApplicationInsights ??= new ApplicationInsightsOptions();
         LoggerOptionsValidator.Validate(_options);
 
         _options.Serialization ??= new SerializationOptions();
@@ -29,6 +36,7 @@ public class Logger
         _serializer = new SafeObjectSerializer(_options.Serialization);
         _formatter = new SafeLogFormatter(_serializer);
         _metrics = _options.Metrics ?? new LoggingMetrics();
+        _sampling = _options.Sampling;
         InitializeTargets();
         _healthReporter = new Health.LoggingHealthReporter(_metrics, _targets);
     }
@@ -44,6 +52,8 @@ public class Logger
             _targets.AddRange(_options.CustomTargets);
             return;
         }
+
+        EnsureApplicationInsightsPreset();
 
         foreach (var config in _options.Targets)
         {
@@ -96,12 +106,22 @@ public class Logger
         Log(LogLevel.Debug, message, context);
     }
 
+    public void Debug(string message, object context)
+    {
+        Log(LogLevel.Debug, message, NormalizeAnonymousContext(context));
+    }
+
     /// <summary>
     /// Log a DEBUG message with exception
     /// </summary>
     public void Debug(Exception ex, string message, Dictionary<string, object?>? context = null)
     {
         Log(LogLevel.Debug, message, context, ex);
+    }
+
+    public void Debug(Exception ex, string message, object context)
+    {
+        Log(LogLevel.Debug, message, NormalizeAnonymousContext(context), ex);
     }
 
     /// <summary>
@@ -112,12 +132,22 @@ public class Logger
         Log(LogLevel.Info, message, context);
     }
 
+    public void Info(string message, object context)
+    {
+        Log(LogLevel.Info, message, NormalizeAnonymousContext(context));
+    }
+
     /// <summary>
     /// Log an INFO message with exception
     /// </summary>
     public void Info(Exception ex, string message, Dictionary<string, object?>? context = null)
     {
         Log(LogLevel.Info, message, context, ex);
+    }
+
+    public void Info(Exception ex, string message, object context)
+    {
+        Log(LogLevel.Info, message, NormalizeAnonymousContext(context), ex);
     }
 
     /// <summary>
@@ -128,12 +158,22 @@ public class Logger
         Log(LogLevel.Warning, message, context);
     }
 
+    public void Warn(string message, object context)
+    {
+        Log(LogLevel.Warning, message, NormalizeAnonymousContext(context));
+    }
+
     /// <summary>
     /// Log a WARNING message with exception
     /// </summary>
     public void Warn(Exception ex, string message, Dictionary<string, object?>? context = null)
     {
         Log(LogLevel.Warning, message, context, ex);
+    }
+
+    public void Warn(Exception ex, string message, object context)
+    {
+        Log(LogLevel.Warning, message, NormalizeAnonymousContext(context), ex);
     }
 
     /// <summary>
@@ -144,12 +184,22 @@ public class Logger
         Log(LogLevel.Error, message, context);
     }
 
+    public void Error(string message, object context)
+    {
+        Log(LogLevel.Error, message, NormalizeAnonymousContext(context));
+    }
+
     /// <summary>
     /// Log an ERROR message with exception
     /// </summary>
     public void Error(Exception ex, string message, Dictionary<string, object?>? context = null)
     {
         Log(LogLevel.Error, message, context, ex);
+    }
+
+    public void Error(Exception ex, string message, object context)
+    {
+        Log(LogLevel.Error, message, NormalizeAnonymousContext(context), ex);
     }
 
     /// <summary>
@@ -160,12 +210,22 @@ public class Logger
         Log(LogLevel.Critical, message, context);
     }
 
+    public void Critical(string message, object context)
+    {
+        Log(LogLevel.Critical, message, NormalizeAnonymousContext(context));
+    }
+
     /// <summary>
     /// Log a CRITICAL message with exception
     /// </summary>
     public void Critical(Exception ex, string message, Dictionary<string, object?>? context = null)
     {
         Log(LogLevel.Critical, message, context, ex);
+    }
+
+    public void Critical(Exception ex, string message, object context)
+    {
+        Log(LogLevel.Critical, message, NormalizeAnonymousContext(context), ex);
     }
 
     /// <summary>
@@ -223,6 +283,21 @@ public class Logger
             return;
         }
 
+        // Probabilistic sampling to reduce volume
+        if (_sampling.Enabled)
+        {
+            var rate = Math.Clamp(_sampling.SampleRate, 0.0, 1.0);
+            if (rate <= 0)
+            {
+                return;
+            }
+
+            if (rate < 1.0 && Random.Shared.NextDouble() > rate)
+            {
+                return;
+            }
+        }
+
         // Get base context
         var enrichedContext = GetBaseContext();
 
@@ -253,6 +328,9 @@ public class Logger
         {
             enrichedContext["exception"] = DeconstructException(exception);
         }
+
+        // Enrich with trace context if available
+        EnrichWithTraceContext(enrichedContext);
 
         // Enrich with HTTP context if available
         if (_currentHttpContext != null)
@@ -305,6 +383,33 @@ public class Logger
         return dict;
     }
 
+    internal static Dictionary<string, object?> NormalizeContext(Dictionary<string, object> context)
+    {
+        return context.ToDictionary(kvp => kvp.Key, kvp => (object?)kvp.Value);
+    }
+
+    private static Dictionary<string, object?> NormalizeAnonymousContext(object context)
+    {
+        if (context is Dictionary<string, object?> dictNullable)
+        {
+            return dictNullable;
+        }
+
+        if (context is Dictionary<string, object> dictNonNullable)
+        {
+            return NormalizeContext(dictNonNullable);
+        }
+
+        var result = new Dictionary<string, object?>();
+        var props = context.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
+        foreach (var prop in props)
+        {
+            result[prop.Name] = prop.GetValue(context);
+        }
+
+        return result;
+    }
+
     private Dictionary<string, object?> GetBaseContext()
     {
         return new Dictionary<string, object?>
@@ -312,6 +417,24 @@ public class Logger
             ["applicationId"] = _options.ApplicationId,
             ["environment"] = _options.Environment
         };
+    }
+
+    private void EnrichWithTraceContext(Dictionary<string, object?> context)
+    {
+        if (_options.OpenTelemetry is { IncludeTraceContext: true })
+        {
+            var activity = Activity.Current;
+            if (activity != null)
+            {
+                context["traceId"] = activity.TraceId.ToString();
+                context["spanId"] = activity.SpanId.ToString();
+                if (activity.ParentSpanId != default)
+                {
+                    context["parentSpanId"] = activity.ParentSpanId.ToString();
+                }
+                context["traceFlags"] = activity.ActivityTraceFlags.ToString();
+            }
+        }
     }
 
     private void EnrichWithHttpContext(Dictionary<string, object?> context)
@@ -378,6 +501,31 @@ public class Logger
                 _metrics.IncrementFailure();
                 Console.Error.WriteLine($"Failed to write to log target: {ex.Message}");
             }
+        }
+    }
+
+    private void EnsureApplicationInsightsPreset()
+    {
+        if (_options.ApplicationInsights is not { Enabled: true })
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_options.ApplicationInsights.ConnectionString))
+        {
+            return;
+        }
+
+        var hasAiTarget = _options.Targets.Any(t =>
+            string.Equals(t.Type, "applicationinsights", StringComparison.OrdinalIgnoreCase));
+
+        if (!hasAiTarget)
+        {
+            _options.Targets.Add(new TargetConfig
+            {
+                Type = "applicationinsights",
+                ConnectionString = _options.ApplicationInsights.ConnectionString
+            });
         }
     }
 }

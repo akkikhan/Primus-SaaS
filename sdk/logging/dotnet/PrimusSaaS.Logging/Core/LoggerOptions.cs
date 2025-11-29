@@ -53,6 +53,21 @@ public class LoggerOptions
     /// When provided, these are used instead of the built-in target factory.
     /// </summary>
     public List<ITarget>? CustomTargets { get; set; }
+
+    /// <summary>
+    /// OpenTelemetry-related enrichment settings.
+    /// </summary>
+    public OpenTelemetryOptions OpenTelemetry { get; set; } = new();
+
+    /// <summary>
+    /// Client-side sampling controls to reduce log volume.
+    /// </summary>
+    public SamplingOptions Sampling { get; set; } = new();
+
+    /// <summary>
+    /// Convenience Application Insights preset for config-first enablement.
+    /// </summary>
+    public ApplicationInsightsOptions ApplicationInsights { get; set; } = new();
 }
 
 /// <summary>
@@ -121,5 +136,47 @@ public class TargetConfig
     /// </summary>
     public int BufferSize { get; set; } = 1000;
 
+}
 
+/// <summary>
+/// OpenTelemetry enrichment options.
+/// </summary>
+public class OpenTelemetryOptions
+{
+    /// <summary>
+    /// When true, attaches trace/span identifiers from Activity.Current onto log context.
+    /// </summary>
+    public bool IncludeTraceContext { get; set; } = true;
+}
+
+/// <summary>
+/// Log sampling configuration.
+/// </summary>
+public class SamplingOptions
+{
+    /// <summary>
+    /// Enable client-side probabilistic sampling.
+    /// </summary>
+    public bool Enabled { get; set; }
+
+    /// <summary>
+    /// Probability between 0.0 and 1.0 (e.g., 0.1 = 10% of logs kept).
+    /// </summary>
+    public double SampleRate { get; set; } = 1.0;
+}
+
+/// <summary>
+/// Application Insights convenience configuration.
+/// </summary>
+public class ApplicationInsightsOptions
+{
+    /// <summary>
+    /// Enable AI target without manually defining a target entry.
+    /// </summary>
+    public bool Enabled { get; set; }
+
+    /// <summary>
+    /// Connection string used by the built-in preset.
+    /// </summary>
+    public string? ConnectionString { get; set; }
 }

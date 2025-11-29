@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PrimusSaaS.Notifications.Abstractions;
 using PrimusSaaS.Notifications.Configuration;
+using PrimusSaaS.Notifications.Channels.Sms;
 using PrimusSaaS.Notifications.Diagnostics;
 
 namespace PrimusSaaS.Notifications.Core;
@@ -21,20 +22,33 @@ public class NotificationService : INotificationService
     private readonly IEnumerable<IChannel> _channels;
     private readonly ILogger<NotificationService> _logger;
     private readonly NotificationOptions _options;
+    private readonly INotificationQueue? _queue;
+    private readonly INotificationDeliveryStore? _deliveryStore;
+    private readonly INotificationWebhookDispatcher? _webhookDispatcher;
+    private readonly RateLimiter _rateLimiter = new();
 
     public NotificationService(IEnumerable<IChannel> channels, ILogger<NotificationService> logger)
-        : this(channels, logger, Options.Create(new NotificationOptions()))
+        : this(channels, logger, Options.Create(new NotificationOptions()), serviceProvider: null)
     {
     }
 
     public NotificationService(
         IEnumerable<IChannel> channels,
         ILogger<NotificationService> logger,
-        IOptions<NotificationOptions> options)
+        IOptions<NotificationOptions> options,
+        IServiceProvider? serviceProvider = null,
+        INotificationQueue? queue = null,
+        INotificationDeliveryStore? deliveryStore = null,
+        INotificationWebhookDispatcher? webhookDispatcher = null)
     {
         _channels = channels;
         _logger = logger;
         _options = options?.Value ?? new NotificationOptions();
+        _options.RateLimit ??= new RateLimitOptions();
+        _options.Webhooks ??= new WebhookOptions();
+        _queue = queue ?? serviceProvider?.GetService(typeof(INotificationQueue)) as INotificationQueue;
+        _deliveryStore = deliveryStore ?? serviceProvider?.GetService(typeof(INotificationDeliveryStore)) as INotificationDeliveryStore;
+        _webhookDispatcher = webhookDispatcher ?? serviceProvider?.GetService(typeof(INotificationWebhookDispatcher)) as INotificationWebhookDispatcher;
     }
 
     public Task<NotificationResult> SendEmailAsync(
@@ -74,12 +88,24 @@ public class NotificationService : INotificationService
         return SendAsync(notification, cancellationToken);
     }
 
-    public async Task<NotificationResult> SendAsync(INotification notification, CancellationToken cancellationToken = default)
+    public async Task<NotificationResult> SendAsync(INotification notification, CancellationToken cancellationToken = default, bool fromQueue = false)
     {
         _logger.LogInformation("Starting notification dispatch for {Type} to {Recipient}", notification.Type, notification.Recipient.Email ?? notification.Recipient.UserId);
 
         var stopwatch = Stopwatch.StartNew();
         NotificationRuntimeStats.RecordQueued();
+
+        if (_options.RateLimit.Enabled && !_rateLimiter.TryConsume(notification.Recipient, _options.RateLimit, out var rateLimitReason))
+        {
+            var rateLimitedResult = NotificationResult.FromChannels(
+                new[] { ChannelDispatchResult.Skipped("RateLimit", rateLimitReason) },
+                rateLimitReason,
+                enqueuedForRetry: false,
+                serviceUnavailable: false);
+
+            await RecordDeliveryAsync(notification, rateLimitedResult, cancellationToken);
+            return rateLimitedResult;
+        }
 
         var requestedChannels = notification.Channels?.ToArray() ?? Array.Empty<string>();
         var channelResults = new List<ChannelDispatchResult>();
@@ -118,6 +144,9 @@ public class NotificationService : INotificationService
             ? null
             : DetermineFailureReason(requestedChannels, channelResults);
 
+        bool enqueuedForRetry = false;
+        bool serviceUnavailable = false;
+
         if (success)
         {
             NotificationMetrics.NotificationsSent.Add(1);
@@ -126,19 +155,74 @@ public class NotificationService : INotificationService
         }
         else
         {
+            if (_options.FallbackToLogger && channelResults.All(r => r.Channel != "Logger"))
+            {
+                var loggerChannel = _channels.FirstOrDefault(c => c.Name.Equals("Logger", StringComparison.OrdinalIgnoreCase));
+                if (loggerChannel != null)
+                {
+                    var loggerResult = await DispatchToChannelAsync(loggerChannel, notification, cancellationToken);
+                    channelResults.Add(loggerResult);
+                    if (loggerResult.Status == ChannelDispatchStatus.Sent)
+                    {
+                        success = true;
+                        firstSuccessChannel = loggerResult.Channel;
+                    }
+                }
+            }
+
+            if (!success && _options.QueueOnFailure && !fromQueue && _queue != null)
+            {
+                await _queue.EnqueueAsync(notification, cancellationToken);
+                enqueuedForRetry = true;
+                _logger.LogWarning("Notification dispatch failed; enqueued for retry.");
+            }
+
             NotificationMetrics.NotificationsFailed.Add(1);
             NotificationRuntimeStats.RecordFailed();
             _logger.LogError("Notification dispatch failed: {Reason}", failureReason);
         }
 
-        var result = NotificationResult.FromChannels(channelResults, failureReason);
+        // Determine if any failure was due to service unavailable (e.g., missing credentials)
+        serviceUnavailable = channelResults.Any(r =>
+            r.Status == ChannelDispatchStatus.Failed &&
+            r.Exception is TwilioSmsException smsEx &&
+            smsEx.HttpStatusCode == 503);
+
+        var result = NotificationResult.FromChannels(channelResults, failureReason, enqueuedForRetry, serviceUnavailable);
 
         if (!success && _options.ThrowOnFailure)
         {
             throw new NotificationFailedException(result.FailureReason ?? "Notification failed", result);
         }
 
+        await RecordDeliveryAsync(notification, result, cancellationToken);
+
         return result;
+    }
+
+    public async Task<IReadOnlyCollection<NotificationResult>> SendBulkAsync(IEnumerable<INotification> notifications, bool enqueueOnly = false, CancellationToken cancellationToken = default)
+    {
+        var results = new List<NotificationResult>();
+
+        foreach (var notification in notifications)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (enqueueOnly && _queue != null)
+            {
+                await _queue.EnqueueAsync(notification, cancellationToken);
+                results.Add(NotificationResult.FromChannels(
+                    new[] { ChannelDispatchResult.Skipped("Queue", "Enqueued for background delivery.") },
+                    failureReason: null,
+                    enqueuedForRetry: true));
+                continue;
+            }
+
+            var result = await SendAsync(notification, cancellationToken);
+            results.Add(result);
+        }
+
+        return results;
     }
 
     private static string DetermineFailureReason(IEnumerable<string> requestedChannels, IEnumerable<ChannelDispatchResult> results)
@@ -168,6 +252,33 @@ public class NotificationService : INotificationService
         {
             _logger.LogError(ex, "Failed to send notification via {Channel}", channel.Name);
             return ChannelDispatchResult.Failed(channel.Name, ex);
+        }
+    }
+
+    private async Task RecordDeliveryAsync(INotification notification, NotificationResult result, CancellationToken cancellationToken)
+    {
+        if (_deliveryStore == null && _webhookDispatcher == null)
+        {
+            return;
+        }
+
+        var record = new NotificationDeliveryRecord
+        {
+            Type = notification.Type,
+            Recipient = notification.Recipient,
+            Channels = result.Channels,
+            Success = result.Success,
+            FailureReason = result.FailureReason
+        };
+
+        if (_deliveryStore != null)
+        {
+            await _deliveryStore.RecordAsync(record, cancellationToken);
+        }
+
+        if (_webhookDispatcher != null)
+        {
+            await _webhookDispatcher.DispatchAsync(record, cancellationToken);
         }
     }
 }

@@ -8,7 +8,7 @@
     
     <!-- NuGet Package Metadata -->
     <PackageId>PrimusSaaS.Identity.Validator</PackageId>
-    <Version>1.3.3</Version>
+    <Version>1.3.4</Version>
     <Authors>Primus SaaS</Authors>
     <Company>Primus SaaS</Company>
     <Product>Primus SaaS Identity Validator</Product>
@@ -22,22 +22,13 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
-    <PackageReleaseNotes>v1.3.3:
+    <PackageReleaseNotes>v1.3.4:
+- FEATURE: Expose matched issuer/provider via HttpContext.GetMatchedIssuer() and inject provider claims for downstream responses.
+- DOCS: Clarified Azure AD client_credentials issuer format (sts.windows.net) vs v2.0 and added guidance/examples.
+
+v1.3.3:
 - DX: Localhost development now allowed without HTTPS by default via AllowHttpOnLocalhost (still enforces HTTPS for non-loopback).
-- DOCS: Updated README to clarify HTTP dev toggle and localhost allowance.
-
-v1.3.2:
-- IMPROVED: Enhanced error messages with actionable guidance and documentation links
-- IMPROVED: Auth0 configuration validation now provides step-by-step troubleshooting
-- DOCS: Added 5-minute Auth0 Quick Start guide to README
-- DOCS: Added clear SDK requirements table (which SDK version for which .NET target)
-- DOCS: Clarified supported frameworks (.NET 6.0, 7.0, 8.0)
-- NEW: PrimusIdentityConfigurationException with HelpUrl and PropertyName for better debugging
-
-v1.3.1:
-- Production release with Auth0 support via UseAuth0() helper
-- Organization validation and M2M token support
-- Full multi-issuer support (Azure AD, Auth0, Cognito, Google, custom JWT)</PackageReleaseNotes>
+- DOCS: Updated README to clarify HTTP dev toggle and localhost allowance.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">

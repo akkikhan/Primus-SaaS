@@ -16,13 +16,13 @@ namespace PrimusSaaS.Notifications.Core;
 /// </summary>
 public class NotificationBackgroundService : BackgroundService
 {
-    private readonly InMemoryNotificationQueue _queue;
+    private readonly INotificationQueue _queue;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly NotificationQueueOptions _options;
     private readonly ILogger<NotificationBackgroundService> _logger;
 
     public NotificationBackgroundService(
-        InMemoryNotificationQueue queue,
+        INotificationQueue queue,
         IServiceScopeFactory scopeFactory,
         IOptions<NotificationQueueOptions> options,
         ILogger<NotificationBackgroundService> logger)
@@ -43,17 +43,25 @@ public class NotificationBackgroundService : BackgroundService
 
     private async Task RunWorkerAsync(CancellationToken stoppingToken)
     {
-        var reader = _queue.Reader;
-
-        while (await reader.WaitToReadAsync(stoppingToken))
+        while (!stoppingToken.IsCancellationRequested)
         {
-            while (_queue.TryDequeue(out var notification))
+            INotification? notification = null;
+            try
             {
-                if (notification != null)
-                {
-                    await ProcessAsync(notification, stoppingToken);
-                }
+                notification = await _queue.DequeueAsync(stoppingToken);
             }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+
+            if (notification == null)
+            {
+                await Task.Delay(100, stoppingToken);
+                continue;
+            }
+
+            await ProcessAsync(notification, stoppingToken);
         }
     }
 
@@ -67,7 +75,7 @@ public class NotificationBackgroundService : BackgroundService
                 // Create a scope for each notification processing to get scoped services
                 using var scope = _scopeFactory.CreateScope();
                 var notificationService = scope.ServiceProvider.GetRequiredService<NotificationService>();
-                var result = await notificationService.SendAsync(notification, ct);
+                var result = await notificationService.SendAsync(notification, ct, fromQueue: true);
                 if (!result.Success)
                 {
                     throw new NotificationFailedException(result.FailureReason ?? "Notification failed", result);

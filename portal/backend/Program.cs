@@ -8,6 +8,7 @@ using System.Text;
 using AspNetCoreRateLimit;
 using PrimusSaaS.Notifications;
 using PrimusSaaS.Notifications.Configuration;
+using PrimusSaaS.Notifications.Services;
 using Microsoft.ApplicationInsights.Extensibility;
 using Serilog;
 using Serilog.Context;
@@ -103,7 +104,7 @@ builder.Services.AddPrimusNotifications(config =>
         });
     }
     
-    config.UseFileTemplates(Path.Combine(builder.Environment.ContentRootPath, "Templates"));
+    config.UseFileTemplates(Path.Combine(builder.Environment.ContentRootPath, "Templates"), validateOnStartup: true);
     config.UseLogger();
     config.UseInMemoryQueue(options =>
     {
@@ -117,6 +118,8 @@ builder.Services.AddPrimusNotifications(config =>
     config.ConfigureDispatch(opts =>
     {
         opts.ThrowOnFailure = builder.Configuration.GetValue("Notifications:ThrowOnFailure", true);
+        opts.FallbackToLogger = builder.Configuration.GetValue("Notifications:FallbackToLogger", false);
+        opts.QueueOnFailure = builder.Configuration.GetValue("Notifications:QueueOnFailure", true);
     });
 });
 
@@ -270,6 +273,12 @@ app.MapGet("/primus/logging/metrics", (LoggingMetrics metrics) =>
         snapshot.Errors
     });
 }).RequireAuthorization();
+
+app.MapGet("/health/notifications", async (NotificationHealthService health) =>
+{
+    var snapshot = await health.GetChannelHealthAsync();
+    return Results.Json(snapshot);
+});
 
 // Initialize database and apply migrations
 using (var scope = app.Services.CreateScope())

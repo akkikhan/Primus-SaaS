@@ -54,7 +54,8 @@ public class NotificationsController : ControllerBase
                     ["channels"] = result.Channels
                 });
 
-                return StatusCode(StatusCodes.Status502BadGateway, new
+                var statusCode = result.ServiceUnavailable ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status502BadGateway;
+                return StatusCode(statusCode, new
                 {
                     error = result.FailureReason ?? "Email delivery failed",
                     correlationId,
@@ -79,7 +80,8 @@ public class NotificationsController : ControllerBase
                 ["failureReason"] = ex.Result.FailureReason
             });
 
-            return StatusCode(StatusCodes.Status502BadGateway, new
+            var statusCode = ex.Result.ServiceUnavailable ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status502BadGateway;
+            return StatusCode(statusCode, new
             {
                 error = ex.Result.FailureReason ?? ex.Message,
                 correlationId,
@@ -125,7 +127,8 @@ public class NotificationsController : ControllerBase
                     ["channels"] = result.Channels
                 });
 
-                return StatusCode(StatusCodes.Status502BadGateway, new
+                var statusCode = result.ServiceUnavailable ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status502BadGateway;
+                return StatusCode(statusCode, new
                 {
                     error = result.FailureReason ?? "SMS delivery failed",
                     correlationId,
@@ -150,7 +153,8 @@ public class NotificationsController : ControllerBase
                 ["failureReason"] = ex.Result.FailureReason
             });
 
-            return StatusCode(StatusCodes.Status502BadGateway, new
+            var statusCode = ex.Result.ServiceUnavailable ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status502BadGateway;
+            return StatusCode(statusCode, new
             {
                 error = ex.Result.FailureReason ?? ex.Message,
                 correlationId,
@@ -219,7 +223,8 @@ public class NotificationsController : ControllerBase
                     ["channels"] = result.Channels
                 });
 
-                return StatusCode(StatusCodes.Status502BadGateway, new
+                var statusCode = result.ServiceUnavailable ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status502BadGateway;
+                return StatusCode(statusCode, new
                 {
                     error = result.FailureReason ?? "Order confirmation email failed",
                     correlationId,

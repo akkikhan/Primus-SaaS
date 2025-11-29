@@ -33,6 +33,21 @@ public class PrimusUser
     public Dictionary<string, string> AdditionalClaims { get; set; } = new();
 
     /// <summary>
+    /// The issuer string from the token (iss claim).
+    /// </summary>
+    public string Issuer { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Matched issuer/provider name injected by Primus Identity (when available).
+    /// </summary>
+    public string ProviderName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Matched issuer/provider type injected by Primus Identity (when available).
+    /// </summary>
+    public string ProviderType { get; set; } = string.Empty;
+
+    /// <summary>
     /// Identity provider extracted from the subject prefix (e.g., auth0, google-oauth2).
     /// </summary>
     public string IdentityProvider { get; set; } = string.Empty;
@@ -65,7 +80,10 @@ public class PrimusUser
             UserId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty,
             Email = principal.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty,
             Name = principal.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty,
-            Roles = principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList()
+            Roles = principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList(),
+            Issuer = principal.FindFirst("iss")?.Value ?? string.Empty,
+            ProviderName = principal.FindFirst("primus:issuer_name")?.Value ?? string.Empty,
+            ProviderType = principal.FindFirst("primus:issuer_type")?.Value ?? string.Empty
         };
 
         // Identity provider parsing from Auth0-style subject: provider|id

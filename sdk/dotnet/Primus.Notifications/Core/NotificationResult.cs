@@ -32,12 +32,16 @@ public sealed record NotificationResult
     public bool Success { get; init; }
     public string? ChannelUsed { get; init; }
     public string? FailureReason { get; init; }
+    public bool EnqueuedForRetry { get; init; }
+    public bool ServiceUnavailable { get; init; }
     public IReadOnlyCollection<ChannelDispatchResult> Channels { get; init; } =
         Array.Empty<ChannelDispatchResult>();
 
     public static NotificationResult FromChannels(
         IEnumerable<ChannelDispatchResult> channels,
-        string? failureReason = null)
+        string? failureReason = null,
+        bool enqueuedForRetry = false,
+        bool serviceUnavailable = false)
     {
         var channelList = channels.ToArray();
         var channelUsed = channelList.FirstOrDefault(c => c.Status == ChannelDispatchStatus.Sent)?.Channel;
@@ -50,7 +54,9 @@ public sealed record NotificationResult
             FailureReason = success
                 ? null
                 : failureReason ?? "Notification did not reach any channel.",
-            Channels = channelList
+            Channels = channelList,
+            EnqueuedForRetry = enqueuedForRetry,
+            ServiceUnavailable = serviceUnavailable
         };
     }
 }

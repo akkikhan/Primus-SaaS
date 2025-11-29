@@ -85,7 +85,13 @@ builder.Services.AddPrimusIdentity(options =>
     options.UseAuth0(
         domain: "my-app.auth0.com",      // From Step 1
         audience: "https://my-api");      // From Step 2
+
+    // Allow client_credentials (M2M) tokens explicitly
+    // options.Issuers[0].AllowMachineToMachine = true;
+    // or: builder.Services.AddPrimusIdentityForAuth0("my-app.auth0.com", "https://my-api", allowMachineToMachine: true);
 });
+
+> Machine-to-machine tokens are **disabled by default**. If your Auth0 APIs issue `client_credentials` tokens, set `AllowMachineToMachine = true` (or use `AddPrimusIdentityForAuth0(..., allowMachineToMachine: true)`) to avoid 401s with "Machine-to-machine tokens are not allowed".
 
 builder.Services.AddControllers();
 builder.Services.AddAuthorization();
@@ -95,6 +101,7 @@ var app = builder.Build();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapPrimusIdentityAuthDiagnostics(); // surfaces auth failure hints via X-Primus-Auth-Error header
 app.Run();
 ```
 
@@ -313,7 +320,7 @@ This authenticates requests with a fixed user (`sub`, `email`, `name`) so you ca
   - `RedactSensitiveData` (default: true)
   - `LogValidationSteps` (default: true)
   - `LogClaimMapping` (default: false)
-- Expose diagnostics endpoint with `app.MapPrimusIdentityDiagnostics();`
+- Expose diagnostics endpoint with `app.MapPrimusIdentityAuthDiagnostics();`
 - Structured logging: when `LogValidationSteps` is true, issuer/audience/kid are logged; subjects are hashed when redaction is on.
 - Refresh tokens: set `TokenRefresh.UseDurableStore = true` and register `IRefreshTokenStore` (e.g., `DistributedRefreshTokenStore` for Redis/SQL via `IDistributedCache`).
 
@@ -351,6 +358,23 @@ builder.Services.AddPrimusIdentity(options =>
     });
 });
 ```
+
+#### Azure AD issuer formats (v1 vs v2)
+- Azure AD client_credentials (app-only) tokens default to **v1 issuers**: `https://sts.windows.net/{tenantId}/` (no `/v2.0`).
+- User/interactive tokens typically use **v2 issuers**: `https://login.microsoftonline.com/{tenantId}/v2.0`.
+- Configure `Issuer` to **match the token’s `iss`** claim, even if you still use the v2 authority for discovery/JWKS:
+```csharp
+options.Issuers.Add(new IssuerConfig
+{
+    Name = "AzureAD M2M",
+    Type = IssuerType.AzureAD,
+    Issuer = $"https://sts.windows.net/{tenantId}/",            // matches app-only tokens
+    Authority = $"https://login.microsoftonline.com/{tenantId}/v2.0", // discovery/JWKS
+    Audiences = { "api://your-api-id" },
+    AllowMachineToMachine = true
+});
+```
+If you accept both interactive and client_credentials flows, add two issuer entries (v2 + v1) with different `Name` values but the same audience.
 
 ### Auth0 multi-tenant (resolve per request)
 
@@ -407,7 +431,9 @@ public class SecureController : ControllerBase
                 userId = primusUser?.UserId,
                 email = primusUser?.Email,
                 name = primusUser?.Name,
-                roles = primusUser?.Roles
+                roles = primusUser?.Roles,
+                issuer = primusUser?.Issuer,
+                provider = primusUser?.ProviderName ?? primusUser?.ProviderType
             }
         });
     }
@@ -420,6 +446,26 @@ public class SecureController : ControllerBase
     }
 }
 ```
+
+#### Get matched issuer/provider in controllers
+The middleware stores the matched issuer for each request:
+```csharp
+using PrimusSaaS.Identity.Validator;
+
+[HttpGet("whoami")]
+[Authorize]
+public IActionResult WhoAmI()
+{
+    var issuer = HttpContext.GetMatchedIssuer();
+    return Ok(new
+    {
+        provider = issuer?.Provider ?? issuer?.Name ?? "unknown",
+        issuer = issuer?.Issuer,
+        audiences = issuer?.Audiences
+    });
+}
+```
+`PrimusUser` also surfaces `Issuer`, `ProviderName`, and `ProviderType` derived from these values.
 
 ### 3. Access User Information
 

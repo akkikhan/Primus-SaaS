@@ -15,6 +15,13 @@ public class PiiMasker
         _patterns = new Dictionary<string, Regex>();
         _sensitiveKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        if (options.MaskPasswords)
+        {
+            _sensitiveKeys.Add("password");
+            _sensitiveKeys.Add("pwd");
+            _sensitiveKeys.Add("pass");
+        }
+
         // Add default patterns if enabled
         if (options.MaskEmails)
         {
@@ -38,10 +45,35 @@ public class PiiMasker
             _sensitiveKeys.Add("socialSecurityNumber");
         }
 
+        if (options.MaskTokens)
+        {
+            _patterns["jwt"] = new Regex(@"\b[A-Za-z0-9-_]{8,}\.[A-Za-z0-9-_]{8,}\.[A-Za-z0-9-_]{8,}\b", RegexOptions.Compiled);
+            _patterns["bearer"] = new Regex(@"(?i)bearer\s+[A-Za-z0-9\-\._~\+\/]+=*", RegexOptions.Compiled);
+            _sensitiveKeys.Add("token");
+            _sensitiveKeys.Add("accessToken");
+            _sensitiveKeys.Add("refreshToken");
+            _sensitiveKeys.Add("idToken");
+        }
+
+        if (options.MaskSecrets)
+        {
+            _sensitiveKeys.Add("secret");
+            _sensitiveKeys.Add("clientSecret");
+            _sensitiveKeys.Add("connectionString");
+            _sensitiveKeys.Add("apiKey");
+            _sensitiveKeys.Add("x-api-key");
+        }
+
         // Add custom keys
         foreach (var key in options.CustomSensitiveKeys)
         {
             _sensitiveKeys.Add(key);
+        }
+
+        foreach (var pattern in options.CustomRegexPatterns)
+        {
+            // Use the pattern itself as the key for traceability
+            _patterns[pattern] = new Regex(pattern, RegexOptions.Compiled);
         }
     }
 
@@ -102,5 +134,9 @@ public class PiiOptions
     public bool MaskEmails { get; set; } = true;
     public bool MaskCreditCards { get; set; } = true;
     public bool MaskSSN { get; set; } = true;
+    public bool MaskPasswords { get; set; } = true;
+    public bool MaskTokens { get; set; } = true;
+    public bool MaskSecrets { get; set; } = true;
     public List<string> CustomSensitiveKeys { get; set; } = new();
+    public List<string> CustomRegexPatterns { get; set; } = new();
 }

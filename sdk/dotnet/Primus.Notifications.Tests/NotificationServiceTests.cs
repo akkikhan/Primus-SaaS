@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using PrimusSaaS.Notifications.Abstractions;
 using PrimusSaaS.Notifications.Configuration;
 using PrimusSaaS.Notifications.Core;
+using PrimusSaaS.Notifications.Channels.Sms;
 using Xunit;
 
 namespace PrimusSaaS.Notifications.Tests;
@@ -99,5 +100,27 @@ public class NotificationServiceTests
         var ex = await Assert.ThrowsAsync<NotificationFailedException>(() => service.SendAsync(notification));
         Assert.False(ex.Result.Success);
         Assert.Equal("No registered channels matched the request.", ex.Result.FailureReason);
+    }
+
+    [Fact]
+    public async Task SendAsync_ServiceUnavailable_FlagsResult()
+    {
+        var failingChannel = new ThrowingChannel("Sms", new TwilioSmsException("missing creds", 0, 503));
+        var service = new NotificationService(
+            new IChannel[] { failingChannel },
+            NullLogger<NotificationService>.Instance,
+            Options.Create(new NotificationOptions { ThrowOnFailure = false }));
+
+        var notification = new TestNotification(
+            "SmsTest",
+            new DirectSmsContent("hi"),
+            new Recipient { PhoneNumber = "+15551234567" },
+            "Sms");
+
+        var result = await service.SendAsync(notification);
+
+        Assert.False(result.Success);
+        Assert.True(result.ServiceUnavailable);
+        Assert.Contains(result.Channels, c => c.Status == ChannelDispatchStatus.Failed);
     }
 }

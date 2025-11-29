@@ -16,12 +16,15 @@ namespace PrimusSaaS.Notifications.Channels.Sms;
 /// <summary>
 /// SMS sender implementation using Twilio REST API.
 /// </summary>
-public class TwilioSmsSender : ISmsSender
+public class TwilioSmsSender : ISmsSender, ITwilioClient
 {
     private readonly HttpClient _httpClient;
     private readonly TwilioOptions _options;
     private readonly ILogger<TwilioSmsSender> _logger;
-    private readonly string _baseUrl;
+    private const int MaxRetryAttempts = 3;
+    private static readonly TimeSpan BaseDelay = TimeSpan.FromMilliseconds(500);
+    private string? _baseUrl;
+    private bool _initialized;
 
     public TwilioSmsSender(
         HttpClient httpClient,
@@ -31,24 +34,23 @@ public class TwilioSmsSender : ISmsSender
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-        _options.Validate();
-
-        _baseUrl = $"https://api.twilio.com/2010-04-01/Accounts/{_options.AccountSid}/Messages.json";
-
-        // Set up Basic Auth
-        var authBytes = Encoding.ASCII.GetBytes($"{_options.AccountSid}:{_options.AuthToken}");
-        _httpClient.DefaultRequestHeaders.Authorization = 
-            new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authBytes));
     }
 
     public async Task SendAsync(string to, string message, CancellationToken cancellationToken = default)
+    {
+        await SendSmsAsync(to, message, cancellationToken);
+    }
+
+    public async Task SendSmsAsync(string to, string message, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(to))
             throw new ArgumentException("Recipient phone number is required.", nameof(to));
 
         if (string.IsNullOrWhiteSpace(message))
             throw new ArgumentException("Message body is required.", nameof(message));
+
+        EnsureInitialized();
+        var baseUrl = _baseUrl!;
 
         // Normalize phone number to E.164 format
         var normalizedTo = NormalizePhoneNumber(to);
@@ -73,9 +75,9 @@ public class TwilioSmsSender : ISmsSender
 
         var content = new FormUrlEncodedContent(formData);
 
-        try
+        await ExecuteWithRetryAsync(async () =>
         {
-            var response = await _httpClient.PostAsync(_baseUrl, content, cancellationToken);
+            var response = await _httpClient.PostAsync(baseUrl, content, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (response.IsSuccessStatusCode)
@@ -84,25 +86,19 @@ public class TwilioSmsSender : ISmsSender
                 _logger.LogInformation(
                     "SMS sent successfully via Twilio. SID: {MessageSid}, To: {To}, Status: {Status}",
                     result?.Sid, normalizedTo, result?.Status);
+                return;
             }
-            else
-            {
-                var error = JsonSerializer.Deserialize<TwilioErrorResponse>(responseBody);
-                _logger.LogError(
-                    "Twilio SMS failed. Status: {StatusCode}, Code: {ErrorCode}, Message: {ErrorMessage}",
-                    (int)response.StatusCode, error?.Code, error?.Message);
 
-                throw new TwilioSmsException(
-                    $"Twilio SMS failed: {error?.Message ?? "Unknown error"}",
-                    error?.Code ?? 0,
-                    (int)response.StatusCode);
-            }
-        }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "Network error sending SMS via Twilio to {To}", normalizedTo);
-            throw new TwilioSmsException("Failed to connect to Twilio API.", ex);
-        }
+            var error = JsonSerializer.Deserialize<TwilioErrorResponse>(responseBody);
+            _logger.LogError(
+                "Twilio SMS failed. Status: {StatusCode}, Code: {ErrorCode}, Message: {ErrorMessage}",
+                (int)response.StatusCode, error?.Code, error?.Message);
+
+            throw new TwilioSmsException(
+                $"Twilio SMS failed: {error?.Message ?? "Unknown error"}",
+                error?.Code ?? 0,
+                (int)response.StatusCode);
+        });
     }
 
     private static string NormalizePhoneNumber(string phone)
@@ -146,6 +142,63 @@ public class TwilioSmsSender : ISmsSender
         public string? MoreInfo { get; set; }
         public int Status { get; set; }
     }
+
+    private void EnsureInitialized()
+    {
+        if (_initialized)
+        {
+            return;
+        }
+
+        if (!_options.IsConfigured())
+        {
+            throw new TwilioSmsException(
+                "Twilio is not configured. Provide Twilio:AccountSid, Twilio:AuthToken, and Twilio:FromNumber or MessagingServiceSid before sending SMS.",
+                twilioErrorCode: 0,
+                httpStatusCode: 503);
+        }
+
+        _options.Validate();
+
+        _baseUrl = $"https://api.twilio.com/2010-04-01/Accounts/{_options.AccountSid}/Messages.json";
+
+        // Set up Basic Auth
+        var authBytes = Encoding.ASCII.GetBytes($"{_options.AccountSid}:{_options.AuthToken}");
+        _httpClient.DefaultRequestHeaders.Authorization = 
+            new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authBytes));
+
+        _initialized = true;
+    }
+
+    private async Task ExecuteWithRetryAsync(Func<Task> action)
+    {
+        for (var attempt = 1; attempt <= MaxRetryAttempts; attempt++)
+        {
+            try
+            {
+                await action();
+                return;
+            }
+            catch (TwilioSmsException ex) when (attempt < MaxRetryAttempts && IsRetryable(ex.HttpStatusCode))
+            {
+                var delay = TimeSpan.FromMilliseconds(BaseDelay.TotalMilliseconds * Math.Pow(2, attempt - 1));
+                _logger.LogWarning(ex, "Twilio send failed (attempt {Attempt}/{Max}). Retrying in {Delay}ms", attempt, MaxRetryAttempts, delay.TotalMilliseconds);
+                await Task.Delay(delay);
+            }
+            catch (HttpRequestException ex) when (attempt < MaxRetryAttempts)
+            {
+                var delay = TimeSpan.FromMilliseconds(BaseDelay.TotalMilliseconds * Math.Pow(2, attempt - 1));
+                _logger.LogWarning(ex, "Network error sending Twilio SMS (attempt {Attempt}/{Max}). Retrying in {Delay}ms", attempt, MaxRetryAttempts, delay.TotalMilliseconds);
+                await Task.Delay(delay);
+            }
+        }
+
+        // Last attempt without catching to surface the exception
+        await action();
+    }
+
+    private static bool IsRetryable(int statusCode) =>
+        statusCode is 408 or 429 or 500 or 502 or 503 or 504;
 }
 
 /// <summary>

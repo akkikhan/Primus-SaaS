@@ -178,6 +178,16 @@ public class PrimusIdentityOptions
     public TimeSpan JwksCacheTtl { get; set; } = TimeSpan.FromHours(24);
 
     /// <summary>
+    /// API key authentication options (optional; disabled by default).
+    /// </summary>
+    public ApiKeyOptions ApiKey { get; set; } = new();
+
+    /// <summary>
+    /// Per-tenant/API key request rate limiting options.
+    /// </summary>
+    public TenantRateLimitOptions TenantRateLimiting { get; set; } = new();
+
+    /// <summary>
     /// Validates that all required options are configured.
     /// </summary>
     public void Validate()
@@ -197,6 +207,15 @@ public class PrimusIdentityOptions
         foreach (var issuer in Issuers)
         {
             ValidateIssuer(issuer, names, claimIssuers, errors, AllowHttpOnLocalhost);
+        }
+
+        try
+        {
+            ApiKey?.Validate();
+        }
+        catch (Exception ex)
+        {
+            errors.Add(ex.Message);
         }
 
         ThrowIfErrors();

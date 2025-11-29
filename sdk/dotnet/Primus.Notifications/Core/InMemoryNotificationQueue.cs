@@ -43,14 +43,17 @@ public class InMemoryNotificationQueue : INotificationQueue
         _logger.LogDebug("Queued notification {Type} for {Recipient}", notification.Type, notification.Recipient.Email ?? notification.Recipient.UserId);
     }
 
-    public bool TryDequeue(out INotification? notification)
+    public async ValueTask<INotification?> DequeueAsync(CancellationToken cancellationToken = default)
     {
-        if (_channel.Reader.TryRead(out notification))
+        try
         {
+            var notification = await _channel.Reader.ReadAsync(cancellationToken);
             NotificationMetrics.QueueLength.Add(-1);
-            return true;
+            return notification;
         }
-
-        return false;
+        catch (OperationCanceledException)
+        {
+            return null;
+        }
     }
 }

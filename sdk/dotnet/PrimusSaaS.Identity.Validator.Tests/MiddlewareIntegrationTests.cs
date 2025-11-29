@@ -75,6 +75,23 @@ public class MiddlewareIntegrationTests
     }
 
     [Fact]
+    public async Task MatchedIssuer_Is_Exposed_In_Context_And_Claims()
+    {
+        using var server = CreateServer();
+        var client = server.CreateClient();
+        var token = GenerateToken(LocalIssuer, LocalAudience, LocalSecret, "tenant-1");
+
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        var response = await client.GetAsync("/api/provider");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsStringAsync();
+
+        body.Should().Contain("Local|Custom JWT");
+        body.Should().Contain(LocalIssuer);
+    }
+
+    [Fact]
     public async Task MissingTenant_With_Isolation_Should_Return_403()
     {
         // Arrange
@@ -162,6 +179,16 @@ public class MiddlewareIntegrationTests
                     {
                         var tenant = context.GetTenantContext();
                         await context.Response.WriteAsync($"Secure: {tenant?.TenantId}");
+                    }).RequireAuthorization();
+
+                    endpoints.MapGet("/api/provider", async context =>
+                    {
+                        var matched = context.GetMatchedIssuer();
+                        var issuerName = matched?.Name ?? "unknown";
+                        var provider = matched?.Provider ?? "unknown";
+                        var issuer = matched?.Issuer ?? "unknown";
+                        var claimName = context.User.FindFirst("primus:issuer_name")?.Value ?? "missing-claim";
+                        await context.Response.WriteAsync($"{issuerName}|{provider}|{issuer}|{claimName}");
                     }).RequireAuthorization();
                 });
             });

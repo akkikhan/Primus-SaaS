@@ -19,6 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Identity.Validator 1.3.4] - 2025-11-29
+
+### Added
+- Expose matched issuer/provider info via `HttpContext.GetMatchedIssuer()` plus injected claims (`primus:issuer_name`, `primus:issuer_type`) for downstream responses and logging.
+
+### Changed
+- Documentation clarifies Azure AD client_credentials issuer format (`https://sts.windows.net/{tenantId}/`) vs v2.0 interactive tokens and shows dual-config examples.
+
+---
+
 ## [Identity.Validator 1.2.1] - 2025-11-24
 
 ### Fixed
@@ -45,6 +55,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `using Microsoft.Extensions.Logging` directive
 
 ---
+
+## [Notifications 1.3.1] - 2025-11-29
+
+### Changed
+- Twilio validation is now lazy/conditional; email-only deployments no longer need Twilio credentials at startup, and first SMS send returns a clear configuration error when Twilio is unconfigured.
 
 ## [Logging 1.1.0] - 2025-11-24
 

@@ -1,0 +1,6 @@
+@EfCoreCompatTest_HostAddress = http://localhost:5028
+
+GET {{EfCoreCompatTest_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

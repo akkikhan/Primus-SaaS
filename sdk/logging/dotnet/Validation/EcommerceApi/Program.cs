@@ -2,6 +2,7 @@ using PrimusSaaS.Logging.Core;
 using PrimusSaaS.Logging.Extensions;
 using PrimusSaaS.Identity.Validator;
 using PrimusSaaS.Notifications;
+using PrimusSaaS.Notifications.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,23 +32,42 @@ builder.Services.AddPrimusLogging(options =>
 // ============================================
 // 2. PRIMUS IDENTITY VALIDATOR CONFIGURATION
 // ============================================
-// Note: For real Auth0/Azure AD integration, configure proper options
-// This demonstrates the API - in production, use real issuer values
+// Multi-provider setup: Auth0 + Azure AD
 builder.Services.AddPrimusIdentity(options =>
 {
-    // Custom issuer configuration for testing
-    // In production, use .UseAuth0() or .UseAzureAd() helpers
     options.Issuers = new List<IssuerConfig>
     {
+        // Auth0 M2M token validation
         new IssuerConfig
         {
-            Name = "test-issuer",
-            Issuer = "https://test.example.com/",
-            Audiences = new List<string> { "ecommerce-api" },
-            Type = IssuerType.Jwt,
-            Secret = "test-secret-key-for-demo-only-replace-in-production"
+            Name = "auth0",
+            Issuer = "https://dev-ft7bykiq2exe4ua4.us.auth0.com/",
+            Authority = "https://dev-ft7bykiq2exe4ua4.us.auth0.com/",
+            Audiences = new List<string> { "https://saas-api/" },
+            Type = IssuerType.Auth0,
+            JwksUrl = "https://dev-ft7bykiq2exe4ua4.us.auth0.com/.well-known/jwks.json",
+            AllowMachineToMachine = true,
+            AllowedGrantTypes = new List<string> { "client-credentials" }
+        },
+        // Azure AD / Entra ID M2M token validation
+        new IssuerConfig
+        {
+            Name = "azuread",
+            // Azure AD v1 issuer format (used by client credentials tokens)
+            Issuer = "https://sts.windows.net/cbd15a9b-cd52-4ccc-916a-00e2edb13043/",
+            Authority = "https://login.microsoftonline.com/cbd15a9b-cd52-4ccc-916a-00e2edb13043",
+            // Audience is the API App ID with api:// prefix
+            Audiences = new List<string> { "api://d91ce212-625e-4bdb-9b3f-428a831077a4" },
+            Type = IssuerType.AzureAD,
+            JwksUrl = "https://login.microsoftonline.com/cbd15a9b-cd52-4ccc-916a-00e2edb13043/discovery/keys",
+            AllowMachineToMachine = true,
+            AllowedGrantTypes = new List<string> { "client-credentials" }
         }
     };
+    
+    // Enable verbose logging for debugging
+    options.Logging.LogValidationSteps = true;
+    options.Logging.MinimumLevel = Microsoft.Extensions.Logging.LogLevel.Debug;
 });
 
 // ============================================
@@ -58,13 +78,13 @@ builder.Services.AddPrimusNotifications(notifications =>
     // File-based templates (required for SMTP/SMS channels)
     var templatesPath = Path.Combine(AppContext.BaseDirectory, "Templates");
     Directory.CreateDirectory(templatesPath);
-    notifications.UseFileTemplates(templatesPath);
+    notifications.UseFileTemplates(templatesPath, validateOnStartup: true);
     
     // Configure Email (SMTP) - use fake SMTP for testing
     notifications.UseSmtp(smtp =>
     {
         smtp.Host = "localhost";
-        smtp.Port = 1025; // MailHog/Papercut default
+        smtp.Port = 25; // Papercut on user's machine
         smtp.EnableSsl = false;
         smtp.FromAddress = "noreply@ecommerce-api.local";
         smtp.FromName = "E-Commerce API";
@@ -118,6 +138,10 @@ app.Use(async (context, next) =>
 app.UsePrimusLogging();
 
 app.UseHttpsRedirection();
+
+// CRITICAL: Must call UseAuthentication() before UseAuthorization()
+// This enables the JWT Bearer middleware that validates Auth0 tokens
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
@@ -130,7 +154,7 @@ logger.Info("E-Commerce API starting", new Dictionary<string, object?>
 {
     ["environment"] = app.Environment.EnvironmentName,
     ["version"] = "2.0.0",
-    ["packages"] = "PrimusSaaS.Logging 1.2.2, PrimusSaaS.Identity.Validator 1.3.3, PrimusSaaS.Notifications 1.1.0"
+    ["packages"] = "PrimusSaaS.Logging 1.2.2, PrimusSaaS.Identity.Validator 1.3.4, PrimusSaaS.Notifications 1.3.1"
 });
 
 app.Run();

@@ -33,4 +33,5 @@ public class Recipient
     public string? PhoneNumber { get; set; }
     public string? DeviceToken { get; set; }
     public string? Name { get; set; }
+    public string? TenantId { get; set; }
 }

@@ -43,6 +43,7 @@ Model values come from `INotification.Data`. Anonymous objects and POCOs are sup
 - If a template is missing, the channel logs a warning and falls back to the raw data string (subject defaults to `"Notification"`).
 - Parsing errors throw to surface invalid templates early.
 - `FluidParser` uses the model type to register member access; prefer simple DTOs/records for clarity.
+- Enable startup validation with `.UseFileTemplates(basePath, validateOnStartup: true)` to parse all templates at boot and fail fast on syntax errors.
 
 ## Tips
 - Keep template names aligned with channel names to simplify multi-channel notifications.

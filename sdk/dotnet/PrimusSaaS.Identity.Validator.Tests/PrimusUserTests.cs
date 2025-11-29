@@ -144,4 +144,23 @@ public class PrimusUserTests
         user.IsMachineToMachine.Should().BeTrue();
         user.ClientId.Should().Be("client-id");
     }
+
+    [Fact]
+    public void FromClaimsPrincipal_SetsIssuerAndProviderClaims_WhenPresent()
+    {
+        var claims = new List<Claim>
+        {
+            new Claim("iss", "https://issuer.example/"),
+            new Claim("primus:issuer_name", "Auth0"),
+            new Claim("primus:issuer_type", "Auth0")
+        };
+
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "test"));
+
+        var user = PrimusUser.FromClaimsPrincipal(principal);
+
+        user.Issuer.Should().Be("https://issuer.example/");
+        user.ProviderName.Should().Be("Auth0");
+        user.ProviderType.Should().Be("Auth0");
+    }
 }

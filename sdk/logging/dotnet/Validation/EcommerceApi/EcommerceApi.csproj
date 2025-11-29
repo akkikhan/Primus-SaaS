@@ -9,10 +9,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-    <!-- PrimusSaaS packages - using project references for local development -->
-    <PackageReference Include="PrimusSaaS.Identity.Validator" Version="1.3.3" />
-    <PackageReference Include="PrimusSaaS.Logging" Version="1.2.2" />
-    <!-- Using project reference for local testing with updated namespaces -->
+    <!-- PrimusSaaS packages - Using local project references for testing -->
+    <ProjectReference Include="..\..\..\..\dotnet\PrimusSaaS.Identity.Validator\PrimusSaaS.Identity.Validator.csproj" />
+    <ProjectReference Include="..\..\PrimusSaaS.Logging\PrimusSaaS.Logging.csproj" />
     <ProjectReference Include="..\..\..\..\dotnet\Primus.Notifications\Primus.Notifications.csproj" />
   </ItemGroup>
 

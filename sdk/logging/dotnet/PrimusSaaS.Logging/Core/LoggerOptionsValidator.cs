@@ -49,6 +49,22 @@ public static class LoggerOptionsValidator
             errors.Add($"Serialization options invalid: {ex.Message}");
         }
 
+        if (options.Sampling is { Enabled: true })
+        {
+            if (options.Sampling.SampleRate <= 0 || options.Sampling.SampleRate > 1)
+            {
+                errors.Add("Sampling SampleRate must be between 0 (exclusive) and 1 (inclusive) when enabled.");
+            }
+        }
+
+        if (options.ApplicationInsights is { Enabled: true })
+        {
+            if (string.IsNullOrWhiteSpace(options.ApplicationInsights.ConnectionString))
+            {
+                errors.Add("ApplicationInsights connection string is required when enabled.");
+            }
+        }
+
         if (errors.Count > 0)
         {
             var builder = new StringBuilder("Invalid Primus logger configuration:");

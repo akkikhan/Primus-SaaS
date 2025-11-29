@@ -1,0 +1,6 @@
+@LiveDemoApi_HostAddress = http://localhost:5221
+
+GET {{LiveDemoApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

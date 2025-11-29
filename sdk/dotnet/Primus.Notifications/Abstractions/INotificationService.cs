@@ -39,6 +39,18 @@ public interface INotificationService
     /// </summary>
     /// <param name="notification">The notification to send.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="fromQueue">Indicates whether this send is being executed by the background queue (prevents re-queue loops).</param>
     /// <returns>A <see cref="Core.NotificationResult"/> indicating success or failure with channel-level details.</returns>
-    Task<Core.NotificationResult> SendAsync(INotification notification, CancellationToken cancellationToken = default);
+    Task<Core.NotificationResult> SendAsync(INotification notification, CancellationToken cancellationToken = default, bool fromQueue = false);
+
+    /// <summary>
+    /// Sends multiple notifications, optionally enqueueing them for background delivery.
+    /// </summary>
+    /// <param name="notifications">Notifications to process.</param>
+    /// <param name="enqueueOnly">When true, enqueue instead of immediate send (if a queue is configured).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<IReadOnlyCollection<Core.NotificationResult>> SendBulkAsync(
+        IEnumerable<INotification> notifications,
+        bool enqueueOnly = false,
+        CancellationToken cancellationToken = default);
 }

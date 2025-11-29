@@ -1,12 +1,17 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using PrimusSaaS.Identity.Validator.Services;
 using PrimusSaaS.Identity.Validator.Validators;
+using PrimusSaaS.Identity.Validator.Middleware;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Security.Claims;
@@ -81,11 +86,21 @@ public static class PrimusIdentityExtensions
             var opt = sp.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
             return opt.RateLimiting;
         });
+        services.AddSingleton(sp =>
+        {
+            var opt = sp.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
+            return opt.TenantRateLimiting;
+        });
         services.AddSingleton<FailedValidationRateLimiter>();
         services.AddSingleton(sp =>
         {
             var opt = sp.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
             return opt.TokenRefresh;
+        });
+        services.AddSingleton(sp =>
+        {
+            var opt = sp.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
+            return opt.ApiKey;
         });
         services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
         services.AddSingleton<ITokenRefreshService>(sp =>
@@ -110,14 +125,41 @@ public static class PrimusIdentityExtensions
             return new NoopTokenRefreshService();
         });
 
-        // Add authentication with JWT Bearer
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        // Add authentication with composite policy (JWT bearer + API key)
+        services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = "PrimusComposite";
+                options.DefaultAuthenticateScheme = "PrimusComposite";
+                options.DefaultChallengeScheme = "PrimusComposite";
+            })
+            .AddPolicyScheme("PrimusComposite", "Primus Identity Composite", policy =>
+            {
+                policy.ForwardDefaultSelector = context =>
+                {
+                    var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
+                    if (!string.IsNullOrWhiteSpace(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return JwtBearerDefaults.AuthenticationScheme;
+                    }
+
+                    var primusOpts = context.RequestServices.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
+                    var apiHeader = primusOpts.ApiKey?.HeaderName ?? ApiKeyDefaults.DefaultHeaderName;
+                    if (!string.IsNullOrWhiteSpace(apiHeader) && context.Request.Headers.ContainsKey(apiHeader))
+                    {
+                        return ApiKeyDefaults.Scheme;
+                    }
+
+                    return JwtBearerDefaults.AuthenticationScheme;
+                };
+            })
             .AddJwtBearer(options =>
             {
                 var sp = services.BuildServiceProvider();
                 var primusOptions = sp.GetRequiredService<IOptions<PrimusIdentityOptions>>().Value;
+                var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("PrimusSaaS.Identity.Validator");
 
                 primusOptions.Validate();
+                WarnIfMachineToMachineDisabled(primusOptions, logger);
 
                 options.RequireHttpsMetadata = primusOptions.RequireHttpsMetadata;
                 
@@ -235,6 +277,16 @@ public static class PrimusIdentityExtensions
 
                         if (issuerConfig != null)
                         {
+                            // Expose the matched issuer/provider for downstream handlers.
+                            var matchedIssuer = MatchedIssuerContext.FromIssuerConfig(issuerConfig);
+                            context.HttpContext.Items[PrimusIdentityContextExtensions.MatchedIssuerItemKey] = matchedIssuer;
+
+                            if (context.Principal?.Identity is ClaimsIdentity identity)
+                            {
+                                identity.AddClaim(new Claim("primus:issuer_name", issuerConfig.Name));
+                                identity.AddClaim(new Claim("primus:issuer_type", issuerConfig.Type.ToString()));
+                            }
+
                             ApplyClaimMappings(context.Principal, issuerConfig, primusIdentityOptions.Logging, logger);
                             if (!EnsureOrganizationRequirement(context, issuerConfig))
                             {
@@ -292,6 +344,11 @@ public static class PrimusIdentityExtensions
                         var securityLogger = context.HttpContext.RequestServices.GetService<ISecurityEventLogger>();
                         securityLogger?.LogFailedAuthentication(null, context.Exception.Message);
 
+                        if (!string.IsNullOrWhiteSpace(context.Exception.Message))
+                        {
+                            context.Response.Headers["X-Primus-Auth-Error"] = context.Exception.Message;
+                        }
+
                         var limiter = context.HttpContext.RequestServices.GetService<FailedValidationRateLimiter>();
                         if (limiter != null && limiter.RegisterFailure(context.HttpContext))
                         {
@@ -307,12 +364,49 @@ public static class PrimusIdentityExtensions
                     {
                         var logger = context.HttpContext.RequestServices.GetService<ILoggerFactory>()?.CreateLogger("PrimusSaaS.Identity.Validator");
                         logger?.LogWarning("Primus Identity: Authentication challenge - {Error}, {ErrorDescription}", context.Error, context.ErrorDescription);
+                        if (!string.IsNullOrWhiteSpace(context.ErrorDescription))
+                        {
+                            context.Response.Headers["X-Primus-Auth-Error"] = context.ErrorDescription;
+                        }
                         return Task.CompletedTask;
                     }
                 };
-            });
+            })
+            .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(ApiKeyDefaults.Scheme, _ => { });
+
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IStartupFilter, PrimusIdentityAuthenticationStartupFilter>());
 
         return services;
+    }
+
+    /// <summary>
+    /// Convenience helper for Auth0 APIs with explicit machine-to-machine allowance.
+    /// </summary>
+    public static IServiceCollection AddPrimusIdentityForAuth0(
+        this IServiceCollection services,
+        string domain,
+        string audience,
+        bool allowMachineToMachine = true,
+        Action<IssuerConfig>? configure = null)
+    {
+        return services.AddPrimusIdentity(options =>
+        {
+            options.Issuers = new List<IssuerConfig>
+            {
+                new()
+                {
+                    Name = "Auth0",
+                    Type = IssuerType.Auth0,
+                    Issuer = $"https://{domain.TrimEnd('/')}/",
+                    Authority = $"https://{domain.TrimEnd('/')}/",
+                    Audiences = new List<string> { audience },
+                    AllowMachineToMachine = allowMachineToMachine,
+                    AllowedGrantTypes = allowMachineToMachine ? new List<string> { "client_credentials" } : new List<string>()
+                }
+            };
+
+            configure?.Invoke(options.Issuers[0]);
+        });
     }
 
     /// <summary>
@@ -342,6 +436,17 @@ public static class PrimusIdentityExtensions
             throw new ArgumentNullException(nameof(app));
 
         return app.UseMiddleware<Middleware.TenantIsolationMiddleware>();
+    }
+
+    /// <summary>
+    /// Applies per-tenant/API key rate limiting middleware.
+    /// </summary>
+    public static IApplicationBuilder UsePrimusTenantRateLimiting(this IApplicationBuilder app)
+    {
+        if (app == null)
+            throw new ArgumentNullException(nameof(app));
+
+        return app.UseMiddleware<TenantRateLimitMiddleware>();
     }
 
     private static ITenantResolver? ResolveTenantResolver(HttpContext httpContext, PrimusIdentityOptions options)
@@ -384,6 +489,15 @@ public static class PrimusIdentityExtensions
         }
 
         return options.Issuers.FirstOrDefault(i => i.Issuer == jwt.Issuer);
+    }
+
+    private static void WarnIfMachineToMachineDisabled(PrimusIdentityOptions options, ILogger logger)
+    {
+        var disabledIssuers = options.Issuers.Where(i => !i.AllowMachineToMachine).Select(i => i.Name).ToList();
+        if (disabledIssuers.Count > 0)
+        {
+            logger.LogWarning("Primus Identity: Machine-to-machine tokens are disabled for issuers: {Issuers}. Auth0 client_credentials tokens will be rejected unless AllowMachineToMachine is enabled.", string.Join(", ", disabledIssuers));
+        }
     }
 
     private static Dictionary<string, object> BuildClaimDictionary(ClaimsPrincipal? principal, SecurityToken? securityToken)
@@ -571,5 +685,17 @@ internal class PrimusIdentityOptionsValidator : IValidateOptions<PrimusIdentityO
         {
             return ValidateOptionsResult.Fail(ex.Message);
         }
+    }
+}
+
+internal sealed class PrimusIdentityAuthenticationStartupFilter : IStartupFilter
+{
+    public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next)
+    {
+        return app =>
+        {
+            app.UseAuthentication();
+            next(app);
+        };
     }
 }

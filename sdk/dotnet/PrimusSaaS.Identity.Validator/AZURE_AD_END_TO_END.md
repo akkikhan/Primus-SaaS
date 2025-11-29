@@ -42,6 +42,19 @@ app.MapGet("/secure", () => "ok").RequireAuthorization();
 app.Run();
 ```
 
+> ⚠️ Azure AD client_credentials (app-only) tokens use a v1 issuer: `https://sts.windows.net/{tenantId}/`. Keep `Authority` on the v2.0 endpoint for discovery, but set `Issuer` to the exact `iss` value or add a second issuer entry for M2M tokens:
+> ```csharp
+> options.Issuers.Add(new IssuerConfig
+> {
+>     Name = "AzureAD M2M",
+>     Type = IssuerType.AzureAD,
+>     Issuer = $"https://sts.windows.net/{builder.Configuration["AzureAd:TenantId"]}/",
+>     Authority = $"https://login.microsoftonline.com/{builder.Configuration["AzureAd:TenantId"]}/v2.0",
+>     Audiences = new List<string> { $"api://{builder.Configuration["AzureAd:ClientId"]}" },
+>     AllowMachineToMachine = true
+> });
+> ```
+
 ## Frontend (MSAL)
 - Use MSAL (@azure/msal-browser / @azure/msal-angular) to acquire tokens for the configured API scope (e.g., `api://<client-id>/.default` or custom scope).
 - Send the access token as `Authorization: Bearer <token>` to the backend.

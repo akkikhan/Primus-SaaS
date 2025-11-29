@@ -36,6 +36,16 @@ public class TwilioOptions
     public bool ValidateOnStartup { get; set; } = true;
 
     /// <summary>
+    /// Indicates whether any Twilio credentials/identifiers have been provided.
+    /// Used to skip validation when the provider is not configured (e.g., email-only deployments).
+    /// </summary>
+    public bool IsConfigured() =>
+        !string.IsNullOrWhiteSpace(AccountSid)
+        || !string.IsNullOrWhiteSpace(AuthToken)
+        || !string.IsNullOrWhiteSpace(FromNumber)
+        || !string.IsNullOrWhiteSpace(MessagingServiceSid);
+
+    /// <summary>
     /// Validates the Twilio configuration.
     /// </summary>
     public void Validate()

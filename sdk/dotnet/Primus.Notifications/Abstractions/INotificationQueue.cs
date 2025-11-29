@@ -9,4 +9,10 @@ namespace PrimusSaaS.Notifications.Abstractions;
 public interface INotificationQueue
 {
     Task EnqueueAsync(INotification notification, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Dequeues the next notification, waiting until one is available or cancellation is requested.
+    /// Returns null when cancelled or when the queue is drained and non-blocking implementations choose to yield.
+    /// </summary>
+    ValueTask<INotification?> DequeueAsync(CancellationToken cancellationToken = default);
 }

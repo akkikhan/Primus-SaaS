@@ -90,6 +90,24 @@ internal sealed class FailingChannel : IChannel
     }
 }
 
+internal sealed class ThrowingChannel : IChannel
+{
+    private readonly Exception _exception;
+
+    public ThrowingChannel(string name, Exception exception)
+    {
+        Name = name;
+        _exception = exception;
+    }
+
+    public string Name { get; }
+
+    public Task SendAsync(INotification notification, CancellationToken cancellationToken = default)
+    {
+        throw _exception;
+    }
+}
+
 internal sealed class SingleServiceScopeFactory : IServiceScopeFactory
 {
     private readonly NotificationService _notificationService;
@@ -132,5 +150,20 @@ internal sealed class SingleServiceScopeFactory : IServiceScopeFactory
         {
             return serviceType == typeof(NotificationService) ? _notificationService : null;
         }
+    }
+}
+
+internal sealed class InMemoryTemplateServiceStub : ITemplateService
+{
+    private readonly string _value;
+
+    public InMemoryTemplateServiceStub(string value)
+    {
+        _value = value;
+    }
+
+    public Task<string> RenderAsync(string notificationType, string channel, object model)
+    {
+        return Task.FromResult(_value);
     }
 }

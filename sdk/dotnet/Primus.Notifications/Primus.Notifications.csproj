@@ -7,18 +7,18 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <PackageId>PrimusSaaS.Notifications</PackageId>
-    <Version>1.3.0</Version>
+    <Version>1.4.0</Version>
     <Authors>Primus SaaS</Authors>
     <Company>Primus SaaS</Company>
     <Product>PrimusSaaS Notifications</Product>
-    <Description>Notification building blocks for Primus SaaS apps: SMTP email delivery, SMS with Twilio, file-based templating, in-memory queueing, background dispatch, and diagnostics.</Description>
-    <PackageTags>notifications;email;smtp;sms;twilio;templating;queue;background-services;aspnetcore;dotnet;primus-saas</PackageTags>
+    <Description>Notification building blocks for Primus SaaS apps: SMTP email delivery, SMS with Twilio/AWS SNS/Azure Communication Services, file-based templating, in-memory queueing, background dispatch, and diagnostics.</Description>
+    <PackageTags>notifications;email;smtp;sms;twilio;aws-sns;azure-communication-services;templating;queue;background-services;aspnetcore;dotnet;primus-saas</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/primus-saas/notifications</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageProjectUrl>https://github.com/primus-saas/notifications</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>v1.3.0: BREAKING - Namespace changed from Primus.Notifications to PrimusSaaS.Notifications. Added INotificationService interface for proper DI and mocking. Improved README with copy-paste ready code samples.</PackageReleaseNotes>
+    <PackageReleaseNotes>v1.4.0: Added AWS SNS and Azure Communication Services as alternative SMS providers. Use UseAwsSns() or UseAzureCommunicationServices() for multi-provider SMS support.</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -27,6 +27,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.400.43" />
+    <PackageReference Include="AWSSDK.SimpleEmail" Version="3.7.401" />
+    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.17.5" />
+    <PackageReference Include="Azure.Communication.Sms" Version="1.0.1" />
+    <PackageReference Include="Azure.Identity" Version="1.11.4" />
     <PackageReference Include="MailKit" Version="4.3.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
@@ -35,7 +40,9 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="7.0.0" />
+    <PackageReference Include="SendGrid" Version="9.29.3" />
     <PackageReference Include="Fluid.Core" Version="2.5.0" />
+    <PackageReference Include="StackExchange.Redis" Version="2.7.33" />
   </ItemGroup>
 
   <ItemGroup>

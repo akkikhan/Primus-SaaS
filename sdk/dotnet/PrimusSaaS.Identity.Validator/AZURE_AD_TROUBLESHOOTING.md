@@ -23,6 +23,7 @@ services.AddPrimusIdentity(options =>
 ## Common Failures and Fixes
 - **IDX10511 / JWKS 404**: Remove `/v2.0` from `Authority`; let discovery derive JWKS. Issuer should keep `/v2.0`.
 - **Unknown issuer**: Ensure token `iss` matches configured `Issuer` exactly (case-sensitive).
+- **Azure AD client_credentials issuer mismatch**: App-only tokens default to `iss = https://sts.windows.net/{tenantId}/` (v1). Set `Issuer` to that value (or add a second issuer entry for M2M) while keeping `Authority` on the v2.0 endpoint for discovery.
 - **Audience mismatch**: Ensure `aud` matches one configured audience.
 - **Authority invalid**: Must be absolute HTTPS; validation now surfaces actionable errors.
 
