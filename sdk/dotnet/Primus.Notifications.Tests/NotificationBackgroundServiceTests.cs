@@ -3,12 +3,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Primus.Notifications.Abstractions;
-using Primus.Notifications.Configuration;
-using Primus.Notifications.Core;
+using PrimusSaaS.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Configuration;
+using PrimusSaaS.Notifications.Core;
 using Xunit;
 
-namespace Primus.Notifications.Tests;
+namespace PrimusSaaS.Notifications.Tests;
 
 public class NotificationBackgroundServiceTests
 {
@@ -27,7 +27,8 @@ public class NotificationBackgroundServiceTests
         var channel = new RecordingChannel("Email");
         var notificationService = new NotificationService(
             new IChannel[] { channel },
-            NullLogger<NotificationService>.Instance);
+            NullLogger<NotificationService>.Instance,
+            Options.Create(new NotificationOptions()));
         var scopeFactory = new SingleServiceScopeFactory(notificationService);
 
         var backgroundService = new NotificationBackgroundService(

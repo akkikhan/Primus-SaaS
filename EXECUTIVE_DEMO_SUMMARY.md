@@ -43,7 +43,7 @@ A **production-ready notification infrastructure** that any application can plug
 - **Maintenance**: Developer required for every text change
 - **Cost at scale**: $1,000 per million emails (SendGrid)
 
-### After (With Primus.Notifications)
+### After (With PrimusSaaS.Notifications)
 - **Time to implement**: 30 minutes (1 line of code + template)
 - **Code required**: 1 line: `await _notifier.SendAsync(event)`
 - **Maintenance**: Marketing can edit templates directly
@@ -82,21 +82,21 @@ Maintenance Reduction:     90% (no code deploys for text changes)
 ## Competitive Advantages
 
 ### vs. Building In-House
-| Aspect | In-House | Primus.Notifications |
+| Aspect | In-House | PrimusSaaS.Notifications |
 |--------|----------|---------------------|
 | Development Time | 2-3 months | ✅ Ready now |
 | Testing | Manual | ✅ 4-tier automated suite |
 | Maintenance | Ongoing | ✅ Minimal |
 
 ### vs. SendGrid/Twilio
-| Aspect | Vendor SDKs | Primus.Notifications |
+| Aspect | Vendor SDKs | PrimusSaaS.Notifications |
 |--------|-------------|---------------------|
 | Vendor Lock-in | ❌ High | ✅ None |
 | Cost per 1M emails | ❌ $1,000 | ✅ $50 |
 | Customization | ❌ Limited | ✅ Full control |
 
 ### vs. Using MailKit Directly
-| Aspect | MailKit Alone | Primus.Notifications |
+| Aspect | MailKit Alone | PrimusSaaS.Notifications |
 |--------|---------------|---------------------|
 | Code per email | ❌ 50+ lines | ✅ 1 line |
 | Template Management | ❌ Hardcoded | ✅ External files |
@@ -139,9 +139,9 @@ Maintenance Reduction:     90% (no code deploys for text changes)
 
 ## Demo Files Available
 
-📁 **Test Agent**: `test-apps/Primus.Notifications.TestAgent/`  
+📁 **Test Agent**: `test-apps/PrimusSaaS.Notifications.TestAgent/`  
 📁 **Frontend UI**: `portal/frontend/src/pages/Notifications.tsx`  
-📁 **Core Library**: `sdk/dotnet/Primus.Notifications/`  
+📁 **Core Library**: `sdk/dotnet/PrimusSaaS.Notifications/`  
 📄 **Full Results**: `TEST_EXECUTION_RESULTS.md`  
 📄 **Implementation Guide**: `NOTIFICATION_MODULE_COMPLETE.md`
 

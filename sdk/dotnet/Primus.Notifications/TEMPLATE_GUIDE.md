@@ -1,6 +1,6 @@
 # Template Guide
 
-Primus.Notifications uses Liquid templates (via Fluid) to render subjects and bodies per notification type and channel.
+PrimusSaaS.Notifications uses Liquid templates (via Fluid) to render subjects and bodies per notification type and channel.
 
 ## Layout and conventions
 - Base path: set through `.UseFileTemplates(basePath)`
@@ -10,6 +10,7 @@ Primus.Notifications uses Liquid templates (via Fluid) to render subjects and bo
   - `EmailBody.liquid`
   - `SmsBody.liquid` (optional; used by the Sms channel)
 - Channel names must match the `INotification.Channels` entries (case-insensitive).
+- The built-in helpers (`SendEmailAsync(to, subject, body)` / `SendSmsAsync(to, message)`) use notification types `primus.email.direct` and `primus.sms.direct` and skip template lookup entirely.
 
 Example structure:
 ```

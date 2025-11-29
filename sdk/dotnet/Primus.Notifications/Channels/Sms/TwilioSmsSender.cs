@@ -8,10 +8,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Primus.Notifications.Abstractions;
-using Primus.Notifications.Configuration;
+using PrimusSaaS.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Configuration;
 
-namespace Primus.Notifications.Channels.Sms;
+namespace PrimusSaaS.Notifications.Channels.Sms;
 
 /// <summary>
 /// SMS sender implementation using Twilio REST API.

@@ -30,7 +30,7 @@ Since the .NET SDK is not available in the current agent shell, you must start t
     *   **Frontend**: A green success toast appears. The "Live Activity" log updates.
     *   **Backend Terminal**: You will see a log entry from the `LoggerChannel`:
         ```
-        info: Primus.Notifications.Channels.LoggerChannel[0]
+        info: PrimusSaaS.Notifications.Channels.LoggerChannel[0]
               📢 [NOTIFICATION] Type: ApplicationCreated | Recipient: test@example.com ...
         ```
 

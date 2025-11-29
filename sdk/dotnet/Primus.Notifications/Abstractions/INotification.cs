@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Primus.Notifications.Abstractions;
+namespace PrimusSaaS.Notifications.Abstractions;
 
 public interface INotification
 {

@@ -2,7 +2,7 @@
 
 ## 🎯 What Was Built
 
-### Core Library (`sdk/dotnet/Primus.Notifications`)
+### Core Library (`sdk/dotnet/PrimusSaaS.Notifications`)
 A production-ready, enterprise-grade notification dispatcher with:
 - **Multi-Channel Architecture**: Pluggable channels (Email, SMS, Push, etc.)
 - **Template Engine**: Liquid-based with caching for performance
@@ -20,7 +20,7 @@ A production-ready, enterprise-grade notification dispatcher with:
 - **Live Logs**: Real-time activity monitoring
 - **Channel Status**: Visual indicators for active channels
 
-### Test Agent (`test-apps/Primus.Notifications.TestAgent`)
+### Test Agent (`test-apps/PrimusSaaS.Notifications.TestAgent`)
 Comprehensive testing suite with 4 difficulty tiers:
 1. **Easy**: Basic single-channel dispatch
 2. **Moderate**: Complex templates with loops/conditionals
@@ -66,7 +66,7 @@ Comprehensive testing suite with 4 difficulty tiers:
 ## 🏆 Competitive Advantages
 
 ### vs. Using MailKit Directly
-| Aspect | MailKit Alone | Primus.Notifications |
+| Aspect | MailKit Alone | PrimusSaaS.Notifications |
 |--------|---------------|---------------------|
 | Code Volume | 50+ lines per email | 1 line dispatch |
 | Template Management | Hardcoded strings | External .liquid files |
@@ -76,7 +76,7 @@ Comprehensive testing suite with 4 difficulty tiers:
 | Maintainability | Developer required | Business user can edit |
 
 ### vs. SendGrid/Twilio SDKs
-| Aspect | Vendor SDKs | Primus.Notifications |
+| Aspect | Vendor SDKs | PrimusSaaS.Notifications |
 |--------|-------------|---------------------|
 | Vendor Lock-in | High | None (swap providers via config) |
 | Cost | $$ per email/SMS | Infrastructure cost only |
@@ -117,7 +117,7 @@ Comprehensive testing suite with 4 difficulty tiers:
 ### 3. Show the Scale (2 min)
 **Run Test Agent**:
 ```bash
-cd test-apps/Primus.Notifications.TestAgent
+cd test-apps/PrimusSaaS.Notifications.TestAgent
 dotnet run
 ```
 - Select "Complex" scenario
@@ -133,7 +133,7 @@ dotnet run
 
 ## 📁 File Structure
 ```
-sdk/dotnet/Primus.Notifications/
+sdk/dotnet/PrimusSaaS.Notifications/
 ├── Abstractions/          # Interfaces
 ├── Channels/              # Email, Logger (SMS/Push future)
 ├── Core/                  # NotificationService
@@ -148,7 +148,7 @@ portal/backend/
 portal/frontend/
 └── src/pages/Notifications.tsx  # UI dashboard
 
-test-apps/Primus.Notifications.TestAgent/
+test-apps/PrimusSaaS.Notifications.TestAgent/
 ├── Scenarios/             # 4 test scenarios
 ├── Templates/             # Test templates
 └── Program.cs             # Interactive CLI

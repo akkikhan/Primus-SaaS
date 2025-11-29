@@ -1,10 +1,10 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using Primus.Notifications.Services;
+using PrimusSaaS.Notifications.Services;
 using Xunit;
 
-namespace Primus.Notifications.Tests;
+namespace PrimusSaaS.Notifications.Tests;
 
 public class FileTemplateServiceTests
 {

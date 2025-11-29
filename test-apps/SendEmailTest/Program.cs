@@ -3,9 +3,9 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Primus.Notifications;
-using Primus.Notifications.Abstractions;
-using Primus.Notifications.Core;
+using PrimusSaaS.Notifications;
+using PrimusSaaS.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Core;
 
 namespace SendEmailTest;
 
@@ -51,10 +51,10 @@ class Program
 
                 config.UseSmtp(options =>
                 {
-                    options.Host = smtpHost;
+                    options.Host = smtpHost ?? string.Empty;
                     options.Port = port;
-                    options.Username = username;
-                    options.Password = password;
+                    options.Username = username ?? string.Empty;
+                    options.Password = password ?? string.Empty;
                     options.FromAddress = fromAddress ?? "noreply@primussaas.com";
                     options.FromName = "Primus SaaS";
                 });

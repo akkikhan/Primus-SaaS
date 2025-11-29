@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 using Fluid;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Primus.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Abstractions;
 
-namespace Primus.Notifications.Services;
+namespace PrimusSaaS.Notifications.Services;
 
 public class FileTemplateService : ITemplateService
 {

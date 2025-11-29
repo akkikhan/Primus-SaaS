@@ -1,4 +1,4 @@
-namespace Primus.Notifications.Configuration;
+namespace PrimusSaaS.Notifications.Configuration;
 
 public class NotificationQueueOptions
 {

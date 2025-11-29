@@ -4,11 +4,11 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Primus.Notifications.Abstractions;
-using Primus.Notifications.Configuration;
-using Primus.Notifications.Diagnostics;
+using PrimusSaaS.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Configuration;
+using PrimusSaaS.Notifications.Diagnostics;
 
-namespace Primus.Notifications.Core;
+namespace PrimusSaaS.Notifications.Core;
 
 /// <summary>
 /// Bounded in-memory queue for notifications. Suitable for small to medium workloads.

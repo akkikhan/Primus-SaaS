@@ -5,11 +5,11 @@ using MailKit.Net.Smtp;
 using MimeKit;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
-using Primus.Notifications.Abstractions;
-using Primus.Notifications.Configuration;
-using Primus.Notifications.Core;
+using PrimusSaaS.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Configuration;
+using PrimusSaaS.Notifications.Core;
 
-namespace Primus.Notifications.Channels.Email;
+namespace PrimusSaaS.Notifications.Channels.Email;
 
 public class SmtpEmailChannel : IChannel
 {
@@ -35,16 +35,29 @@ public class SmtpEmailChannel : IChannel
         }
 
         var directContent = notification.Data as DirectEmailContent;
-        var renderedSubject = await _templateService.RenderAsync(notification.Type, "EmailSubject", notification.Data);
-        var renderedBody = await _templateService.RenderAsync(notification.Type, "EmailBody", notification.Data);
+        var isDirect = notification.Type.Equals(BasicNotification.DirectEmailType, StringComparison.OrdinalIgnoreCase);
 
-        var subject = string.IsNullOrWhiteSpace(renderedSubject)
-            ? directContent?.Subject ?? TryGetProperty(notification.Data, "Subject") ?? "Notification"
-            : renderedSubject;
+        string subject;
+        string body;
 
-        var body = string.IsNullOrWhiteSpace(renderedBody)
-            ? directContent?.Body ?? TryGetProperty(notification.Data, "Body") ?? notification.Data.ToString() ?? string.Empty
-            : renderedBody;
+        if (isDirect)
+        {
+            subject = directContent?.Subject ?? TryGetProperty(notification.Data, "Subject") ?? "Notification";
+            body = directContent?.Body ?? TryGetProperty(notification.Data, "Body") ?? notification.Data.ToString() ?? string.Empty;
+        }
+        else
+        {
+            var renderedSubject = await _templateService.RenderAsync(notification.Type, "EmailSubject", notification.Data);
+            var renderedBody = await _templateService.RenderAsync(notification.Type, "EmailBody", notification.Data);
+
+            subject = string.IsNullOrWhiteSpace(renderedSubject)
+                ? directContent?.Subject ?? TryGetProperty(notification.Data, "Subject") ?? "Notification"
+                : renderedSubject;
+
+            body = string.IsNullOrWhiteSpace(renderedBody)
+                ? directContent?.Body ?? TryGetProperty(notification.Data, "Body") ?? notification.Data.ToString() ?? string.Empty
+                : renderedBody;
+        }
 
         // Fallback if template returns empty (maybe data has it directly?)
         if (string.IsNullOrEmpty(subject)) subject = "Notification";

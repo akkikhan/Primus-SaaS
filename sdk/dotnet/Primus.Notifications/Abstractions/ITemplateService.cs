@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace Primus.Notifications.Abstractions;
+namespace PrimusSaaS.Notifications.Abstractions;
 
 public interface ITemplateService
 {

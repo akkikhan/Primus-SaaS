@@ -15,9 +15,9 @@ Audience: first-time developers integrating Primus SaaS modules into their own A
 | Module | Runtime | Package | Version | Notes |
 |--------|---------|---------|---------|-------|
 | Identity Validator | Node.js 16+ | `@primus-saas/identity-validator` | 1.3.2 | Express/NestJS middleware + direct validator |
-| Identity Validator | .NET 6/7/8 | `PrimusSaaS.Identity.Validator` | 1.3.0 | ASP.NET Core authentication handler + helpers |
-| Logging | Node.js 16+ | `@primus-saas/logging` | 1.2.1 | Structured logger + Express middleware |
-| Logging | .NET 6/7/8 | `PrimusSaaS.Logging` | 1.2.1 | ILogger provider, middleware, file/App Insights targets |
+| Identity Validator | .NET 6/7/8 | `PrimusSaaS.Identity.Validator` | 1.3.3 | ASP.NET Core authentication handler + helpers |
+| Logging | Node.js 16+ | `@primus-saas/logging` | 1.2.2 | Structured logger + Express middleware |
+| Logging | .NET 6/7/8 | `PrimusSaaS.Logging` | 1.2.2 | ILogger provider, middleware, file/App Insights targets |
 
 ## 3) Getting Started / Setup
 ### Prerequisites
@@ -80,7 +80,7 @@ Use User Secrets for local development (`dotnet user-secrets set "Azure:TenantId
 
 Azure registration guide: https://learn.microsoft.com/azure/active-directory/develop/quickstart-register-app
 
-## 5) Integration Steps
+## 5) Integration Steps (keep versions in table above for npm/NuGet parity)
 ### Node.js (Express/Nest)
 ```typescript
 import express from 'express';
@@ -145,6 +145,8 @@ builder.Services.AddPrimusIdentity(options =>
     };
     options.RequireHttpsMetadata = true;
     options.ClockSkew = TimeSpan.FromMinutes(5);
+    // Dev: Allow HTTP on localhost while keeping HTTPS elsewhere
+    options.AllowHttpOnLocalhost = true;
 });
 
 builder.Services.AddAuthorization();

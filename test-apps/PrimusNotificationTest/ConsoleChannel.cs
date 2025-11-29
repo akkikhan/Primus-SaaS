@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Primus.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Abstractions;
 
 namespace PrimusNotificationTest;
 

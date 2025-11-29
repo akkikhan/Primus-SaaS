@@ -73,7 +73,7 @@ The application sends a Welcome Email to **akki@primussoft.com** with:
 
 📤 Dispatching notification...
 
-info: Primus.Notifications.Channels.LoggerChannel[0]
+info: PrimusSaaS.Notifications.Channels.LoggerChannel[0]
       📢 [NOTIFICATION] Type: Welcome | Recipient: akki@primussoft.com
       Data: { "Name": "Akki" }
 
@@ -87,10 +87,10 @@ info: Primus.Notifications.Channels.LoggerChannel[0]
 ```
 📤 Dispatching notification...
 
-info: Primus.Notifications.Channels.LoggerChannel[0]
+info: PrimusSaaS.Notifications.Channels.LoggerChannel[0]
       📢 [NOTIFICATION] Type: Welcome | Recipient: akki@primussoft.com
 
-info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
+info: PrimusSaaS.Notifications.Channels.Email.SmtpEmailChannel[0]
       Email Channel: Message prepared
       Subject: Welcome to Primus, Akki!
       To: akki@primussoft.com

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using Primus.Notifications.Abstractions;
-using Primus.Notifications.Core;
+using PrimusSaaS.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Core;
 
-namespace Primus.Notifications.Tests;
+namespace PrimusSaaS.Notifications.Tests;
 
 internal record TestNotification(
     string Type,

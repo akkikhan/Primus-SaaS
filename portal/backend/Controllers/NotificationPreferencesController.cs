@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PrimusSaaS.Portal.Api.Data;
 using PrimusSaaS.Portal.Api.Models;
-using Primus.Notifications.Diagnostics;
+using PrimusSaaS.Notifications.Diagnostics;
 
 namespace PrimusSaaS.Portal.Api.Controllers;
 

@@ -1,4 +1,4 @@
-# 🎁 Primus.Notifications - Complete Package Overview
+# 🎁 PrimusSaaS.Notifications - Complete Package Overview
 
 ## ✅ PROVEN: Email Successfully Delivered!
 
@@ -23,7 +23,7 @@ That's it! No SMTP boilerplate, no hardcoded HTML.
 
 ## 🎯 Package Contents
 
-### **Core Library** (`Primus.Notifications.dll`)
+### **Core Library** (`PrimusSaaS.Notifications.dll`)
 ```
 Size: ~50 KB
 Target: .NET 7.0+
@@ -81,7 +81,7 @@ Welcome to {{ AppName }}, {{ Name }}!
 
 ### **Step 1: Install**
 ```bash
-dotnet add package Primus.Notifications
+dotnet add package PrimusSaaS.Notifications
 ```
 
 ### **Step 2: Configure** (Program.cs)
@@ -155,7 +155,7 @@ services.AddScoped<IChannel, SlackChannel>();
 | Add new channel | 1 week | 1 day | **5x faster** |
 
 ### **Cost Savings**
-| Volume | SendGrid | Primus.Notifications | Savings |
+| Volume | SendGrid | PrimusSaaS.Notifications | Savings |
 |--------|----------|---------------------|---------|
 | 1M emails/month | $1,000 | $50 (SMTP server) | **$950/month** |
 | 10M emails/month | $10,000 | $50 | **$9,950/month** |
@@ -192,7 +192,7 @@ services.AddScoped<IChannel, SlackChannel>();
 
 ## 🆚 Competitive Comparison
 
-| Feature | Primus.Notifications | SendGrid | MailKit Alone |
+| Feature | PrimusSaaS.Notifications | SendGrid | MailKit Alone |
 |---------|---------------------|----------|---------------|
 | **Setup Time** | ✅ 5 min | ⚠️ 30 min | ❌ 2 hours |
 | **Code per Email** | ✅ 1 line | ⚠️ 10 lines | ❌ 50+ lines |
@@ -235,19 +235,19 @@ services.AddScoped<IChannel, SlackChannel>();
 
 ### **1. Prepare Package**
 ```bash
-cd sdk/dotnet/Primus.Notifications
+cd sdk/dotnet/PrimusSaaS.Notifications
 dotnet pack -c Release
 ```
 
 ### **2. Test Package Locally**
 ```bash
 dotnet nuget add source ./bin/Release --name local
-dotnet add package Primus.Notifications --source local
+dotnet add package PrimusSaaS.Notifications --source local
 ```
 
 ### **3. Publish to NuGet**
 ```bash
-dotnet nuget push bin/Release/Primus.Notifications.1.0.0.nupkg \
+dotnet nuget push bin/Release/PrimusSaaS.Notifications.1.0.0.nupkg \
   --api-key YOUR_API_KEY \
   --source https://api.nuget.org/v3/index.json
 ```

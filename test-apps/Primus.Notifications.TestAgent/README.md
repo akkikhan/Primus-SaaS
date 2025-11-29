@@ -50,7 +50,7 @@ This comprehensive test agent validates the Primus Notification Module across 4 
 
 ### Execution
 ```bash
-cd test-apps/Primus.Notifications.TestAgent
+cd test-apps/PrimusSaaS.Notifications.TestAgent
 dotnet run
 ```
 

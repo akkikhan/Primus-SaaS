@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Primus.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Abstractions;
 using PrimusSaaS.Portal.Api.Notifications;
 using System.Security.Claims;
 using System.Diagnostics;

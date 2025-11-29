@@ -1,10 +1,10 @@
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
-using Primus.Notifications.Abstractions;
-using Primus.Notifications.Core;
+using PrimusSaaS.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Core;
 using Xunit;
 
-namespace Primus.Notifications.Tests;
+namespace PrimusSaaS.Notifications.Tests;
 
 public class ServiceCollectionExtensionsTests
 {

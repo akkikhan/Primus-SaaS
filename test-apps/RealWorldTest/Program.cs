@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Primus.Notifications;
-using Primus.Notifications.Abstractions;
+using PrimusSaaS.Notifications;
+using PrimusSaaS.Notifications.Abstractions;
 
 namespace RealWorldTest;
 

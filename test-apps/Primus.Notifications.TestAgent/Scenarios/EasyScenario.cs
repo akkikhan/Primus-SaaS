@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Primus.Notifications.Abstractions;
-using Primus.Notifications.Core;
+using PrimusSaaS.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Core;
 using Spectre.Console;
 
-namespace Primus.Notifications.TestAgent.Scenarios;
+namespace PrimusSaaS.Notifications.TestAgent.Scenarios;
 
 public class EasyScenario : IScenario
 {

@@ -3,7 +3,7 @@
 ## 📦 Complete Implementation Delivered
 
 ### Core Library
-✅ **Location**: `sdk/dotnet/Primus.Notifications/`
+✅ **Location**: `sdk/dotnet/PrimusSaaS.Notifications/`
 - Multi-channel notification dispatcher
 - Liquid template engine with caching
 - SMTP email channel (MailKit)
@@ -24,7 +24,7 @@
 - Channel status indicators
 
 ### Test Suite
-✅ **Test Agent**: `test-apps/Primus.Notifications.TestAgent/`
+✅ **Test Agent**: `test-apps/PrimusSaaS.Notifications.TestAgent/`
 - 4-tier difficulty scenarios (Easy → Complex)
 - Interactive CLI with Spectre.Console
 - Performance benchmarking
@@ -118,7 +118,7 @@
 
 ### Option 1: Test Agent (Comprehensive)
 ```bash
-cd test-apps/Primus.Notifications.TestAgent
+cd test-apps/PrimusSaaS.Notifications.TestAgent
 dotnet run
 ```
 Select "Run All" to execute all 4 scenarios.

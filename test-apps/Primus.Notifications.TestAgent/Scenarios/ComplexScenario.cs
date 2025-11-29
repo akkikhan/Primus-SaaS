@@ -4,11 +4,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using Primus.Notifications.Abstractions;
-using Primus.Notifications.Core;
+using PrimusSaaS.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Core;
 using Spectre.Console;
 
-namespace Primus.Notifications.TestAgent.Scenarios;
+namespace PrimusSaaS.Notifications.TestAgent.Scenarios;
 
 public class ComplexScenario : IScenario
 {

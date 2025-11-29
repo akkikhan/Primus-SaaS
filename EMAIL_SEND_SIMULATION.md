@@ -34,22 +34,22 @@ SMTP Host (e.g., smtp.gmail.com): [ENTER pressed]
 
 📤 Dispatching notification...
 
-info: Primus.Notifications.Services.FileTemplateService[0]
+info: PrimusSaaS.Notifications.Services.FileTemplateService[0]
       Loading template: Welcome/EmailSubject.liquid
       
-info: Primus.Notifications.Services.FileTemplateService[0]
+info: PrimusSaaS.Notifications.Services.FileTemplateService[0]
       Template parsed successfully (12ms)
       
-info: Primus.Notifications.Services.FileTemplateService[0]
+info: PrimusSaaS.Notifications.Services.FileTemplateService[0]
       Loading template: Welcome/EmailBody.liquid
       
-info: Primus.Notifications.Services.FileTemplateService[0]
+info: PrimusSaaS.Notifications.Services.FileTemplateService[0]
       Template parsed successfully (18ms)
       
-info: Primus.Notifications.Core.NotificationService[0]
+info: PrimusSaaS.Notifications.Core.NotificationService[0]
       Starting notification dispatch for Welcome to akki@primussoft.com
       
-info: Primus.Notifications.Channels.LoggerChannel[0]
+info: PrimusSaaS.Notifications.Channels.LoggerChannel[0]
       📢 [NOTIFICATION] Type: Welcome | Recipient: akki@primussoft.com | Data: {
         "Name": "Akki"
       }
@@ -82,55 +82,55 @@ From Email Address: your-email@gmail.com
 
 📤 Dispatching notification...
 
-info: Primus.Notifications.Services.FileTemplateService[0]
+info: PrimusSaaS.Notifications.Services.FileTemplateService[0]
       Loading template: Welcome/EmailSubject.liquid
       
-info: Primus.Notifications.Services.FileTemplateService[0]
+info: PrimusSaaS.Notifications.Services.FileTemplateService[0]
       Template parsed successfully (12ms)
       
-info: Primus.Notifications.Services.FileTemplateService[0]
+info: PrimusSaaS.Notifications.Services.FileTemplateService[0]
       Loading template: Welcome/EmailBody.liquid
       
-info: Primus.Notifications.Services.FileTemplateService[0]
+info: PrimusSaaS.Notifications.Services.FileTemplateService[0]
       Template parsed successfully (18ms)
       
-info: Primus.Notifications.Core.NotificationService[0]
+info: PrimusSaaS.Notifications.Core.NotificationService[0]
       Starting notification dispatch for Welcome to akki@primussoft.com
       
-info: Primus.Notifications.Channels.LoggerChannel[0]
+info: PrimusSaaS.Notifications.Channels.LoggerChannel[0]
       📢 [NOTIFICATION] Type: Welcome | Recipient: akki@primussoft.com | Data: {
         "Name": "Akki"
       }
       
-info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
+info: PrimusSaaS.Notifications.Channels.Email.SmtpEmailChannel[0]
       Email Channel: Rendering template Welcome/EmailSubject.liquid
       
-info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
+info: PrimusSaaS.Notifications.Channels.Email.SmtpEmailChannel[0]
       Email Channel: Rendering template Welcome/EmailBody.liquid
       
-info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
+info: PrimusSaaS.Notifications.Channels.Email.SmtpEmailChannel[0]
       Email Channel: Connecting to smtp.gmail.com:587
       
-info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
+info: PrimusSaaS.Notifications.Channels.Email.SmtpEmailChannel[0]
       Email Channel: Authenticating with username your-email@gmail.com
       
-info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
+info: PrimusSaaS.Notifications.Channels.Email.SmtpEmailChannel[0]
       Email Channel: Message prepared
       Subject: Welcome to Primus, Akki!
       To: akki@primussoft.com
       From: your-email@gmail.com
       Body: 245 bytes (HTML)
       
-info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
+info: PrimusSaaS.Notifications.Channels.Email.SmtpEmailChannel[0]
       Email Channel: Sending message...
       
-info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
+info: PrimusSaaS.Notifications.Channels.Email.SmtpEmailChannel[0]
       Email Channel: Message sent successfully
       
-info: Primus.Notifications.Core.NotificationService[0]
+info: PrimusSaaS.Notifications.Core.NotificationService[0]
       Successfully sent notification via Email
       
-info: Primus.Notifications.Core.NotificationService[0]
+info: PrimusSaaS.Notifications.Core.NotificationService[0]
       Notification dispatch complete.
 
 ✅ SUCCESS!
@@ -217,7 +217,7 @@ From Email: test@example.com
 
 ✅ **Application Created**: `test-apps/SendEmailTest/`  
 ✅ **Templates Ready**: Welcome email templates copied  
-✅ **Code Verified**: Uses production Primus.Notifications module  
+✅ **Code Verified**: Uses production PrimusSaaS.Notifications module  
 ✅ **Ready to Run**: Just needs SMTP credentials  
 
 **To actually send the email**, you need to:

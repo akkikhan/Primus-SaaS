@@ -1,4 +1,4 @@
-# 📦 Primus.Notifications - Package Distribution Guide
+# 📦 PrimusSaaS.Notifications - Package Distribution Guide
 
 ## ✅ What We've Proven
 
@@ -10,13 +10,13 @@ The email you just received **proves**:
 
 ## 🎯 What We Provide as a Package
 
-### 1. **NuGet Package: Primus.Notifications**
+### 1. **NuGet Package: PrimusSaaS.Notifications**
 
-**Location**: `sdk/dotnet/Primus.Notifications/`
+**Location**: `sdk/dotnet/PrimusSaaS.Notifications/`
 
 **What's Included**:
 ```
-Primus.Notifications/
+PrimusSaaS.Notifications/
 ├── Abstractions/
 │   ├── INotification.cs          # Interface for notification events
 │   ├── IChannel.cs                # Interface for delivery channels
@@ -48,13 +48,13 @@ Primus.Notifications/
 ### Step 1: Install Package
 
 ```bash
-dotnet add package Primus.Notifications
+dotnet add package PrimusSaaS.Notifications
 ```
 
 ### Step 2: Configure in Program.cs
 
 ```csharp
-using Primus.Notifications;
+using PrimusSaaS.Notifications;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -110,7 +110,7 @@ Welcome to MyApp, {{ Name }}!
 ### Step 4: Define Notification Event
 
 ```csharp
-using Primus.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Abstractions;
 
 public class WelcomeNotification : INotification
 {
@@ -238,7 +238,7 @@ foreach (var user in users)
 ## 📦 What We Package & Distribute
 
 ### 1. **NuGet Package**
-- **Name**: `Primus.Notifications`
+- **Name**: `PrimusSaaS.Notifications`
 - **Version**: 1.0.0
 - **Target**: .NET 7.0+
 - **Size**: ~50 KB
@@ -267,7 +267,7 @@ foreach (var user in users)
 ## 💼 Value Proposition
 
 ### For Developers
-| Before (Hardcoded) | After (Primus.Notifications) |
+| Before (Hardcoded) | After (PrimusSaaS.Notifications) |
 |--------------------|------------------------------|
 | 50+ lines per email | **1 line** |
 | Hardcoded HTML strings | **External templates** |
@@ -334,7 +334,7 @@ foreach (var user in users)
 
 ## 📊 Competitive Analysis
 
-| Feature | Primus.Notifications | SendGrid SDK | MailKit Alone |
+| Feature | PrimusSaaS.Notifications | SendGrid SDK | MailKit Alone |
 |---------|---------------------|--------------|---------------|
 | **Cost** | Free (infra only) | $$$ per email | Free |
 | **Templates** | ✅ Liquid | ✅ Proprietary | ❌ None |
@@ -349,9 +349,9 @@ foreach (var user in users)
 
 ### 1. Publish to NuGet
 ```bash
-cd sdk/dotnet/Primus.Notifications
+cd sdk/dotnet/PrimusSaaS.Notifications
 dotnet pack -c Release
-dotnet nuget push bin/Release/Primus.Notifications.1.0.0.nupkg --source nuget.org
+dotnet nuget push bin/Release/PrimusSaaS.Notifications.1.0.0.nupkg --source nuget.org
 ```
 
 ### 2. Create GitHub Repository

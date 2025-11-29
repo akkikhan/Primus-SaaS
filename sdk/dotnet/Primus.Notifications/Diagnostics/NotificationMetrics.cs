@@ -1,13 +1,13 @@
 using System.Diagnostics.Metrics;
 
-namespace Primus.Notifications.Diagnostics;
+namespace PrimusSaaS.Notifications.Diagnostics;
 
 /// <summary>
 /// Centralized metrics instruments for notifications.
 /// </summary>
 public static class NotificationMetrics
 {
-    private static readonly Meter Meter = new("Primus.Notifications", "1.0.0");
+    private static readonly Meter Meter = new("PrimusSaaS.Notifications", "1.0.0");
 
     public static readonly Counter<long> NotificationsSent = Meter.CreateCounter<long>(
         "primus_notifications_sent_total",

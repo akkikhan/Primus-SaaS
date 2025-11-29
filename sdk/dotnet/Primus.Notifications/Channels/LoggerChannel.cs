@@ -1,9 +1,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Primus.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Abstractions;
 
-namespace Primus.Notifications.Channels;
+namespace PrimusSaaS.Notifications.Channels;
 
 public class LoggerChannel : IChannel
 {

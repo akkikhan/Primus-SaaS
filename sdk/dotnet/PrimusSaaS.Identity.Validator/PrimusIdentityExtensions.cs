@@ -256,7 +256,7 @@ public static class PrimusIdentityExtensions
                             if (primusIdentityOptions.Logging.LogValidationSteps && logger != null && context.SecurityToken is JwtSecurityToken jwtToken)
                             {
                                 var logData = IdentityLogHelper.BuildValidationLogData(jwtToken, context.Principal, primusIdentityOptions.Logging);
-                                logger.Log(primusIdentityOptions.Logging.MinimumLevel, "Primus Identity: Token validated", logData);
+                                logger.Log(primusIdentityOptions.Logging.MinimumLevel, "Primus Identity: Token validated {@ValidationData}", logData);
                             }
                         }
 

@@ -1,14 +1,17 @@
 using System;
 using System.Collections.Generic;
-using Primus.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Abstractions;
 
-namespace Primus.Notifications.Core;
+namespace PrimusSaaS.Notifications.Core;
 
 /// <summary>
 /// Lightweight notification implementation for common scenarios (email, SMS).
 /// </summary>
 public sealed class BasicNotification : INotification
 {
+    public const string DirectEmailType = "primus.email.direct";
+    public const string DirectSmsType = "primus.sms.direct";
+
     public BasicNotification(string type, object data, Recipient recipient, IEnumerable<string> channels)
     {
         Type = type ?? throw new ArgumentNullException(nameof(type));

@@ -1,4 +1,4 @@
-namespace Primus.Notifications.Configuration;
+namespace PrimusSaaS.Notifications.Configuration;
 
 /// <summary>
 /// Configuration options for Twilio SMS provider.
@@ -29,6 +29,11 @@ public class TwilioOptions
     /// Optional: Messaging Service SID (use instead of FromNumber for advanced routing).
     /// </summary>
     public string? MessagingServiceSid { get; set; }
+
+    /// <summary>
+    /// Whether to validate configuration during service startup (default: true).
+    /// </summary>
+    public bool ValidateOnStartup { get; set; } = true;
 
     /// <summary>
     /// Validates the Twilio configuration.

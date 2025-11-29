@@ -1,9 +1,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Primus.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Abstractions;
 
-namespace Primus.Notifications.Channels.Sms;
+namespace PrimusSaaS.Notifications.Channels.Sms;
 
 /// <summary>
 /// Default SMS sender that logs messages instead of delivering to a provider.

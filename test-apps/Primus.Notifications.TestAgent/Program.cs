@@ -4,21 +4,21 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Primus.Notifications;
-using Primus.Notifications.Abstractions;
-using Primus.Notifications.Core;
-using Primus.Notifications.TestAgent.Scenarios;
+using PrimusSaaS.Notifications;
+using PrimusSaaS.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Core;
+using PrimusSaaS.Notifications.TestAgent.Scenarios;
 using Spectre.Console;
 
-namespace Primus.Notifications.TestAgent;
+namespace PrimusSaaS.Notifications.TestAgent;
 
 class Program
 {
     static async Task Main(string[] args)
     {
         // Display banner
-        var rule = new Rule("[bold blue]Primus Notification Module - Test Agent[/]");
-        rule.Alignment = Justify.Center;
+        var rule = new Rule("[bold blue]Primus Notification Module - Test Agent[/]")
+            .Centered();
         AnsiConsole.Write(rule);
         AnsiConsole.WriteLine();
 

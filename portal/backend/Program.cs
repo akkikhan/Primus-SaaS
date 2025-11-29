@@ -6,8 +6,8 @@ using PrimusSaaS.Portal.Api.Models;
 using PrimusSaaS.Portal.Api.Services;
 using System.Text;
 using AspNetCoreRateLimit;
-using Primus.Notifications;
-using Primus.Notifications.Configuration;
+using PrimusSaaS.Notifications;
+using PrimusSaaS.Notifications.Configuration;
 using Microsoft.ApplicationInsights.Extensibility;
 using Serilog;
 using Serilog.Context;
@@ -111,6 +111,12 @@ builder.Services.AddPrimusNotifications(config =>
         options.MaxParallelHandlers = 4;
         options.MaxRetryCount = 2;
         options.BaseRetryDelayMs = 200;
+    });
+
+    // Surface failures by default; allow disabling via configuration if callers prefer manual handling.
+    config.ConfigureDispatch(opts =>
+    {
+        opts.ThrowOnFailure = builder.Configuration.GetValue("Notifications:ThrowOnFailure", true);
     });
 });
 

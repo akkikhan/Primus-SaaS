@@ -1,10 +1,10 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using PrimusSaaS.Portal.Api.Data;
 using PrimusSaaS.Portal.Api.Models;
-using Primus.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Abstractions;
 using PrimusSaaS.Portal.Api.Notifications;
 
 namespace PrimusSaaS.Portal.Api.Services;

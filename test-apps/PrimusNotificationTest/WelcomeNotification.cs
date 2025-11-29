@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Primus.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Abstractions;
 
 namespace PrimusNotificationTest;
 

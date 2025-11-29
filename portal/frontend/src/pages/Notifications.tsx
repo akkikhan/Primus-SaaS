@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, Mail, CheckCircle, AlertCircle, Send, Save } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../providers/AuthProvider';
 
 type Prefs = {
     emailOnNewVersion: boolean;

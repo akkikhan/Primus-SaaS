@@ -1,6 +1,6 @@
 using System.Threading;
 
-namespace Primus.Notifications.Diagnostics;
+namespace PrimusSaaS.Notifications.Diagnostics;
 
 /// <summary>
 /// Lightweight in-memory counters for quick diagnostics without external exporters.

@@ -6,10 +6,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Primus.Notifications.Abstractions;
-using Primus.Notifications.Configuration;
+using PrimusSaaS.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Configuration;
 
-namespace Primus.Notifications.Core;
+namespace PrimusSaaS.Notifications.Core;
 
 /// <summary>
 /// Background worker that drains the notification queue and dispatches via NotificationService.
@@ -67,7 +67,11 @@ public class NotificationBackgroundService : BackgroundService
                 // Create a scope for each notification processing to get scoped services
                 using var scope = _scopeFactory.CreateScope();
                 var notificationService = scope.ServiceProvider.GetRequiredService<NotificationService>();
-                await notificationService.SendAsync(notification, ct);
+                var result = await notificationService.SendAsync(notification, ct);
+                if (!result.Success)
+                {
+                    throw new NotificationFailedException(result.FailureReason ?? "Notification failed", result);
+                }
                 return;
             }
             catch (Exception ex)

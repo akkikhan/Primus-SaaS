@@ -1,7 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Primus.Notifications.Abstractions;
+namespace PrimusSaaS.Notifications.Abstractions;
 
 /// <summary>
 /// Abstraction for sending SMS messages. Implement this to integrate with your provider (e.g., Twilio).

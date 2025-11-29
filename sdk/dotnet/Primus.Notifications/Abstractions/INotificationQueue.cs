@@ -1,7 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Primus.Notifications.Abstractions;
+namespace PrimusSaaS.Notifications.Abstractions;
 
 /// <summary>
 /// Contract for queueing notifications to be processed out-of-band.

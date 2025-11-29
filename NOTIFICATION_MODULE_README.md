@@ -15,7 +15,7 @@ The Primus Notification Module is a decoupled, multi-channel notification system
 
 ## Implementation Details
 
-### 1. Library Structure (`sdk/dotnet/Primus.Notifications`)
+### 1. Library Structure (`sdk/dotnet/PrimusSaaS.Notifications`)
 *   **Abstractions**: Interfaces for `INotification`, `IChannel`, `ITemplateService`.
 *   **Core**: The `NotificationService` logic.
 *   **Channels**: `SmtpEmailChannel` implementation.
@@ -33,7 +33,7 @@ The Primus Notification Module is a decoupled, multi-channel notification system
 
 ### 1. Installation
 ```bash
-dotnet add package Primus.Notifications
+dotnet add package PrimusSaaS.Notifications
 ```
 
 ### 2. Configuration (Startup.cs)

@@ -3,11 +3,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Primus.Notifications.Abstractions;
-using Primus.Notifications.Configuration;
-using Primus.Notifications.Core;
+using PrimusSaaS.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Configuration;
+using PrimusSaaS.Notifications.Core;
 
-namespace Primus.Notifications.Channels.Sms;
+namespace PrimusSaaS.Notifications.Channels.Sms;
 
 public class SmsChannel : IChannel
 {
@@ -39,10 +39,20 @@ public class SmsChannel : IChannel
         }
 
         var direct = notification.Data as DirectSmsContent;
-        var renderedBody = await _templateService.RenderAsync(notification.Type, "SmsBody", notification.Data);
-        var message = string.IsNullOrWhiteSpace(renderedBody)
-            ? direct?.Message ?? TryGetProperty(notification.Data, "Message") ?? notification.Data.ToString() ?? string.Empty
-            : renderedBody;
+        var isDirect = notification.Type.Equals(BasicNotification.DirectSmsType, StringComparison.OrdinalIgnoreCase);
+        string message;
+
+        if (isDirect)
+        {
+            message = direct?.Message ?? TryGetProperty(notification.Data, "Message") ?? notification.Data.ToString() ?? string.Empty;
+        }
+        else
+        {
+            var renderedBody = await _templateService.RenderAsync(notification.Type, "SmsBody", notification.Data);
+            message = string.IsNullOrWhiteSpace(renderedBody)
+                ? direct?.Message ?? TryGetProperty(notification.Data, "Message") ?? notification.Data.ToString() ?? string.Empty
+                : renderedBody;
+        }
 
         if (string.IsNullOrWhiteSpace(message))
         {

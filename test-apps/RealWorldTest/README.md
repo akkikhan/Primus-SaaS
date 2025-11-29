@@ -6,7 +6,7 @@ This test simulates the actual Primus SaaS Portal workflow where:
 2. An admin assigns a module to that application  
 3. A new version of the module is published
 
-All three scenarios trigger notifications using the Primus.Notifications module.
+All three scenarios trigger notifications using the PrimusSaaS.Notifications module.
 
 ## Test Setup
 
@@ -33,19 +33,19 @@ dotnet run
 
 Dispatching ApplicationCreated notification...
 
-info: Primus.Notifications.Channels.LoggerChannel[0]
+info: PrimusSaaS.Notifications.Channels.LoggerChannel[0]
       📢 [NOTIFICATION] Type: ApplicationCreated | Recipient: developer@company.com | Data: {
         "AppName": "E-Commerce Platform",
         "ClientId": "primus_abc123xyz789"
       }
 
-info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
+info: PrimusSaaS.Notifications.Channels.Email.SmtpEmailChannel[0]
       Email Channel: Rendering template ApplicationCreated/EmailSubject.liquid
       
-info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
+info: PrimusSaaS.Notifications.Channels.Email.SmtpEmailChannel[0]
       Email Channel: Rendering template ApplicationCreated/EmailBody.liquid
       
-info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
+info: PrimusSaaS.Notifications.Channels.Email.SmtpEmailChannel[0]
       Email Channel: Message prepared
       Subject: Your new Primus application has been created
       To: developer@company.com
@@ -59,7 +59,7 @@ info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
 
 Dispatching ModuleAssigned notification...
 
-info: Primus.Notifications.Channels.LoggerChannel[0]
+info: PrimusSaaS.Notifications.Channels.LoggerChannel[0]
       📢 [NOTIFICATION] Type: ModuleAssigned | Recipient: developer@company.com | Data: {
         "ModuleName": "Identity Validator",
         "Version": "1.2.0",
@@ -70,10 +70,10 @@ info: Primus.Notifications.Channels.LoggerChannel[0]
         "DocsBaseUrl": "https://akkikhan.github.io/Primus-SaaS"
       }
 
-info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
+info: PrimusSaaS.Notifications.Channels.Email.SmtpEmailChannel[0]
       Email Channel: Templates loaded from cache (0ms)
       
-info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
+info: PrimusSaaS.Notifications.Channels.Email.SmtpEmailChannel[0]
       Email Channel: Message prepared
       Subject: Module Identity Validator assigned to E-Commerce Platform
       To: developer@company.com
@@ -87,7 +87,7 @@ info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
 
 Dispatching VersionPublished notification...
 
-info: Primus.Notifications.Channels.LoggerChannel[0]
+info: PrimusSaaS.Notifications.Channels.LoggerChannel[0]
       📢 [NOTIFICATION] Type: VersionPublished | Recipient: developer@company.com | Data: {
         "Version": "1.3.0",
         "ModuleName": "Identity Validator",
@@ -98,10 +98,10 @@ info: Primus.Notifications.Channels.LoggerChannel[0]
         "IsBreakingChange": false
       }
 
-info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
+info: PrimusSaaS.Notifications.Channels.Email.SmtpEmailChannel[0]
       Email Channel: Templates loaded from cache (0ms)
       
-info: Primus.Notifications.Channels.Email.SmtpEmailChannel[0]
+info: PrimusSaaS.Notifications.Channels.Email.SmtpEmailChannel[0]
       Email Channel: Message prepared
       Subject: New version 1.3.0 published for module Identity Validator
       To: developer@company.com
