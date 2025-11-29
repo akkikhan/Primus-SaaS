@@ -1,8 +1,11 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Configuration;
 using Primus.Notifications.Abstractions;
 using Primus.Notifications.Channels.Email;
+using Primus.Notifications.Channels.Sms;
 using Primus.Notifications.Configuration;
 using Primus.Notifications.Core;
 using Primus.Notifications.Services;
@@ -46,6 +49,33 @@ public class PrimusNotificationBuilder
         return this;
     }
 
+    public PrimusNotificationBuilder UseSms(Action<SmsOptions>? configureOptions = null)
+    {
+        _services.Configure<SmsOptions>(opts =>
+        {
+            configureOptions?.Invoke(opts);
+            opts.Validate();
+        });
+
+        _services.TryAddScoped<ISmsSender, LoggingSmsSender>();
+        _services.AddScoped<IChannel, SmsChannel>();
+        return this;
+    }
+
+    public PrimusNotificationBuilder UseSms<TSender>(Action<SmsOptions>? configureOptions = null)
+        where TSender : class, ISmsSender
+    {
+        _services.Configure<SmsOptions>(opts =>
+        {
+            configureOptions?.Invoke(opts);
+            opts.Validate();
+        });
+
+        _services.AddScoped<ISmsSender, TSender>();
+        _services.AddScoped<IChannel, SmsChannel>();
+        return this;
+    }
+
     public PrimusNotificationBuilder UseFileTemplates(string basePath)
     {
         _services.AddSingleton<ITemplateService>(sp =>
@@ -73,6 +103,41 @@ public class PrimusNotificationBuilder
         _services.AddSingleton<InMemoryNotificationQueue>();
         _services.AddSingleton<INotificationQueue>(sp => sp.GetRequiredService<InMemoryNotificationQueue>());
         _services.AddHostedService<NotificationBackgroundService>();
+        return this;
+    }
+
+    /// <summary>
+    /// Configures Twilio as the SMS provider.
+    /// </summary>
+    /// <param name="configureOptions">Action to configure Twilio options.</param>
+    /// <returns>The builder for chaining.</returns>
+    public PrimusNotificationBuilder UseTwilio(Action<TwilioOptions> configureOptions)
+    {
+        _services.Configure<TwilioOptions>(opts =>
+        {
+            configureOptions(opts);
+            opts.Validate();
+        });
+
+        _services.AddHttpClient<TwilioSmsSender>();
+        _services.AddScoped<ISmsSender, TwilioSmsSender>();
+        _services.AddScoped<IChannel, SmsChannel>();
+        return this;
+    }
+
+    /// <summary>
+    /// Configures Twilio as the SMS provider using configuration from appsettings.json.
+    /// Reads from the "Twilio" section by default.
+    /// </summary>
+    /// <param name="configuration">The configuration root.</param>
+    /// <param name="sectionName">The configuration section name (default: "Twilio").</param>
+    /// <returns>The builder for chaining.</returns>
+    public PrimusNotificationBuilder UseTwilio(Microsoft.Extensions.Configuration.IConfiguration configuration, string sectionName = TwilioOptions.SectionName)
+    {
+        _services.Configure<TwilioOptions>(configuration.GetSection(sectionName));
+        _services.AddHttpClient<TwilioSmsSender>();
+        _services.AddScoped<ISmsSender, TwilioSmsSender>();
+        _services.AddScoped<IChannel, SmsChannel>();
         return this;
     }
 }

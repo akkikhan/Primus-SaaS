@@ -20,6 +20,43 @@ public class NotificationService
         _logger = logger;
     }
 
+    public Task SendEmailAsync(
+        string to,
+        string subject,
+        string body,
+        string? name = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(to)) throw new ArgumentException("Recipient email is required.", nameof(to));
+        if (string.IsNullOrWhiteSpace(subject)) throw new ArgumentException("Email subject is required.", nameof(subject));
+        if (string.IsNullOrWhiteSpace(body)) throw new ArgumentException("Email body is required.", nameof(body));
+
+        var notification = new BasicNotification(
+            type: "primus.email.direct",
+            data: new DirectEmailContent(subject, body),
+            recipient: new Recipient { Email = to, Name = name ?? string.Empty },
+            channels: new[] { "Email" });
+
+        return SendAsync(notification, cancellationToken);
+    }
+
+    public Task SendSmsAsync(
+        string phoneNumber,
+        string message,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(phoneNumber)) throw new ArgumentException("Recipient phone number is required.", nameof(phoneNumber));
+        if (string.IsNullOrWhiteSpace(message)) throw new ArgumentException("SMS message is required.", nameof(message));
+
+        var notification = new BasicNotification(
+            type: "primus.sms.direct",
+            data: new DirectSmsContent(message),
+            recipient: new Recipient { PhoneNumber = phoneNumber },
+            channels: new[] { "Sms" });
+
+        return SendAsync(notification, cancellationToken);
+    }
+
     public async Task SendAsync(INotification notification, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Starting notification dispatch for {Type} to {Recipient}", notification.Type, notification.Recipient.Email ?? notification.Recipient.UserId);

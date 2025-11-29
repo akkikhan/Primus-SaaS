@@ -85,12 +85,15 @@ public class Auth0Options
 
     internal IssuerConfig ToIssuerConfig()
     {
+        // Use the enhanced validator for better error messages
+        Auth0ConfigurationValidator.ValidateDomain(Domain);
+
         var authority = BuildAuthority();
         var audiences = Audiences.Where(a => !string.IsNullOrWhiteSpace(a)).Distinct(StringComparer.Ordinal).ToList();
 
         if (!audiences.Any())
         {
-            throw new ArgumentException("At least one audience is required for Auth0.", nameof(Audiences));
+            Auth0ConfigurationValidator.ValidateAudience(null); // This will throw with helpful message
         }
 
         var issuerValue = authority.EndsWith("/", StringComparison.Ordinal) ? authority : $"{authority}/";
@@ -117,10 +120,8 @@ public class Auth0Options
 
     private string BuildAuthority()
     {
-        if (string.IsNullOrWhiteSpace(Domain))
-        {
-            throw new ArgumentException("Auth0 domain is required.", nameof(Domain));
-        }
+        // Domain validation is now handled by Auth0ConfigurationValidator.ValidateDomain()
+        // which provides much more helpful error messages
 
         var trimmed = Domain.Trim().TrimEnd('/');
         if (!trimmed.StartsWith("http", StringComparison.OrdinalIgnoreCase))
@@ -130,12 +131,20 @@ public class Auth0Options
 
         if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri))
         {
-            throw new ArgumentException("Auth0 domain must be a valid absolute URI or host.", nameof(Domain));
+            throw new PrimusIdentityConfigurationException(
+                $"Auth0 domain '{Domain}' could not be parsed as a valid URI.\n" +
+                "Expected format: 'your-tenant.auth0.com'",
+                "Domain",
+                "https://auth0.com/docs");
         }
 
         if (!uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
         {
-            throw new ArgumentException("Auth0 domain must use HTTPS.", nameof(Domain));
+            throw new PrimusIdentityConfigurationException(
+                $"Auth0 domain must use HTTPS.\n" +
+                $"Current: \"{Domain}\"\n" +
+                $"Correct: \"{uri.Host}\"",
+                "Domain");
         }
 
         return uri.ToString().TrimEnd('/');

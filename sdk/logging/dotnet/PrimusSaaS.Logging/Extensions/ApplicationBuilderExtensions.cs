@@ -9,18 +9,19 @@ namespace PrimusSaaS.Logging.Extensions;
 public static class ApplicationBuilderExtensions
 {
     /// <summary>
-    /// Adds Primus Logging middleware to the pipeline.
-    /// This middleware enriches logs with HTTP context information (User, Request ID, etc.).
+    /// Legacy wrapper for adding Primus Logging middleware.
+    /// Prefer app.UsePrimusLogging() via LoggingExtensions to avoid namespace ambiguity.
     /// </summary>
     /// <param name="app">The application builder</param>
     /// <returns>The application builder</returns>
-    public static IApplicationBuilder UsePrimusLogging(this IApplicationBuilder app)
+    [Obsolete("Use app.UsePrimusLogging() via PrimusSaaS.Logging.Extensions.LoggingExtensions. This legacy alias will be removed in a future release.")]
+    public static IApplicationBuilder UsePrimusLoggingLegacy(IApplicationBuilder app)
     {
         if (app == null)
         {
             throw new ArgumentNullException(nameof(app));
         }
 
-        return app.UseMiddleware<LoggingMiddleware>();
+        return LoggingExtensions.UsePrimusLogging(app);
     }
 }

@@ -1,8 +1,39 @@
 # Primus SaaS Identity Validator - .NET SDK
 
-Official .NET SDK for validating JWT/OIDC tokens from your configured identity providers (Azure AD, LocalAuth, or any JWT issuer). The package is library-only: no Primus-hosted login, no Primus-issued tokens, no outbound calls to Primus.
+Official .NET SDK for validating JWT/OIDC tokens from your configured identity providers (Azure AD, Auth0, Cognito, Google, or any JWT issuer). The package is library-only: no Primus-hosted login, no Primus-issued tokens, no outbound calls to Primus.
 
 > Full client integration guide (Node + .NET + Logging): see `docs-site/docs/modules/client-integration-guide.md`.
+
+---
+
+## 📋 Requirements
+
+### Supported Frameworks
+
+| Framework | Status | Notes |
+|-----------|--------|-------|
+| .NET 8.0 | ✅ Supported | Recommended for new projects |
+| .NET 7.0 | ✅ Supported | Full feature parity |
+| .NET 6.0 | ✅ Supported | LTS - production ready |
+
+### SDK Requirements
+
+> **Important:** The .NET SDK version must match or exceed your project's target framework.
+
+| Your Project Targets | Required SDK | Download |
+|---------------------|--------------|----------|
+| .NET 8.0 | .NET SDK 8.0+ | [Download](https://dotnet.microsoft.com/download/dotnet/8.0) |
+| .NET 7.0 | .NET SDK 7.0+ | [Download](https://dotnet.microsoft.com/download/dotnet/7.0) |
+| .NET 6.0 | .NET SDK 6.0+ | [Download](https://dotnet.microsoft.com/download/dotnet/6.0) |
+
+**Check your SDK version:**
+```bash
+dotnet --version
+```
+
+**Common Issue:** If you see `NETSDK1045: The current .NET SDK does not support targeting .NET X.0`, install the matching SDK version above.
+
+---
 
 ## Installation
 
@@ -16,7 +47,85 @@ Or via NuGet Package Manager:
 Install-Package PrimusSaaS.Identity.Validator
 ```
 
-## Quick Start
+---
+
+## 🚀 Auth0 Quick Start (5 Minutes)
+
+New to Auth0? Follow these steps to secure your API in under 5 minutes.
+
+### Step 1: Sign up for Auth0 (FREE)
+
+1. Go to [https://auth0.com/signup](https://auth0.com/signup)
+2. Create account (use Google/GitHub for fastest setup)
+3. Choose a tenant name (e.g., `my-app` → `my-app.auth0.com`)
+
+### Step 2: Create an API in Auth0
+
+1. Go to **Dashboard → Applications → APIs → Create API**
+2. **Name:** `My API` (or your app name)
+3. **Identifier:** `https://my-api` (this becomes your Audience)
+4. Click **Create**
+
+### Step 3: Install the Package
+
+```bash
+dotnet add package PrimusSaaS.Identity.Validator
+```
+
+### Step 4: Configure Your API (Program.cs)
+
+```csharp
+using PrimusSaaS.Identity.Validator;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add Auth0 authentication with one line
+builder.Services.AddPrimusIdentity(options =>
+{
+    options.UseAuth0(
+        domain: "my-app.auth0.com",      // From Step 1
+        audience: "https://my-api");      // From Step 2
+});
+
+builder.Services.AddControllers();
+builder.Services.AddAuthorization();
+
+var app = builder.Build();
+
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+app.Run();
+```
+
+### Step 5: Protect Your Endpoints
+
+```csharp
+[ApiController]
+[Route("api/[controller]")]
+[Authorize] // Requires valid Auth0 token
+public class SecureController : ControllerBase
+{
+    [HttpGet]
+    public IActionResult Get() => Ok(new { message = "Hello, authenticated user!" });
+}
+```
+
+### Step 6: Get a Test Token
+
+1. Go to **Dashboard → Applications → APIs → My API → Test tab**
+2. Copy the test token
+3. Test your API:
+
+```bash
+curl -H "Authorization: Bearer YOUR_TOKEN_HERE" https://localhost:5001/api/secure
+```
+
+✅ **Done!** Your API is now secured with Auth0.
+
+---
+
+## Quick Start (General)
 
 ### 1. Configure in Program.cs or Startup.cs
 
@@ -340,6 +449,7 @@ if (primusUser != null)
 | Issuers | Yes | List of issuer configs (Oidc/AzureAD or Jwt) | - |
 | ValidateLifetime | No | Validate token expiration | true |
 | RequireHttpsMetadata | No | Require HTTPS for metadata | true |
+| AllowHttpOnLocalhost | No | Permit HTTP issuer/authority on localhost for development | true |
 | ClockSkew | No | Allowed time difference | 5 minutes |
 | JwksCacheTtl | No | JWKS cache TTL (OIDC) | 24 hours |
 | TenantResolver | No | Map claims to TenantContext | null |
@@ -530,6 +640,10 @@ builder.Services.AddPrimusIdentity(options =>
 });
 ```
 
+### Localhost HTTP shortcuts
+- Loopback issuers/authorities such as `http://localhost:5000` are allowed by default for development (`AllowHttpOnLocalhost = true`).
+- Set `AllowHttpOnLocalhost = false` to enforce HTTPS everywhere, even on localhost.
+
 ### Enable Detailed Logging
 
 The SDK automatically logs authentication events to the console. For more detailed logging, enable ASP.NET Core logging:
@@ -555,7 +669,12 @@ The SDK automatically logs authentication events to the console. For more detail
 
 If you are using both `PrimusSaaS.Identity.Validator` and `PrimusSaaS.Logging`, you may encounter an ambiguous reference error for `UsePrimusLogging()`.
 
-**Solution:** Use the fully qualified name or an alias.
+**Status:** Fixed in `PrimusSaaS.Logging >= 1.2.2` (duplicate extension removed). Simply import `using PrimusSaaS.Logging.Extensions;` and call:
+```csharp
+app.UsePrimusLogging();
+```
+
+**If you cannot upgrade Logging yet:** Use the fully qualified name or an alias.
 
 ```csharp
 using PrimusLogging = PrimusSaaS.Logging.Extensions;

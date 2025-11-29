@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -26,6 +26,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dotnet-test-app", "dotnet-t
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrimusTest.Api", "test-apps\dotnet-test-app\PrimusTest.Api\PrimusTest.Api.csproj", "{CD17C1FB-725C-81D5-B453-CB91948FB17B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Primus.Notifications", "sdk\dotnet\Primus.Notifications\Primus.Notifications.csproj", "{5FD44114-B416-4434-B5EF-C40AADD50D82}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Primus.Notifications.Tests", "sdk\dotnet\Primus.Notifications.Tests\Primus.Notifications.Tests.csproj", "{85A5433B-9CAD-4B05-B188-8558C9E68D43}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,6 +56,14 @@ Global
 		{CD17C1FB-725C-81D5-B453-CB91948FB17B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CD17C1FB-725C-81D5-B453-CB91948FB17B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CD17C1FB-725C-81D5-B453-CB91948FB17B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FD44114-B416-4434-B5EF-C40AADD50D82}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FD44114-B416-4434-B5EF-C40AADD50D82}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FD44114-B416-4434-B5EF-C40AADD50D82}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FD44114-B416-4434-B5EF-C40AADD50D82}.Release|Any CPU.Build.0 = Release|Any CPU
+		{85A5433B-9CAD-4B05-B188-8558C9E68D43}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{85A5433B-9CAD-4B05-B188-8558C9E68D43}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{85A5433B-9CAD-4B05-B188-8558C9E68D43}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{85A5433B-9CAD-4B05-B188-8558C9E68D43}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -65,6 +77,8 @@ Global
 		{5FF9620B-8001-16BA-9D29-E6CB225B3F8D} = {9D954F24-B3F1-FF05-00E7-71549D8DD0D6}
 		{08709891-6944-7A32-B27E-AC57876020CE} = {5ED88D9A-91D3-55EE-6D1F-913C6BD5074A}
 		{CD17C1FB-725C-81D5-B453-CB91948FB17B} = {08709891-6944-7A32-B27E-AC57876020CE}
+		{5FD44114-B416-4434-B5EF-C40AADD50D82} = {9D954F24-B3F1-FF05-00E7-71549D8DD0D6}
+		{85A5433B-9CAD-4B05-B188-8558C9E68D43} = {9D954F24-B3F1-FF05-00E7-71549D8DD0D6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D546BE59-EA56-4D80-BF68-DDD250DB2309}

@@ -163,6 +163,11 @@ public class PrimusIdentityOptions
     public bool RequireHttpsMetadata { get; set; } = true;
 
     /// <summary>
+    /// Allow HTTP issuers/authorities when targeting localhost/loopback hosts (for local development).
+    /// </summary>
+    public bool AllowHttpOnLocalhost { get; set; } = true;
+
+    /// <summary>
     /// Clock skew to allow for time differences between servers. Default is 5 minutes.
     /// </summary>
     public TimeSpan ClockSkew { get; set; } = TimeSpan.FromMinutes(5);
@@ -191,7 +196,7 @@ public class PrimusIdentityOptions
 
         foreach (var issuer in Issuers)
         {
-            ValidateIssuer(issuer, names, claimIssuers, errors);
+            ValidateIssuer(issuer, names, claimIssuers, errors, AllowHttpOnLocalhost);
         }
 
         ThrowIfErrors();
@@ -207,7 +212,8 @@ public class PrimusIdentityOptions
         IssuerConfig issuer,
         HashSet<string> names,
         HashSet<string> claimIssuers,
-        List<string> errors)
+        List<string> errors,
+        bool allowHttpOnLocalhost)
     {
         if (string.IsNullOrWhiteSpace(issuer.Name))
         {
@@ -227,9 +233,10 @@ public class PrimusIdentityOptions
             errors.Add($"Duplicate issuer claim value '{issuer.Issuer}'. Configure unique 'Issuer' per identity provider.");
         }
 
-        if (!IsHttpsAbsoluteUri(issuer.Issuer))
+        if (!IsAllowedIssuerUri(issuer.Issuer, allowHttpOnLocalhost))
         {
-            errors.Add($"Issuer must be an absolute HTTPS URI for '{issuer.Name}'. Example: https://your-tenant.auth0.com/.");
+            var localhostNote = allowHttpOnLocalhost ? " HTTP is allowed for localhost during development." : string.Empty;
+            errors.Add($"Issuer must be an absolute HTTPS URI for '{issuer.Name}'.{localhostNote} Example: https://your-tenant.auth0.com/.");
         }
 
         if (issuer.Audiences == null || !issuer.Audiences.Any() || issuer.Audiences.Any(string.IsNullOrWhiteSpace))
@@ -247,9 +254,10 @@ public class PrimusIdentityOptions
             {
                 errors.Add($"Authority must be an absolute URI for '{issuer.Name}'. Example: https://login.microsoftonline.com/<tenant-id>.");
             }
-            else if (!authorityUri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            else if (!IsAllowedAuthorityUri(authorityUri, allowHttpOnLocalhost))
             {
-                errors.Add($"Authority must use HTTPS for '{issuer.Name}'.");
+                var localhostNote = allowHttpOnLocalhost ? " HTTP is allowed for localhost during development." : string.Empty;
+                errors.Add($"Authority must use HTTPS for '{issuer.Name}'.{localhostNote}");
             }
         }
         else if (issuer.Type == IssuerType.Jwt)
@@ -291,10 +299,17 @@ public class PrimusIdentityOptions
         }
     }
 
-    private static bool IsHttpsAbsoluteUri(string value)
+    private static bool IsAllowedIssuerUri(string value, bool allowHttpOnLocalhost)
     {
         if (!Uri.TryCreate(value, UriKind.Absolute, out var uri)) return false;
-        return uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase);
+        if (uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)) return true;
+        return allowHttpOnLocalhost && uri.Scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) && uri.IsLoopback;
+    }
+
+    private static bool IsAllowedAuthorityUri(Uri uri, bool allowHttpOnLocalhost)
+    {
+        if (uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)) return true;
+        return allowHttpOnLocalhost && uri.Scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) && uri.IsLoopback;
     }
 
     /// <summary>

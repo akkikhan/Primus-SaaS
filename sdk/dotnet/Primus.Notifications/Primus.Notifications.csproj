@@ -4,18 +4,40 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>PrimusSaaS.Notifications</PackageId>
     <Version>1.0.0</Version>
     <Authors>Primus SaaS</Authors>
-    <Description>The standard notification module for Primus SaaS applications.</Description>
+    <Company>Primus SaaS</Company>
+    <Product>PrimusSaaS Notifications</Product>
+    <Description>Notification building blocks for Primus SaaS apps: SMTP email delivery, file-based templating, in-memory queueing, background dispatch, and diagnostics.</Description>
+    <PackageTags>notifications;email;smtp;templating;queue;background-services;aspnetcore;dotnet;primus-saas</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/primus-saas/notifications</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/primus-saas/notifications</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>Initial production release with SMTP channel, file-based templating, in-memory queue, background dispatch workers, and metrics hooks.</PackageReleaseNotes>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageOutputPath>$(MSBuildProjectDirectory)\..\..\..\nupkg</PackageOutputPath>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="MailKit" Version="4.3.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="7.0.0" />
     <PackageReference Include="Fluid.Core" Version="2.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="USAGE_GUIDE.md" Pack="true" PackagePath="\" />
+    <None Include="TEMPLATE_GUIDE.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

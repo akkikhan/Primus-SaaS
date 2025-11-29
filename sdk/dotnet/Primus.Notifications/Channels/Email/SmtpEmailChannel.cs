@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using Primus.Notifications.Abstractions;
 using Primus.Notifications.Configuration;
+using Primus.Notifications.Core;
 
 namespace Primus.Notifications.Channels.Email;
 
@@ -33,8 +34,17 @@ public class SmtpEmailChannel : IChannel
             return;
         }
 
-        var subject = await _templateService.RenderAsync(notification.Type, "EmailSubject", notification.Data);
-        var body = await _templateService.RenderAsync(notification.Type, "EmailBody", notification.Data);
+        var directContent = notification.Data as DirectEmailContent;
+        var renderedSubject = await _templateService.RenderAsync(notification.Type, "EmailSubject", notification.Data);
+        var renderedBody = await _templateService.RenderAsync(notification.Type, "EmailBody", notification.Data);
+
+        var subject = string.IsNullOrWhiteSpace(renderedSubject)
+            ? directContent?.Subject ?? TryGetProperty(notification.Data, "Subject") ?? "Notification"
+            : renderedSubject;
+
+        var body = string.IsNullOrWhiteSpace(renderedBody)
+            ? directContent?.Body ?? TryGetProperty(notification.Data, "Body") ?? notification.Data.ToString() ?? string.Empty
+            : renderedBody;
 
         // Fallback if template returns empty (maybe data has it directly?)
         if (string.IsNullOrEmpty(subject)) subject = "Notification";
@@ -92,5 +102,14 @@ public class SmtpEmailChannel : IChannel
                 }
             }
         }
+    }
+
+    private static string? TryGetProperty(object data, string propertyName)
+    {
+        if (data == null) return null;
+        var prop = data.GetType().GetProperty(propertyName);
+        if (prop == null || prop.GetIndexParameters().Length > 0) return null;
+        var value = prop.GetValue(data);
+        return value?.ToString();
     }
 }

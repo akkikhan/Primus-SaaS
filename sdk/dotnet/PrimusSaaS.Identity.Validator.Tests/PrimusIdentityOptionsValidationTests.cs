@@ -31,6 +31,53 @@ public class PrimusIdentityOptionsValidationTests
     }
 
     [Fact]
+    public void Validate_ShouldAllow_HttpLoopback_WhenEnabled()
+    {
+        var options = new PrimusIdentityOptions
+        {
+            AllowHttpOnLocalhost = true,
+            Issuers = new List<IssuerConfig>
+            {
+                new IssuerConfig
+                {
+                    Name = "LocalAuth",
+                    Type = IssuerType.Jwt,
+                    Issuer = "http://localhost:5000/",
+                    Secret = "local-secret",
+                    Audiences = new List<string> { "api://local" }
+                }
+            }
+        };
+
+        options.Validate(); // should not throw
+    }
+
+    [Fact]
+    public void Validate_ShouldFail_HttpLoopback_WhenExplicitlyDisabled()
+    {
+        var options = new PrimusIdentityOptions
+        {
+            AllowHttpOnLocalhost = false,
+            Issuers = new List<IssuerConfig>
+            {
+                new IssuerConfig
+                {
+                    Name = "LocalAuth",
+                    Type = IssuerType.Jwt,
+                    Issuer = "http://localhost:5000/",
+                    Secret = "local-secret",
+                    Audiences = new List<string> { "api://local" }
+                }
+            }
+        };
+
+        Action act = options.Validate;
+
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*HTTPS URI*");
+    }
+
+    [Fact]
     public void Validate_ShouldFail_WhenOrgRequiredButClaimNameMissing()
     {
         var options = new PrimusIdentityOptions

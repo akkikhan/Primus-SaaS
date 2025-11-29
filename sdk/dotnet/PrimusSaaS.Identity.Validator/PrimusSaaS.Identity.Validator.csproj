@@ -8,12 +8,12 @@
     
     <!-- NuGet Package Metadata -->
     <PackageId>PrimusSaaS.Identity.Validator</PackageId>
-    <Version>1.3.0</Version>
+    <Version>1.3.3</Version>
     <Authors>Primus SaaS</Authors>
     <Company>Primus SaaS</Company>
     <Product>Primus SaaS Identity Validator</Product>
-    <Description>Multi-issuer JWT/OIDC token validator for .NET. Supports Azure AD, custom JWT issuers, and any OIDC-compliant identity provider. Provides middleware and extensions for ASP.NET Core applications.</Description>
-    <PackageTags>jwt;oidc;authentication;identity;validator;asp-net-core;azure-ad;multi-tenant</PackageTags>
+    <Description>Multi-issuer JWT/OIDC token validator for .NET 6.0, 7.0, and 8.0. Supports Azure AD, Auth0, AWS Cognito, Google, and custom JWT issuers. Features one-liner Auth0 setup with UseAuth0(), organization validation, M2M token support, and comprehensive claim mapping. Includes ASP.NET Core middleware and authorization extensions.</Description>
+    <PackageTags>jwt;oidc;authentication;identity;validator;asp-net-core;azure-ad;auth0;cognito;multi-tenant</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/primus-saas/identity-validator</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -22,7 +22,22 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
-    <PackageReleaseNotes>JWKS discovery normalization with retry/backoff and diagnostics; actionable config validation; security event logging + rate limiting; diagnostics endpoint helper; optional token refresh interface; policy helper scaffolding; docs updated.</PackageReleaseNotes>
+    <PackageReleaseNotes>v1.3.3:
+- DX: Localhost development now allowed without HTTPS by default via AllowHttpOnLocalhost (still enforces HTTPS for non-loopback).
+- DOCS: Updated README to clarify HTTP dev toggle and localhost allowance.
+
+v1.3.2:
+- IMPROVED: Enhanced error messages with actionable guidance and documentation links
+- IMPROVED: Auth0 configuration validation now provides step-by-step troubleshooting
+- DOCS: Added 5-minute Auth0 Quick Start guide to README
+- DOCS: Added clear SDK requirements table (which SDK version for which .NET target)
+- DOCS: Clarified supported frameworks (.NET 6.0, 7.0, 8.0)
+- NEW: PrimusIdentityConfigurationException with HelpUrl and PropertyName for better debugging
+
+v1.3.1:
+- Production release with Auth0 support via UseAuth0() helper
+- Organization validation and M2M token support
+- Full multi-issuer support (Azure AD, Auth0, Cognito, Google, custom JWT)</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
