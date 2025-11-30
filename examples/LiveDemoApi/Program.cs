@@ -3,8 +3,20 @@ using PrimusSaaS.Notifications;
 using PrimusSaaS.Notifications.Abstractions;
 using PrimusSaaS.Notifications.Core;
 using PrimusSaaS.Notifications.Services;
+using PrimusSaaS.Notifications.Configuration;
+using PrimusSaaS.Logging.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// =========================================================================
+// Logging: structured logging with PII redaction + optional file sink
+// =========================================================================
+builder.Logging.ClearProviders();
+builder.Logging.AddPrimus(options =>
+{
+    // Bind from configuration; safe defaults if section is missing
+    builder.Configuration.GetSection("PrimusLogging").Bind(options);
+});
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
@@ -63,6 +75,18 @@ builder.Services.AddPrimusNotifications(notifications =>
         });
     }
 
+    // SMS: use Twilio when configured, otherwise fall back to logger SMS channel.
+    var twilioSection = builder.Configuration.GetSection("Notifications:Twilio");
+    var twilioOptions = twilioSection.Get<TwilioOptions>() ?? new TwilioOptions();
+    if (twilioOptions.IsConfigured())
+    {
+        notifications.UseTwilio(builder.Configuration, "Notifications:Twilio", validateOnStartup: false);
+    }
+    else
+    {
+        notifications.UseSms(); // logging sender for local/dev if no Twilio creds
+    }
+
     notifications.ConfigureDispatch(opts =>
     {
         opts.ThrowOnFailure = false;
@@ -108,6 +132,9 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
+
+// Structured request logging (with correlation IDs and PII redaction by default)
+app.UsePrimusLogging();
 
 // =========================================================================
 // DEMO STEP 2: Add Middleware
@@ -275,6 +302,34 @@ app.MapPost("/notifications/welcome", async (SendWelcomeRequest request, INotifi
     }
 });
 
+app.MapPost("/notifications/sms", async (SendSmsRequest request, INotificationService notifications, ILogger<Program> logger) =>
+{
+    try
+    {
+        var result = await notifications.SendSmsAsync(request.PhoneNumber, request.Message);
+
+        if (result.Success)
+        {
+            return Results.Ok(new
+            {
+                message = "SMS dispatched",
+                channel = result.ChannelUsed,
+                queued = result.EnqueuedForRetry
+            });
+        }
+
+        logger.LogWarning("SMS failed: {Reason}", result.FailureReason);
+        return Results.Problem(
+            detail: result.FailureReason ?? "Failed to dispatch SMS.",
+            statusCode: result.ServiceUnavailable ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status400BadRequest);
+    }
+    catch (NotificationFailedException ex)
+    {
+        logger.LogError(ex, "SMS notification threw");
+        return Results.Problem(ex.Result.FailureReason ?? ex.Message);
+    }
+});
+
 app.Run();
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
@@ -283,3 +338,4 @@ record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 }
 
 record SendWelcomeRequest(string Email, string Name);
+record SendSmsRequest(string PhoneNumber, string Message);

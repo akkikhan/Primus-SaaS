@@ -13,10 +13,11 @@ dotnet new webapi -n LiveDemoApi
 cd LiveDemoApi
 ```
 
-## Step 2: Add the Identity Validator Package
-Add the `PrimusSaaS.Identity.Validator` package to your project:
+## Step 2: Add the Identity + Logging Packages
+Add the `PrimusSaaS.Identity.Validator` and `PrimusSaaS.Logging` packages to your project:
 ```bash
-dotnet add package PrimusSaaS.Identity.Validator --version 1.3.3
+dotnet add package PrimusSaaS.Identity.Validator --version 1.3.5
+dotnet add package PrimusSaaS.Logging --version 1.2.3
 ```
 *Note: Ensure your `nuget.config` is set up to find the package if it's hosted locally.*
 
@@ -26,11 +27,19 @@ Open `Program.cs` and make the following changes:
 1.  **Add Namespace**:
     ```csharp
     using PrimusSaaS.Identity.Validator;
+    using PrimusSaaS.Logging.Extensions;
     ```
 
 2.  **Register Services**:
     Add the Primus Identity services before `builder.Build()`:
     ```csharp
+    // Structured logging with Primus logging
+    builder.Logging.ClearProviders();
+    builder.Logging.AddPrimus(options =>
+    {
+        builder.Configuration.GetSection("PrimusLogging").Bind(options);
+    });
+
     // Configure Primus Identity from appsettings
     builder.Services.AddPrimusIdentity(options =>
     {
@@ -44,6 +53,7 @@ Open `Program.cs` and make the following changes:
 3.  **Add Middleware**:
     Add the authentication and authorization middleware in the correct order (after `UseHttpsRedirection`):
     ```csharp
+    app.UsePrimusLogging(); // request logging + correlation IDs
     app.UseAuthentication();
     app.UseAuthorization();
     ```
@@ -54,11 +64,24 @@ Open `Program.cs` and make the following changes:
     ```
 
 ## Step 4: Configure `appsettings.json`
-Open `appsettings.json` and add the `PrimusIdentity` section to configure your issuers (Azure AD and Auth0).
+Open `appsettings.json` and add the `PrimusIdentity` section to configure your issuers (Azure AD and Auth0), plus `PrimusLogging` for structured logs.
 
 ```json
 {
   "Logging": { ... },
+  "PrimusLogging": {
+    "MinimumLevel": "Information",
+    "RedactSensitiveData": true,
+    "EnableScopes": true,
+    "Targets": {
+      "Console": { "Enabled": true },
+      "File": {
+        "Enabled": true,
+        "Path": "logs/app.log",
+        "RollingInterval": "Day"
+      }
+    }
+  },
   "AllowedHosts": "*",
   "PrimusIdentity": {
     "Issuers": [
