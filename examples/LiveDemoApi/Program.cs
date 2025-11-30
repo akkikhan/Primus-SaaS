@@ -279,6 +279,50 @@ app.MapPost("/auth/azure", async () =>
     }
 });
 
+// 3. Local JWT (shared secret for demo/local development)
+app.MapPost("/auth/local", (LocalLoginRequest request, IConfiguration config, ILogger<Program> logger) =>
+{
+    var primusOptions = config.GetSection("PrimusIdentity").Get<PrimusIdentityOptions>() ?? new PrimusIdentityOptions();
+    var localIssuer = primusOptions.Issuers.FirstOrDefault(i =>
+        string.Equals(i.Name, "LocalJwt", StringComparison.OrdinalIgnoreCase));
+
+    if (localIssuer == null)
+    {
+        return Results.BadRequest(new { error = "LocalJwt issuer not configured. Add PrimusIdentity:Issuers entry named 'LocalJwt'." });
+    }
+
+    if (string.IsNullOrWhiteSpace(localIssuer.Secret))
+    {
+        return Results.BadRequest(new { error = "LocalJwt secret is missing. Set PrimusIdentity:Issuers:LocalJwt:Secret." });
+    }
+
+    var demoAuth = config.GetSection("DemoLocalAuth");
+    var expectedEmail = demoAuth["Email"] ?? "demo@primus.local";
+    var expectedPassword = demoAuth["Password"] ?? "PrimusDemo123!";
+    var displayName = demoAuth["Name"] ?? "Local Demo User";
+    var subject = demoAuth["Subject"] ?? "local-demo-user";
+
+    if (!string.Equals(request.Email, expectedEmail, StringComparison.OrdinalIgnoreCase) ||
+        request.Password != expectedPassword)
+    {
+        logger.LogWarning("Local JWT login failed for {Email}", request.Email);
+        return Results.BadRequest(new { error = "Invalid email or password for Local JWT demo user." });
+    }
+
+    var audience = localIssuer.Audiences.FirstOrDefault() ?? "api://primus-livedemo";
+    var token = TestTokenBuilder.Create()
+        .WithIssuer(localIssuer.Issuer)
+        .WithAudience(audience)
+        .WithSecret(localIssuer.Secret)
+        .WithClaim("sub", subject)
+        .WithClaim("email", request.Email)
+        .WithClaim("name", displayName)
+        .Build();
+
+    logger.LogInformation("✅ Issued Local JWT for {Email} (issuer: {Issuer}, audience: {Audience})", request.Email, localIssuer.Issuer, audience);
+    return Results.Ok(new { access_token = token, token_type = "Bearer", provider = localIssuer.Name });
+});
+
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -399,5 +443,6 @@ record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }
 
+record LocalLoginRequest(string Email, string Password);
 record SendWelcomeRequest(string Email, string Name);
 record SendSmsRequest(string PhoneNumber, string Message);

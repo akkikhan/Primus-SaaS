@@ -9,6 +9,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [provider, setProvider] = useState<string>('');
   const [token, setToken] = useState<string>('');
+  const [localEmail, setLocalEmail] = useState('demo@primus.local');
+  const [localPassword, setLocalPassword] = useState('PrimusDemo123!');
   const [apiData, setApiData] = useState<any>(null);
   const [error, setError] = useState<any>(null);
   const [health, setHealth] = useState<any>(null);
@@ -43,9 +45,21 @@ function App() {
         console.log('Auth0 login: requesting token');
         response = await axios.post(`${apiBaseUrl}/auth/auth0`);
         setToken(response.data.access_token);
-      } else {
+      } else if (selectedProvider === 'Azure') {
         console.log('Azure login: requesting token');
         response = await axios.post(`${apiBaseUrl}/auth/azure`);
+        setToken(response.data.access_token);
+      } else {
+        if (!localEmail || !localPassword) {
+          setIsLoading(false);
+          setError(new Error('Email and password are required for Local JWT login.'));
+          return;
+        }
+        console.log('Local JWT login: requesting token');
+        response = await axios.post(`${apiBaseUrl}/auth/local`, {
+          email: localEmail,
+          password: localPassword
+        });
         setToken(response.data.access_token);
       }
       console.log('Token received:', selectedProvider, response.data);
@@ -192,6 +206,40 @@ function App() {
           </button>
         </div>
 
+        <div style={{ marginTop: '1.5rem', padding: '1rem', borderRadius: '12px', background: 'rgba(51,65,85,0.4)', border: '1px solid #334155', textAlign: 'left' }}>
+          <p className="subtitle" style={{ marginBottom: '0.75rem' }}>
+            Local JWT (shared secret) — exercise the Jwt issuer path without relying on Azure or Auth0.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <input
+                style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid #334155', background: 'rgba(255,255,255,0.03)', color: '#e2e8f0', minWidth: '220px' }}
+                placeholder="Email"
+                value={localEmail}
+                onChange={(e) => setLocalEmail(e.target.value)}
+              />
+              <input
+                type="password"
+                style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid #334155', background: 'rgba(255,255,255,0.03)', color: '#e2e8f0', minWidth: '200px' }}
+                placeholder="Password"
+                value={localPassword}
+                onChange={(e) => setLocalPassword(e.target.value)}
+              />
+              <button
+                className="btn"
+                style={{ width: 'auto', backgroundColor: '#0ea5e9' }}
+                onClick={() => handleLogin('LocalJwt')}
+                disabled={isLoading}
+              >
+                {isLoading && provider === 'LocalJwt' ? <div className="loader"></div> : <><LogIn size={20} /> Sign in with Local JWT</>}
+              </button>
+            </div>
+            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+              Default demo creds: demo@primus.local / PrimusDemo123! (override via appsettings or environment vars)
+            </span>
+          </div>
+        </div>
+
         {error && (
           <div style={{ marginTop: '1rem', color: '#ef4444', fontSize: '0.9rem' }}>
             Error: {error.response?.data?.error || error.message}
@@ -219,7 +267,7 @@ function App() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Logged in via <strong>{provider}</strong></span>
-            <button className="btn" style={{ width: 'auto', backgroundColor: '#334155' }} onClick={() => { setIsLoggedIn(false); setApiData(null); setError(null); }}>
+            <button className="btn" style={{ width: 'auto', backgroundColor: '#334155' }} onClick={() => { setIsLoggedIn(false); setApiData(null); setError(null); setToken(''); setProvider(''); }}>
               Sign Out
             </button>
           </div>
