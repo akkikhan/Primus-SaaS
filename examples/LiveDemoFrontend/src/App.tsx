@@ -40,15 +40,18 @@ function App() {
     try {
       let response;
       if (selectedProvider === 'Auth0') {
+        console.log('Auth0 login: requesting token');
         response = await axios.post(`${apiBaseUrl}/auth/auth0`);
         setToken(response.data.access_token);
       } else {
+        console.log('Azure login: requesting token');
         response = await axios.post(`${apiBaseUrl}/auth/azure`);
         setToken(response.data.access_token);
       }
+      console.log('Token received:', selectedProvider, response.data);
       setIsLoggedIn(true);
     } catch (err: any) {
-      console.error(err);
+      console.error('Login failed', err);
       setError(err);
     } finally {
       setIsLoading(false);
@@ -66,15 +69,17 @@ function App() {
     }
 
     try {
+      console.log('Calling /weatherforecast with token to', apiBaseUrl);
       const response = await axios.get(`${apiBaseUrl}/weatherforecast`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
+      console.log('Weatherforecast response', response.data);
       setApiData(response.data);
       setError(null);
     } catch (err: any) {
-      console.error(err);
+      console.error('Weatherforecast failed', err);
       setError(err);
     } finally {
       setIsLoading(false);
@@ -85,10 +90,12 @@ function App() {
     setIsHealthLoading(true);
     setHealthError(null);
     try {
+      console.log('Checking notification health');
       const response = await axios.get(`${apiBaseUrl}/notifications/health`);
+      console.log('Notification health response', response.data);
       setHealth(response.data);
     } catch (err: any) {
-      console.error(err);
+      console.error('Notification health failed', err);
       setHealthError(err);
     } finally {
       setIsHealthLoading(false);
@@ -104,9 +111,10 @@ function App() {
         email: notificationEmail,
         name: notificationName
       });
+      console.log('Welcome email response', response.data);
       setNotificationResult(response.data);
     } catch (err: any) {
-      console.error(err);
+      console.error('Welcome email failed', err);
       setNotificationError(err);
     } finally {
       setIsSendingNotification(false);
@@ -122,9 +130,10 @@ function App() {
         phoneNumber: smsPhone,
         message: smsMessage
       });
+      console.log('SMS response', response.data);
       setSmsResult(response.data);
     } catch (err: any) {
-      console.error(err);
+      console.error('SMS failed', err);
       setSmsError(err);
     } finally {
       setIsSendingSms(false);
@@ -135,11 +144,13 @@ function App() {
     setIsLoadingLogs(true);
     setLogsError(null);
     try {
+      console.log('Fetching recent logs');
       const response = await axios.get(`${apiBaseUrl}/logs/recent`);
+      console.log('Logs response meta', response.data?.file, response.data?.size);
       setLogs(response.data.tail || '');
       setLogsMeta({ file: response.data.file, size: response.data.size });
     } catch (err: any) {
-      console.error(err);
+      console.error('Logs fetch failed', err);
       setLogsError(err);
       setLogs('');
       setLogsMeta(null);

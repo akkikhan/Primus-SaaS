@@ -185,7 +185,10 @@ app.MapGet("/logs/recent", () =>
     var logFile = candidates.FirstOrDefault(File.Exists);
     if (logFile == null)
     {
-        return Results.Json(new { message = "No log file found yet. Trigger a request to generate logs." });
+        // Create a default file with a starter entry
+        var defaultFile = Path.Combine(logDirs.First(), "livedemo-api.log");
+        File.AppendAllText(defaultFile, $"[{DateTimeOffset.UtcNow:u}] Warmup log created by /logs/recent endpoint.{Environment.NewLine}");
+        logFile = defaultFile;
     }
 
     const int maxBytes = 32 * 1024; // tail ~32KB
@@ -380,8 +383,12 @@ app.MapPost("/notifications/sms", async (SendSmsRequest request, INotificationSe
     catch (NotificationFailedException ex)
     {
         var detail = ex.Result.FailureReason ?? ex.Message;
+        var channels = ex.Result.Channels.Select(c => new { c.Channel, c.Status, c.Detail }).ToArray();
         logger.LogError(ex, "SMS notification threw: {Detail}", detail);
-        return Results.Problem(detail);
+        return Results.Problem(detail: detail, statusCode: StatusCodes.Status502BadGateway, extensions: new Dictionary<string, object?>
+        {
+            ["channels"] = channels
+        });
     }
 });
 
