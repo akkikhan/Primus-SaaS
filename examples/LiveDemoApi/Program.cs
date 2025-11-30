@@ -18,6 +18,21 @@ builder.Logging.AddPrimus(options =>
     builder.Configuration.GetSection("PrimusLogging").Bind(options);
 });
 
+// =========================================================================
+// Application Insights: Full request/dependency telemetry + Primus traces
+// =========================================================================
+// Primus logging sends structured events as TraceTelemetry to AI.
+// AddApplicationInsightsTelemetry adds Request/Dependency telemetry.
+// Correlation IDs from Primus logging appear in trace properties.
+var aiConnectionString = builder.Configuration["PrimusLogging:ApplicationInsights:ConnectionString"];
+if (!string.IsNullOrWhiteSpace(aiConnectionString) && aiConnectionString != "your-application-insights-connection-string")
+{
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+    {
+        options.ConnectionString = aiConnectionString;
+    });
+}
+
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
