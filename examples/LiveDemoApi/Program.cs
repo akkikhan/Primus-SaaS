@@ -121,6 +121,20 @@ builder.Services.AddHttpClient();
 // Enable PII for debugging
 Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
 
+// Helper to log JSON payloads for demo visibility
+static void LogJson(ILogger logger, string message, object data)
+{
+    try
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(data);
+        logger.LogInformation("{Message}: {Payload}", message, json);
+    }
+    catch
+    {
+        logger.LogInformation("{Message}: (unserializable payload)", message);
+    }
+}
+
 var app = builder.Build();
 
 // Warm up logging so a file is created early for the demo log viewer
@@ -242,6 +256,8 @@ app.MapPost("/auth/auth0", async (IHttpClientFactory httpClientFactory, ILogger<
     {
         logger.LogError("❌ Auth0 token request failed: {Content}", content);
     }
+    
+    LogJson(logger, "Auth0 token response", new { Status = response.StatusCode, ContentLength = content.Length });
     
     return Results.Content(content, "application/json");
 });
@@ -371,6 +387,7 @@ app.MapGet("/notifications/health", async (NotificationHealthService health) =>
 
 app.MapPost("/notifications/welcome", async (SendWelcomeRequest request, INotificationService notifications, ILogger<Program> logger) =>
 {
+    LogJson(logger, "Notifications - welcome request", request);
     var notification = new BasicNotification(
         type: "Welcome",
         data: new { request.Name },
@@ -383,6 +400,7 @@ app.MapPost("/notifications/welcome", async (SendWelcomeRequest request, INotifi
 
         if (result.Success)
         {
+            LogJson(logger, "Notifications - welcome sent", result);
             return Results.Ok(new
             {
                 message = "Notification dispatched",
@@ -392,6 +410,7 @@ app.MapPost("/notifications/welcome", async (SendWelcomeRequest request, INotifi
         }
 
         logger.LogWarning("Notification failed: {Reason}", result.FailureReason);
+        LogJson(logger, "Notifications - welcome failed", result);
         return Results.Problem(
             detail: result.FailureReason ?? "Failed to dispatch notification.",
             statusCode: result.ServiceUnavailable ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status400BadRequest);
@@ -399,27 +418,31 @@ app.MapPost("/notifications/welcome", async (SendWelcomeRequest request, INotifi
     catch (NotificationFailedException ex)
     {
         logger.LogError(ex, "Notification threw");
+        LogJson(logger, "Notifications - welcome threw", new { ex.Result.FailureReason, ex.Message });
         return Results.Problem(ex.Result.FailureReason ?? ex.Message);
     }
 });
 
 app.MapPost("/notifications/sms", async (SendSmsRequest request, INotificationService notifications, ILogger<Program> logger) =>
 {
+    LogJson(logger, "Notifications - sms request", request);
     try
     {
         var result = await notifications.SendSmsAsync(request.PhoneNumber, request.Message);
 
         if (result.Success)
         {
-        return Results.Ok(new
-        {
-            message = "SMS dispatched",
-            channel = result.ChannelUsed,
-            queued = result.EnqueuedForRetry
-        });
-    }
+            LogJson(logger, "Notifications - sms sent", result);
+            return Results.Ok(new
+            {
+                message = "SMS dispatched",
+                channel = result.ChannelUsed,
+                queued = result.EnqueuedForRetry
+            });
+        }
 
-    logger.LogWarning("SMS failed: {Reason}", result.FailureReason);
+        logger.LogWarning("SMS failed: {Reason}", result.FailureReason);
+        LogJson(logger, "Notifications - sms failed", result);
         return Results.Problem(
             detail: result.FailureReason ?? "Failed to dispatch SMS.",
             statusCode: result.ServiceUnavailable ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status400BadRequest);
@@ -429,6 +452,7 @@ app.MapPost("/notifications/sms", async (SendSmsRequest request, INotificationSe
         var detail = ex.Result.FailureReason ?? ex.Message;
         var channels = ex.Result.Channels.Select(c => new { c.Channel, c.Status, c.Detail }).ToArray();
         logger.LogError(ex, "SMS notification threw: {Detail}", detail);
+        LogJson(logger, "Notifications - sms threw", new { detail, channels });
         return Results.Problem(detail: detail, statusCode: StatusCodes.Status502BadGateway, extensions: new Dictionary<string, object?>
         {
             ["channels"] = channels
