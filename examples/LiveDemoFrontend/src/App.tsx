@@ -32,7 +32,9 @@ function App() {
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
   // Prefer env override; fall back to http dev port (5221) to avoid HTTPS cert hassles
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5221';
+  const apiBaseUrl =
+    (import.meta.env.VITE_API_BASE_URL && import.meta.env.VITE_API_BASE_URL.trim()) ||
+    'http://localhost:5221';
 
   const handleLogin = async (selectedProvider: string) => {
     setIsLoading(true);
