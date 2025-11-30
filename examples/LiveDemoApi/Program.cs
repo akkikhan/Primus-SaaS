@@ -207,6 +207,57 @@ app.UseAuthorization();
 app.MapPrimusIdentityDiagnostics();
 
 // =========================================================================
+// DEMO HELPER: Application Insights Telemetry Summary
+// =========================================================================
+// This endpoint provides a live summary of telemetry metrics for the frontend dashboard.
+// In production, you'd query Azure Monitor directly via API or use Azure SDK.
+app.MapGet("/telemetry/summary", (IConfiguration config) =>
+{
+    var aiEnabled = !string.IsNullOrWhiteSpace(config["PrimusLogging:ApplicationInsights:ConnectionString"]) 
+        && config["PrimusLogging:ApplicationInsights:ConnectionString"] != "your-application-insights-connection-string";
+    
+    // Track basic in-memory metrics (for demo purposes)
+    // In production, use TelemetryClient.GetMetric() or query Azure Monitor API
+    var uptime = DateTime.UtcNow - System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime();
+    var process = System.Diagnostics.Process.GetCurrentProcess();
+    
+    return Results.Json(new
+    {
+        applicationInsights = new
+        {
+            enabled = aiEnabled,
+            instrumentationKey = aiEnabled ? config["PrimusLogging:ApplicationInsights:ConnectionString"]?.Split(';').FirstOrDefault()?.Replace("InstrumentationKey=", "") : null,
+            portalUrl = aiEnabled ? "https://portal.azure.com/#blade/HubsExtension/BrowseResource/resourceType/microsoft.insights%2Fcomponents" : null
+        },
+        server = new
+        {
+            name = Environment.MachineName,
+            uptime = new { 
+                hours = (int)uptime.TotalHours, 
+                minutes = uptime.Minutes, 
+                seconds = uptime.Seconds,
+                formatted = $"{(int)uptime.TotalHours}h {uptime.Minutes}m {uptime.Seconds}s"
+            },
+            startedAt = System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime().ToString("o")
+        },
+        memory = new
+        {
+            workingSetMB = process.WorkingSet64 / (1024 * 1024),
+            privateMemoryMB = process.PrivateMemorySize64 / (1024 * 1024),
+            gcTotalMemoryMB = GC.GetTotalMemory(false) / (1024 * 1024)
+        },
+        runtime = new
+        {
+            framework = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription,
+            os = System.Runtime.InteropServices.RuntimeInformation.OSDescription,
+            processId = Environment.ProcessId,
+            threadCount = process.Threads.Count
+        },
+        timestamp = DateTime.UtcNow.ToString("o")
+    });
+}).WithName("GetTelemetrySummary");
+
+// =========================================================================
 // DEMO HELPER: Log viewer (for demo only — consider securing/removing for prod)
 // =========================================================================
 app.MapGet("/logs/recent", () =>
@@ -463,7 +514,13 @@ app.MapPost("/notifications/sms", async (SendSmsRequest request, INotificationSe
     LogJson(logger, "Notifications - sms request", request);
     try
     {
-        var result = await notifications.SendSmsAsync(request.PhoneNumber, request.Message);
+        var notification = new BasicNotification(
+            type: "SmsDemo", // maps to NotificationTemplates/SmsDemo/SmsBody.liquid
+            data: new { request.Message, request.PhoneNumber },
+            recipient: new Recipient { PhoneNumber = request.PhoneNumber },
+            channels: new[] { "Sms" });
+
+        var result = await notifications.SendAsync(notification);
 
         if (result.Success)
         {
@@ -495,6 +552,35 @@ app.MapPost("/notifications/sms", async (SendSmsRequest request, INotificationSe
     }
 });
 
+// =========================================================================
+// DEMO HELPER: Template preview (renders without sending)
+// =========================================================================
+app.MapPost("/notifications/templates/preview", async (TemplatePreviewRequest request, ITemplateService templates, ILogger<Program> logger) =>
+{
+    var type = string.IsNullOrWhiteSpace(request.Type) ? "SmsDemo" : request.Type!;
+    var channel = string.IsNullOrWhiteSpace(request.Channel) ? "SmsBody" : request.Channel!;
+
+    var model = new
+    {
+        Message = request.Message ?? "Your code is 123456",
+        PhoneNumber = request.PhoneNumber ?? "+15551234567",
+        Name = request.Name ?? "Primus Demo User",
+        Email = request.Email ?? "demo@primus.local"
+    };
+
+    try
+    {
+        var content = await templates.RenderAsync(type, channel, model);
+        logger.LogInformation("Template preview rendered for {Type}/{Channel}", type, channel);
+        return Results.Ok(new { content, type, channel });
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Template preview failed for {Type}/{Channel}", type, channel);
+        return Results.BadRequest(new { error = ex.Message, type, channel });
+    }
+}).WithName("PreviewTemplates");
+
 app.Run();
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
@@ -505,3 +591,4 @@ record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 record LocalLoginRequest(string Email, string Password);
 record SendWelcomeRequest(string Email, string Name);
 record SendSmsRequest(string PhoneNumber, string Message);
+record TemplatePreviewRequest(string? Type, string? Channel, string? Message, string? PhoneNumber, string? Name, string? Email);

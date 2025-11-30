@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Shield, Lock, LayoutDashboard, LogIn, CheckCircle, AlertTriangle, Cloud, Server, Mail, Activity, Phone } from 'lucide-react';
+import { Shield, Lock, LayoutDashboard, LogIn, CheckCircle, AlertTriangle, Cloud, Server, Mail, Activity, Phone, BarChart3, Cpu, HardDrive, Clock, Wifi } from 'lucide-react';
 import './App.css';
 
 function App() {
@@ -30,7 +30,22 @@ function App() {
   const [logsMeta, setLogsMeta] = useState<{ file?: string; size?: number } | null>(null);
   const [logsError, setLogsError] = useState<any>(null);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [previewType, setPreviewType] = useState('SmsDemo');
+  const [previewChannel, setPreviewChannel] = useState('SmsBody');
+  const [previewMessage, setPreviewMessage] = useState('Your Primus demo code is 123456');
+  const [previewPhone, setPreviewPhone] = useState('+15551234567');
+  const [previewName, setPreviewName] = useState('Primus Demo User');
+  const [previewEmail, setPreviewEmail] = useState('demo@primus.local');
+  const [previewResult, setPreviewResult] = useState<string>('');
+  const [previewError, setPreviewError] = useState<any>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [autoLogs, setAutoLogs] = useState(false);
+  
+  // Telemetry dashboard state
+  const [telemetry, setTelemetry] = useState<any>(null);
+  const [telemetryError, setTelemetryError] = useState<any>(null);
+  const [isLoadingTelemetry, setIsLoadingTelemetry] = useState(false);
+  const [autoTelemetry, setAutoTelemetry] = useState(true); // Auto-refresh enabled by default
 
   // Prefer env override; fall back to http dev port (5221) to avoid HTTPS cert hassles
   const apiBaseUrl =
@@ -157,6 +172,28 @@ function App() {
     }
   };
 
+  const previewTemplate = async () => {
+    setIsPreviewLoading(true);
+    setPreviewError(null);
+    setPreviewResult('');
+    try {
+      const response = await axios.post(`${apiBaseUrl}/notifications/templates/preview`, {
+        type: previewType,
+        channel: previewChannel,
+        message: previewMessage,
+        phoneNumber: previewPhone,
+        name: previewName,
+        email: previewEmail
+      });
+      setPreviewResult(response.data.content || '');
+    } catch (err: any) {
+      console.error('Template preview failed', err);
+      setPreviewError(err);
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
   const fetchLogs = async () => {
     setIsLoadingLogs(true);
     setLogsError(null);
@@ -176,6 +213,21 @@ function App() {
     }
   };
 
+  const fetchTelemetry = async () => {
+    setIsLoadingTelemetry(true);
+    setTelemetryError(null);
+    try {
+      const response = await axios.get(`${apiBaseUrl}/telemetry/summary`);
+      setTelemetry(response.data);
+    } catch (err: any) {
+      console.error('Telemetry fetch failed', err);
+      setTelemetryError(err);
+      setTelemetry(null);
+    } finally {
+      setIsLoadingTelemetry(false);
+    }
+  };
+
   useEffect(() => {
     if (!autoLogs) return;
     // Start immediate fetch, then poll every 3s
@@ -183,6 +235,15 @@ function App() {
     const id = setInterval(fetchLogs, 3000);
     return () => clearInterval(id);
   }, [autoLogs]);
+
+  useEffect(() => {
+    // Always fetch telemetry on mount
+    fetchTelemetry();
+    if (!autoTelemetry) return;
+    // Poll every 5s when auto-refresh is on
+    const id = setInterval(fetchTelemetry, 5000);
+    return () => clearInterval(id);
+  }, [autoTelemetry]);
 
   if (!isLoggedIn) {
     return (
@@ -428,12 +489,232 @@ function App() {
               </div>
             )}
 
-            {smsError && (
+              {smsError && (
+                <div className="status-card error" style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.25)' }}>
+                  <strong>Error:</strong> {smsError.response?.data?.detail || smsError.message}
+                </div>
+              )}
+          </div>
+        </div>
+
+        <div className="card" style={{ maxWidth: '100%', textAlign: 'left', marginTop: '1.5rem' }}>
+          <h2><Mail size={20} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.5rem' }} /> Template Preview</h2>
+          <p className="subtitle">Render Liquid templates without sending. Defaults: type <code>SmsDemo</code>, channel <code>SmsBody</code>.</p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <input
+                style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid #334155', background: 'rgba(255,255,255,0.03)', color: '#e2e8f0', minWidth: '150px' }}
+                placeholder="Type (folder)"
+                value={previewType}
+                onChange={(e) => setPreviewType(e.target.value)}
+              />
+              <input
+                style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid #334155', background: 'rgba(255,255,255,0.03)', color: '#e2e8f0', minWidth: '140px' }}
+                placeholder="Channel (file)"
+                value={previewChannel}
+                onChange={(e) => setPreviewChannel(e.target.value)}
+              />
+              <input
+                style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid #334155', background: 'rgba(255,255,255,0.03)', color: '#e2e8f0', minWidth: '220px' }}
+                placeholder="Message"
+                value={previewMessage}
+                onChange={(e) => setPreviewMessage(e.target.value)}
+              />
+              <input
+                style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid #334155', background: 'rgba(255,255,255,0.03)', color: '#e2e8f0', minWidth: '180px' }}
+                placeholder="Phone"
+                value={previewPhone}
+                onChange={(e) => setPreviewPhone(e.target.value)}
+              />
+              <input
+                style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid #334155', background: 'rgba(255,255,255,0.03)', color: '#e2e8f0', minWidth: '180px' }}
+                placeholder="Name"
+                value={previewName}
+                onChange={(e) => setPreviewName(e.target.value)}
+              />
+              <input
+                style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid #334155', background: 'rgba(255,255,255,0.03)', color: '#e2e8f0', minWidth: '200px' }}
+                placeholder="Email"
+                value={previewEmail}
+                onChange={(e) => setPreviewEmail(e.target.value)}
+              />
+              <button className="btn" style={{ width: 'auto' }} onClick={previewTemplate} disabled={isPreviewLoading}>
+                {isPreviewLoading ? <div className="loader" style={{ borderColor: '#3b82f6', borderTopColor: 'transparent' }}></div> : 'Preview'}
+              </button>
+            </div>
+
+            {previewResult && (
+              <pre style={{
+                marginTop: '0.5rem',
+                padding: '0.9rem',
+                borderRadius: '10px',
+                background: 'rgba(148, 163, 184, 0.08)',
+                border: '1px solid rgba(148, 163, 184, 0.2)',
+                color: '#e2e8f0',
+                maxHeight: '220px',
+                overflow: 'auto',
+                fontSize: '0.9rem',
+                whiteSpace: 'pre-wrap'
+              }}>
+                {previewResult}
+              </pre>
+            )}
+
+            {previewError && (
               <div className="status-card error" style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.25)' }}>
-                <strong>Error:</strong> {smsError.response?.data?.detail || smsError.message}
+                <strong>Error:</strong> {previewError.response?.data?.error || previewError.message}
               </div>
             )}
           </div>
+        </div>
+
+        {/* Application Insights Telemetry Dashboard */}
+        <div className="card" style={{ maxWidth: '100%', textAlign: 'left', marginTop: '1.5rem' }}>
+          <h2><BarChart3 size={20} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.5rem' }} /> Application Insights Telemetry</h2>
+          <p className="subtitle">Live server metrics and Application Insights status.</p>
+
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginTop: '1rem', flexWrap: 'wrap' }}>
+            <button className="btn" style={{ width: 'auto' }} onClick={fetchTelemetry} disabled={isLoadingTelemetry}>
+              {isLoadingTelemetry ? <div className="loader" style={{ borderColor: '#3b82f6', borderTopColor: 'transparent' }}></div> : 'Refresh'}
+            </button>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#cbd5e1', fontSize: '0.9rem' }}>
+              <input
+                type="checkbox"
+                checked={autoTelemetry}
+                onChange={(e) => setAutoTelemetry(e.target.checked)}
+              />
+              Auto-refresh (5s)
+            </label>
+            {telemetry?.applicationInsights?.enabled && (
+              <a 
+                href={telemetry.applicationInsights.portalUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ color: '#3b82f6', fontSize: '0.9rem', textDecoration: 'underline' }}
+              >
+                Open Azure Portal →
+              </a>
+            )}
+            {telemetryError && (
+              <span style={{ color: '#ef4444', fontSize: '0.9rem' }}>
+                {telemetryError.response?.data?.message || telemetryError.message}
+              </span>
+            )}
+          </div>
+
+          {telemetry && (
+            <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              {/* Application Insights Status */}
+              <div style={{
+                padding: '1rem',
+                borderRadius: '12px',
+                background: telemetry.applicationInsights?.enabled ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+                border: `1px solid ${telemetry.applicationInsights?.enabled ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <Wifi size={18} color={telemetry.applicationInsights?.enabled ? '#22c55e' : '#ef4444'} />
+                  <strong style={{ color: telemetry.applicationInsights?.enabled ? '#22c55e' : '#ef4444' }}>
+                    {telemetry.applicationInsights?.enabled ? 'AI Connected' : 'AI Disabled'}
+                  </strong>
+                </div>
+                {telemetry.applicationInsights?.instrumentationKey && (
+                  <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                    Key: {telemetry.applicationInsights.instrumentationKey.substring(0, 8)}...
+                  </div>
+                )}
+              </div>
+
+              {/* Server Info */}
+              <div style={{
+                padding: '1rem',
+                borderRadius: '12px',
+                background: 'rgba(59,130,246,0.08)',
+                border: '1px solid rgba(59,130,246,0.25)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <Server size={18} color="#3b82f6" />
+                  <strong style={{ color: '#3b82f6' }}>{telemetry.server?.name}</strong>
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                  PID: {telemetry.runtime?.processId}
+                </div>
+              </div>
+
+              {/* Uptime */}
+              <div style={{
+                padding: '1rem',
+                borderRadius: '12px',
+                background: 'rgba(168,85,247,0.08)',
+                border: '1px solid rgba(168,85,247,0.25)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <Clock size={18} color="#a855f7" />
+                  <strong style={{ color: '#a855f7' }}>Uptime</strong>
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#e2e8f0' }}>
+                  {telemetry.server?.uptime?.formatted}
+                </div>
+              </div>
+
+              {/* Memory */}
+              <div style={{
+                padding: '1rem',
+                borderRadius: '12px',
+                background: 'rgba(236,72,153,0.08)',
+                border: '1px solid rgba(236,72,153,0.25)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <HardDrive size={18} color="#ec4899" />
+                  <strong style={{ color: '#ec4899' }}>Memory</strong>
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#e2e8f0' }}>
+                  {telemetry.memory?.workingSetMB} MB working set
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                  GC: {telemetry.memory?.gcTotalMemoryMB} MB
+                </div>
+              </div>
+
+              {/* Threads */}
+              <div style={{
+                padding: '1rem',
+                borderRadius: '12px',
+                background: 'rgba(245,158,11,0.08)',
+                border: '1px solid rgba(245,158,11,0.25)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <Cpu size={18} color="#f59e0b" />
+                  <strong style={{ color: '#f59e0b' }}>Threads</strong>
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#e2e8f0' }}>
+                  {telemetry.runtime?.threadCount} active
+                </div>
+              </div>
+
+              {/* Runtime */}
+              <div style={{
+                padding: '1rem',
+                borderRadius: '12px',
+                background: 'rgba(20,184,166,0.08)',
+                border: '1px solid rgba(20,184,166,0.25)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <Activity size={18} color="#14b8a6" />
+                  <strong style={{ color: '#14b8a6' }}>Runtime</strong>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#94a3b8', wordBreak: 'break-word' }}>
+                  {telemetry.runtime?.framework?.replace('.NET ', '.NET\n')}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {telemetry?.timestamp && (
+            <div style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#64748b', textAlign: 'right' }}>
+              Last updated: {new Date(telemetry.timestamp).toLocaleTimeString()}
+            </div>
+          )}
         </div>
 
         <div className="card" style={{ maxWidth: '100%', textAlign: 'left', marginTop: '1.5rem' }}>
