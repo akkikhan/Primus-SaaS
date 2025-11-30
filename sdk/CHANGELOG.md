@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Documentation now references the actual `PrimusIdentityLoggingOptions` type (previously documented as `LoggingOptions`), eliminating first-time compile failures.
+- Improved logging for machine-to-machine validation failures and documented Auth0 `client_credentials` setup (`AllowMachineToMachine = true`).
 
 ---
 

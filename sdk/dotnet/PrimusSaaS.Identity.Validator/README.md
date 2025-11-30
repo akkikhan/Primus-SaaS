@@ -337,6 +337,22 @@ This authenticates requests with a fixed user (`sub`, `email`, `name`) so you ca
 - Structured logging: when `LogValidationSteps` is true, issuer/audience/kid are logged; subjects are hashed when redaction is on.
 - Refresh tokens: set `TokenRefresh.UseDurableStore = true` and register `IRefreshTokenStore` (e.g., `DistributedRefreshTokenStore` for Redis/SQL via `IDistributedCache`).
 
+### Auth0 client_credentials (M2M) tokens
+- Auth0 marks client credentials tokens with `gty: "client-credentials"` and a subject ending in `@clients`. These are treated as machine-to-machine tokens.
+- To allow them, set `AllowMachineToMachine = true` in the Auth0 issuer config and optionally restrict `AllowedGrantTypes` to `client_credentials`.
+  ```json
+  {
+    "Name": "Auth0",
+    "Type": "Oidc",
+    "Issuer": "https://your-tenant.us.auth0.com/",
+    "Authority": "https://your-tenant.us.auth0.com/",
+    "Audiences": [ "https://saas-api/" ],
+    "AllowMachineToMachine": true,
+    "AllowedGrantTypes": [ "client_credentials" ]
+  }
+  ```
+- If `AllowMachineToMachine` is false, validation fails with "Machine-to-machine tokens are not allowed for this issuer."
+
 ### Multi-provider (Azure AD + Auth0 + Local)
 
 ```csharp

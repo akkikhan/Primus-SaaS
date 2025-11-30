@@ -292,7 +292,7 @@ public static class PrimusIdentityExtensions
                             {
                                 return;
                             }
-                            if (!EnsureMachineToMachineRequirement(context, issuerConfig))
+                            if (!EnsureMachineToMachineRequirement(context, issuerConfig, logger))
                             {
                                 return;
                             }
@@ -634,12 +634,19 @@ public static class PrimusIdentityExtensions
         return true;
     }
 
-    private static bool EnsureMachineToMachineRequirement(TokenValidatedContext context, IssuerConfig issuerConfig)
+    private static bool EnsureMachineToMachineRequirement(
+        TokenValidatedContext context,
+        IssuerConfig issuerConfig,
+        ILogger? logger)
     {
         var isAllowed = TokenClassification.ValidateMachineToMachineAllowed(context.Principal, issuerConfig, out var error);
         if (!isAllowed)
         {
             context.Fail(error ?? "Machine-to-machine token not allowed.");
+            logger?.LogWarning("Primus Identity: Machine-to-machine validation failed for issuer {IssuerName} ({Issuer}): {Error}",
+                issuerConfig.Name,
+                issuerConfig.Issuer,
+                error ?? "Machine-to-machine token not allowed.");
             return false;
         }
         return true;
