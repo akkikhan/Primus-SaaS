@@ -16,22 +16,6 @@ builder.Logging.AddPrimus(options =>
 {
     // Bind from configuration; safe defaults if section is missing
     builder.Configuration.GetSection("PrimusLogging").Bind(options);
-
-    // Ensure logs directory exists and resolve relative file paths
-    var contentRootLogs = Path.Combine(builder.Environment.ContentRootPath, "logs");
-    var baseDirLogs = Path.Combine(AppContext.BaseDirectory, "logs");
-    Directory.CreateDirectory(contentRootLogs);
-    Directory.CreateDirectory(baseDirLogs);
-
-    if (options.Targets.File.Enabled)
-    {
-        var currentPath = options.Targets.File.Path ?? "livedemo-api.log";
-        if (!Path.IsPathRooted(currentPath))
-        {
-            // Write under content root logs
-            options.Targets.File.Path = Path.Combine(contentRootLogs, Path.GetFileName(currentPath));
-        }
-    }
 });
 
 // Add services to the container.
@@ -138,6 +122,12 @@ builder.Services.AddHttpClient();
 Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
 
 var app = builder.Build();
+
+// Warm up logging so a file is created early for the demo log viewer
+var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+startupLogger.LogInformation("Primus LiveDemo starting at {Time} (Environment: {Env})",
+    DateTimeOffset.UtcNow,
+    app.Environment.EnvironmentName);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
