@@ -5,8 +5,10 @@ using PrimusSaaS.Notifications.Core;
 using PrimusSaaS.Notifications.Services;
 using PrimusSaaS.Notifications.Configuration;
 using PrimusSaaS.Logging.Extensions;
+using Fluid;
 
 var builder = WebApplication.CreateBuilder(args);
+var templatesRoot = Path.Combine(builder.Environment.ContentRootPath, "NotificationTemplates");
 
 // =========================================================================
 // Logging: structured logging with PII redaction + optional file sink
@@ -570,7 +572,29 @@ app.MapPost("/notifications/templates/preview", async (TemplatePreviewRequest re
 
     try
     {
-        var content = await templates.RenderAsync(type, channel, model);
+        string content;
+
+        if (!IsSafeSegment(type) || !IsSafeSegment(channel))
+            return Results.BadRequest(new { error = "Invalid type/channel." });
+
+        if (!string.IsNullOrWhiteSpace(request.Content))
+        {
+            var parser = new FluidParser();
+            if (!parser.TryParse(request.Content, out var template, out var error))
+            {
+                return Results.BadRequest(new { error = $"Template parse failed: {error}" });
+            }
+
+            var options = new TemplateOptions();
+            options.MemberAccessStrategy.Register(model.GetType());
+            var context = new TemplateContext(model, options);
+            content = await template.RenderAsync(context);
+        }
+        else
+        {
+            content = await templates.RenderAsync(type, channel, model);
+        }
+
         logger.LogInformation("Template preview rendered for {Type}/{Channel}", type, channel);
         return Results.Ok(new { content, type, channel });
     }
@@ -580,6 +604,46 @@ app.MapPost("/notifications/templates/preview", async (TemplatePreviewRequest re
         return Results.BadRequest(new { error = ex.Message, type, channel });
     }
 }).WithName("PreviewTemplates");
+
+app.MapGet("/notifications/templates/{type}/{channel}", async (string type, string channel) =>
+{
+    if (!IsSafeSegment(type) || !IsSafeSegment(channel))
+        return Results.BadRequest(new { error = "Invalid type/channel." });
+
+    var path = GetTemplatePath(type, channel);
+    if (!File.Exists(path))
+        return Results.NotFound(new { error = $"Template not found at {type}/{channel}" });
+
+    var content = await File.ReadAllTextAsync(path);
+    return Results.Ok(new { content, type, channel });
+}).WithName("GetTemplate");
+
+app.MapPut("/notifications/templates/{type}/{channel}", async (TemplateSaveRequest request, string type, string channel, ILogger<Program> logger) =>
+{
+    if (!IsSafeSegment(type) || !IsSafeSegment(channel))
+        return Results.BadRequest(new { error = "Invalid type/channel." });
+
+    if (string.IsNullOrWhiteSpace(request.Content))
+        return Results.BadRequest(new { error = "Content is required." });
+
+    var path = GetTemplatePath(type, channel);
+    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+    await File.WriteAllTextAsync(path, request.Content);
+    logger.LogInformation("Template saved at {Type}/{Channel}", type, channel);
+    return Results.Ok(new { saved = true, type, channel });
+}).WithName("SaveTemplate");
+
+bool IsSafeSegment(string segment)
+{
+    return !string.IsNullOrWhiteSpace(segment)
+           && segment.IndexOfAny(Path.GetInvalidFileNameChars()) == -1
+           && !segment.Contains("..", StringComparison.Ordinal);
+}
+
+string GetTemplatePath(string type, string channel)
+{
+    return Path.Combine(templatesRoot, type, $"{channel}.liquid");
+}
 
 app.Run();
 
@@ -591,4 +655,5 @@ record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 record LocalLoginRequest(string Email, string Password);
 record SendWelcomeRequest(string Email, string Name);
 record SendSmsRequest(string PhoneNumber, string Message);
-record TemplatePreviewRequest(string? Type, string? Channel, string? Message, string? PhoneNumber, string? Name, string? Email);
+record TemplatePreviewRequest(string? Type, string? Channel, string? Message, string? PhoneNumber, string? Name, string? Email, string? Content);
+record TemplateSaveRequest(string Content);

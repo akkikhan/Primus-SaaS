@@ -39,6 +39,12 @@ function App() {
   const [previewResult, setPreviewResult] = useState<string>('');
   const [previewError, setPreviewError] = useState<any>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [editorContent, setEditorContent] = useState('');
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [templateLoadError, setTemplateLoadError] = useState<any>(null);
+  const [templateSaveError, setTemplateSaveError] = useState<any>(null);
+  const [templateSaveSuccess, setTemplateSaveSuccess] = useState<string>('');
   const [autoLogs, setAutoLogs] = useState(false);
   
   // Telemetry dashboard state
@@ -172,6 +178,38 @@ function App() {
     }
   };
 
+  const loadTemplate = async () => {
+    setIsLoadingTemplate(true);
+    setTemplateLoadError(null);
+    setTemplateSaveSuccess('');
+    try {
+      const response = await axios.get(`${apiBaseUrl}/notifications/templates/${previewType}/${previewChannel}`);
+      setEditorContent(response.data.content || '');
+    } catch (err: any) {
+      console.error('Template load failed', err);
+      setTemplateLoadError(err);
+    } finally {
+      setIsLoadingTemplate(false);
+    }
+  };
+
+  const saveTemplate = async () => {
+    setIsSavingTemplate(true);
+    setTemplateSaveError(null);
+    setTemplateSaveSuccess('');
+    try {
+      await axios.put(`${apiBaseUrl}/notifications/templates/${previewType}/${previewChannel}`, {
+        content: editorContent
+      });
+      setTemplateSaveSuccess('Saved');
+    } catch (err: any) {
+      console.error('Template save failed', err);
+      setTemplateSaveError(err);
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
+
   const previewTemplate = async () => {
     setIsPreviewLoading(true);
     setPreviewError(null);
@@ -183,7 +221,8 @@ function App() {
         message: previewMessage,
         phoneNumber: previewPhone,
         name: previewName,
-        email: previewEmail
+        email: previewEmail,
+        content: editorContent
       });
       setPreviewResult(response.data.content || '');
     } catch (err: any) {
@@ -547,6 +586,31 @@ function App() {
                 value={previewEmail}
                 onChange={(e) => setPreviewEmail(e.target.value)}
               />
+            </div>
+
+            <textarea
+              style={{
+                width: '100%',
+                minHeight: '140px',
+                padding: '0.75rem',
+                borderRadius: '10px',
+                border: '1px solid #334155',
+                background: 'rgba(255,255,255,0.03)',
+                color: '#e2e8f0',
+                fontFamily: 'monospace'
+              }}
+              placeholder="Edit template content (Liquid) or load from file"
+              value={editorContent}
+              onChange={(e) => setEditorContent(e.target.value)}
+            />
+
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <button className="btn" style={{ width: 'auto', backgroundColor: '#475569' }} onClick={loadTemplate} disabled={isLoadingTemplate}>
+                {isLoadingTemplate ? <div className="loader" style={{ borderColor: '#3b82f6', borderTopColor: 'transparent' }}></div> : 'Load from file'}
+              </button>
+              <button className="btn" style={{ width: 'auto', backgroundColor: '#10b981' }} onClick={saveTemplate} disabled={isSavingTemplate}>
+                {isSavingTemplate ? <div className="loader" style={{ borderColor: '#22c55e', borderTopColor: 'transparent' }}></div> : 'Save to file'}
+              </button>
               <button className="btn" style={{ width: 'auto' }} onClick={previewTemplate} disabled={isPreviewLoading}>
                 {isPreviewLoading ? <div className="loader" style={{ borderColor: '#3b82f6', borderTopColor: 'transparent' }}></div> : 'Preview'}
               </button>
@@ -572,6 +636,24 @@ function App() {
             {previewError && (
               <div className="status-card error" style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.25)' }}>
                 <strong>Error:</strong> {previewError.response?.data?.error || previewError.message}
+              </div>
+            )}
+
+            {templateLoadError && (
+              <div className="status-card error" style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.25)' }}>
+                <strong>Load error:</strong> {templateLoadError.response?.data?.error || templateLoadError.message}
+              </div>
+            )}
+
+            {templateSaveError && (
+              <div className="status-card error" style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.25)' }}>
+                <strong>Save error:</strong> {templateSaveError.response?.data?.error || templateSaveError.message}
+              </div>
+            )}
+
+            {templateSaveSuccess && (
+              <div className="status-card success" style={{ background: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.25)' }}>
+                {templateSaveSuccess}
               </div>
             )}
           </div>
