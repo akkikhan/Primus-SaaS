@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Notifications 1.4.0] - 2025-11-29
+
+### Added
+- Multi-provider SMS support with AWS SNS (`UseAwsSns()`) and Azure Communication Services (`UseAzureCommunicationServices()`).
+- SendGrid and Amazon SES email channels plus file-based Liquid templating and webhook dispatch helpers.
+- Queueing, rate limiting, and delivery health diagnostics with in-memory, Redis, and Service Bus queues.
+
+### Changed
+- Background notification service now drives queued delivery with richer diagnostics and configuration options.
+
+---
+
+## [Logging 1.2.2] - 2025-11-29
+
+### Added
+- Logging metrics endpoint helper and updated health/metrics documentation.
+
+### Changed
+- Resolved `UsePrimusLogging` extension ambiguity alongside other Primus packages; improved safe serialization, scopes/correlation IDs, async buffering, file rotation, and Application Insights integration.
+
+---
+
 ## [Identity.Validator Unreleased]
 
 ### Added
