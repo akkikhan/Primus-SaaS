@@ -17,6 +17,8 @@ builder.Logging.AddPrimus(options =>
     // Bind from configuration; safe defaults if section is missing
     builder.Configuration.GetSection("PrimusLogging").Bind(options);
 });
+// Ensure logs directory exists so the log viewer can find files
+Directory.CreateDirectory(Path.Combine(builder.Environment.ContentRootPath, "logs"));
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
@@ -89,9 +91,10 @@ builder.Services.AddPrimusNotifications(notifications =>
 
     notifications.ConfigureDispatch(opts =>
     {
-        opts.ThrowOnFailure = false;
-        opts.FallbackToLogger = true;
-        opts.QueueOnFailure = true;
+        // Surface failures so Twilio issues are visible; avoid silent logger fallback.
+        opts.ThrowOnFailure = true;
+        opts.FallbackToLogger = false;
+        opts.QueueOnFailure = false;
     });
 });
 
@@ -156,10 +159,7 @@ app.MapPrimusIdentityDiagnostics();
 app.MapGet("/logs/recent", () =>
 {
     var logsDir = Path.Combine(builder.Environment.ContentRootPath, "logs");
-    if (!Directory.Exists(logsDir))
-    {
-        return Results.Json(new { message = "Log directory not found." });
-    }
+    Directory.CreateDirectory(logsDir);
 
     // Prefer the dev log file name, fall back to any log in the directory.
     var candidates = new[]
@@ -171,7 +171,7 @@ app.MapGet("/logs/recent", () =>
     var logFile = candidates.FirstOrDefault(File.Exists);
     if (logFile == null)
     {
-        return Results.Json(new { message = "No log file found." });
+        return Results.Json(new { message = "No log file found yet. Trigger a request to generate logs." });
     }
 
     const int maxBytes = 32 * 1024; // tail ~32KB
@@ -350,23 +350,24 @@ app.MapPost("/notifications/sms", async (SendSmsRequest request, INotificationSe
 
         if (result.Success)
         {
-            return Results.Ok(new
-            {
-                message = "SMS dispatched",
-                channel = result.ChannelUsed,
-                queued = result.EnqueuedForRetry
-            });
-        }
+        return Results.Ok(new
+        {
+            message = "SMS dispatched",
+            channel = result.ChannelUsed,
+            queued = result.EnqueuedForRetry
+        });
+    }
 
-        logger.LogWarning("SMS failed: {Reason}", result.FailureReason);
+    logger.LogWarning("SMS failed: {Reason}", result.FailureReason);
         return Results.Problem(
             detail: result.FailureReason ?? "Failed to dispatch SMS.",
             statusCode: result.ServiceUnavailable ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status400BadRequest);
     }
     catch (NotificationFailedException ex)
     {
-        logger.LogError(ex, "SMS notification threw");
-        return Results.Problem(ex.Result.FailureReason ?? ex.Message);
+        var detail = ex.Result.FailureReason ?? ex.Message;
+        logger.LogError(ex, "SMS notification threw: {Detail}", detail);
+        return Results.Problem(detail);
     }
 });
 
