@@ -8,7 +8,7 @@
     
     <!-- Package Metadata -->
     <PackageId>PrimusSaaS.Logging</PackageId>
-    <Version>1.2.2</Version>
+    <Version>1.2.3</Version>
     <Authors>Primus SaaS</Authors>
     <Company>Primus SaaS</Company>
     <Product>PrimusSaaS Logging SDK</Product>
@@ -22,7 +22,11 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <PackageReleaseNotes>Resolved duplicate UsePrimusLogging extension ambiguity when used alongside other Primus packages; safe serialization; scopes + correlation IDs; async buffering with metrics; logging metrics endpoint helper; file rotation and AI target support; health/metrics guidance updated.</PackageReleaseNotes>
+    <PackageReleaseNotes>v1.2.3:
+- DOCS: Comprehensive documentation update with accurate implementation examples and best practices.
+- Improved developer experience with clear migration guides and copy-paste ready samples.
+
+v1.2.2: Resolved duplicate UsePrimusLogging extension ambiguity; safe serialization; scopes + correlation IDs; async buffering with metrics.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

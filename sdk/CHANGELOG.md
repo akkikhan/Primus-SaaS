@@ -29,6 +29,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Notifications 1.4.1] - 2025-11-29
+
+### Fixed
+- Documentation corrected to match shipped APIs (`TimeoutSeconds`, `MaxRetryCount`, `RetryBaseDelayMs`, `NotificationResult.Channels`), preventing copy/paste build errors.
+
+---
+
+## [Identity.Validator 1.3.5] - 2025-11-29
+
+### Fixed
+- Documentation now references the actual `PrimusIdentityLoggingOptions` type (previously documented as `LoggingOptions`), eliminating first-time compile failures.
+
+---
+
+## [Logging 1.2.3] - 2025-11-29
+
+### Fixed
+- Documentation refreshed and aligned with the current package APIs; clarified migration notes and usage samples.
+
+---
+
 ## [Identity.Validator Unreleased]
 
 ### Added

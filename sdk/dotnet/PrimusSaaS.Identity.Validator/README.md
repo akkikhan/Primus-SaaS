@@ -320,6 +320,19 @@ This authenticates requests with a fixed user (`sub`, `email`, `name`) so you ca
   - `RedactSensitiveData` (default: true)
   - `LogValidationSteps` (default: true)
   - `LogClaimMapping` (default: false)
+- The type is `PrimusIdentityLoggingOptions` (older docs mentioning `LoggingOptions` will not compile):
+  ```csharp
+  builder.Services.AddPrimusIdentity(options =>
+  {
+      options.Logging = new PrimusIdentityLoggingOptions
+      {
+          MinimumLevel = LogLevel.Information,
+          RedactSensitiveData = true,
+          LogValidationSteps = true,
+          LogClaimMapping = false
+      };
+  });
+  ```
 - Expose diagnostics endpoint with `app.MapPrimusIdentityAuthDiagnostics();`
 - Structured logging: when `LogValidationSteps` is true, issuer/audience/kid are logged; subjects are hashed when redaction is on.
 - Refresh tokens: set `TokenRefresh.UseDurableStore = true` and register `IRefreshTokenStore` (e.g., `DistributedRefreshTokenStore` for Redis/SQL via `IDistributedCache`).

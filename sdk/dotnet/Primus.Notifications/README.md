@@ -15,7 +15,7 @@ Production-ready notification building blocks for Primus SaaS applications. The 
 
 ## Installation
 ```bash
-dotnet add package PrimusSaaS.Notifications --version 1.4.0
+dotnet add package PrimusSaaS.Notifications --version 1.4.1
 ```
 
 ## 🚀 Minimal Complete Example (Copy-Paste Ready)
@@ -138,6 +138,13 @@ builder.Services.AddPrimusNotifications(notifications =>
 });
 ```
 
+### SMTP tuning (actual property names)
+- `TimeoutSeconds` (default `30`)
+- `MaxRetryCount` (default `2`)
+- `RetryBaseDelayMs` (default `200`, exponential backoff)
+
+> Older names you may see online (`Timeout`, `RetryCount`, `RetryDelayMs`) do not exist. Use the properties above.
+
 Create a notification type:
 ```csharp
 public record WelcomeNotification(string Email, string Name) : INotification
@@ -226,8 +233,13 @@ Environment variables (examples):
 - `Twilio__AuthToken=...`
 - `Twilio__FromNumber=+16205538468`
 
-> Notes: Twilio trial accounts require verifying each recipient number before sending. Keep AuthToken in secrets/Key Vault/env vars—never commit secrets.
+> Notes: Twilio trial accounts require verifying each recipient number before sending. Keep AuthToken in secrets/Key Vault/env vars-never commit secrets.
 > Twilio options are validated when configured (can be disabled with `ValidateOnStartup = false`). Email-only deployments without Twilio settings skip startup validation; the first SMS send will throw a helpful error if Twilio is still unconfigured. Missing credentials surface as service-unavailable.
+
+## Inspecting results
+- `NotificationResult.Channels` is the per-channel breakdown (`Channel`, `Status`, `Detail`/`Exception`). (`ChannelResults` does not exist.)
+- `ChannelUsed` is set only when at least one channel succeeds.
+- For HTTP APIs, map `ServiceUnavailable` to 503 if your SMS provider is offline.
 
 ## AWS SNS SMS (Built-in)
 

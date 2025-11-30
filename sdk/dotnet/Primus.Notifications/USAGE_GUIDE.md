@@ -15,6 +15,9 @@ builder.Services.AddPrimusNotifications(notifications =>
             opts.Password = builder.Configuration["Smtp:Password"];
             opts.FromAddress = builder.Configuration["Smtp:From"];
             opts.FromName = "Primus Notifications";
+            opts.TimeoutSeconds = 30;
+            opts.MaxRetryCount = 2;
+            opts.RetryBaseDelayMs = 200;
         })
         .UseSms() // default: logs SMS payloads (swap ISmsSender for real provider)
         .UseFileTemplates(Path.Combine(builder.Environment.ContentRootPath, "NotificationTemplates"))
@@ -29,6 +32,8 @@ builder.Services.AddPrimusNotifications(notifications =>
         .ConfigureDispatch(opts => opts.ThrowOnFailure = true); // surfaces failures instead of silently succeeding
 });
 ```
+
+> SMTP properties to tune retries/timeouts: `TimeoutSeconds`, `MaxRetryCount`, `RetryBaseDelayMs` (older names like `RetryCount`/`RetryDelayMs` are not present).
 
 ## 2. Add configuration
 ```json
