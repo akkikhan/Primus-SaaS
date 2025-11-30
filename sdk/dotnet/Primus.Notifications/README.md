@@ -15,7 +15,7 @@ Production-ready notification building blocks for Primus SaaS applications. The 
 
 ## Installation
 ```bash
-dotnet add package PrimusSaaS.Notifications --version 1.4.1
+dotnet add package PrimusSaaS.Notifications --version 1.4.2
 ```
 
 ## 🚀 Minimal Complete Example (Copy-Paste Ready)

@@ -7,7 +7,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <PackageId>PrimusSaaS.Notifications</PackageId>
-    <Version>1.4.1</Version>
+    <Version>1.4.2</Version>
     <Authors>Primus SaaS</Authors>
     <Company>Primus SaaS</Company>
     <Product>PrimusSaaS Notifications</Product>
@@ -18,7 +18,12 @@
     <RepositoryType>git</RepositoryType>
     <PackageProjectUrl>https://github.com/primus-saas/notifications</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>v1.4.1:
+    <PackageReleaseNotes>v1.4.2:
+- E2E tested: All endpoint tests passing for email, SMS, and queue scenarios.
+- Verified API accuracy: SmtpOptions (TimeoutSeconds, MaxRetryCount, RetryBaseDelayMs), NotificationResult.Channels.
+- Production-ready with comprehensive copy-paste code samples.
+
+v1.4.1:
 - DOCS: Comprehensive documentation update with accurate implementation examples and best practices.
 - Improved developer experience with copy-paste ready code samples for email, SMS, and templating.
 

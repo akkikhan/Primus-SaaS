@@ -16,13 +16,28 @@ builder.Services.AddPrimusIdentity(options =>
     builder.Configuration.GetSection("PrimusIdentity").Bind(options);
 });
 
-builder.Services.AddPrimusIdentity(options =>
-{
-    builder.Configuration.GetSection("PrimusIdentity").Bind(options);
-});
+
 
 // Standard ASP.NET Core Authorization
 builder.Services.AddAuthorization();
+
+// Enable CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5173") // Vite default port
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
+// Add HttpClient for Auth0 proxy
+builder.Services.AddHttpClient();
+
+// Enable PII for debugging
+Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
 
 var app = builder.Build();
 
@@ -32,6 +47,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
 
@@ -48,6 +65,58 @@ app.UseAuthorization();
 // This endpoint (/primus/diagnostics) allows us to verify our configuration
 // and see exactly which keys are loaded from Azure AD and Auth0.
 app.MapPrimusIdentityDiagnostics();
+
+// =========================================================================
+// DEMO HELPER: Real Token Proxy
+// =========================================================================
+// 1. Auth0 Proxy (Client Credentials Flow)
+app.MapPost("/auth/auth0", async (IHttpClientFactory httpClientFactory) =>
+{
+    var client = httpClientFactory.CreateClient();
+    var response = await client.PostAsJsonAsync("https://dev-ft7bykiq2exe4ua4.us.auth0.com/oauth/token", new
+    {
+        client_id = "h4CjtEYT0HiXwJVr3JkOSkJnr1aq3bHc",
+        client_secret = "6Si0dfpi89xei4GGGcxblXIb2dc6r8RpfLqPAqaleN_sy3c6PmSLbrTfDAfm_sLm",
+        audience = "https://saas-api/",
+        grant_type = "client_credentials"
+    });
+
+    var content = await response.Content.ReadAsStringAsync();
+    return Results.Content(content, "application/json");
+});
+
+// 2. Azure Proxy (CLI Token)
+app.MapPost("/auth/azure", async () =>
+{
+    try
+    {
+        var process = new System.Diagnostics.Process
+        {
+            StartInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = "/c az account get-access-token --resource https://management.azure.com/ --query accessToken -o tsv",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+        process.Start();
+        var token = await process.StandardOutput.ReadToEndAsync();
+        var error = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        if (process.ExitCode != 0 || string.IsNullOrWhiteSpace(token))
+            return Results.BadRequest(new { error = $"Azure CLI Error: {error}. Ensure you are logged in with 'az login'." });
+
+        return Results.Ok(new { access_token = token.Trim(), token_type = "Bearer" });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
 
 var summaries = new[]
 {

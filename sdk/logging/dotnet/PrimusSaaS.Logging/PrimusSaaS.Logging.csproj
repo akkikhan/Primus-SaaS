@@ -8,7 +8,7 @@
     
     <!-- Package Metadata -->
     <PackageId>PrimusSaaS.Logging</PackageId>
-    <Version>1.2.3</Version>
+    <Version>1.2.4</Version>
     <Authors>Primus SaaS</Authors>
     <Company>Primus SaaS</Company>
     <Product>PrimusSaaS Logging SDK</Product>
@@ -22,7 +22,12 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <PackageReleaseNotes>v1.2.3:
+    <PackageReleaseNotes>v1.2.4:
+- E2E tested: All endpoint tests passing with structured logging, correlation IDs, and PII masking.
+- Verified API accuracy: UsePrimusLogging, LogLevel integration, async buffering.
+- Production-ready with comprehensive copy-paste code samples.
+
+v1.2.3:
 - DOCS: Comprehensive documentation update with accurate implementation examples and best practices.
 - Improved developer experience with clear migration guides and copy-paste ready samples.
 
