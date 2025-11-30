@@ -11,6 +11,8 @@ Enterprise-grade JWT/OIDC validation that runs entirely inside your stack. Suppo
 - **.NET**: `PrimusSaaS.Identity.Validator` (ASP.NET Core middleware + helpers)
 - **Node.js**: `@primus-saas/identity-validator` (Express/NestJS middleware + helpers)
 
+Version source of truth: [Modules Version Matrix](/docs/modules/version-matrix).
+
 ## Highlights
 
 - Multi-issuer: Azure AD (JWKS) + local JWT in the same app.

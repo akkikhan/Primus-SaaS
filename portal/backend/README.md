@@ -1,6 +1,6 @@
 # Primus SaaS Portal - Backend API
 
-ASP.NET Core 7.0 Web API for the Primus SaaS Platform portal.
+ASP.NET Core 8.0 Web API for the Primus SaaS Platform portal.
 
 ## Features
 
@@ -11,9 +11,60 @@ ASP.NET Core 7.0 Web API for the Primus SaaS Platform portal.
 - **Database**: Entity Framework Core with SQL Server
 - **Notifications**: Email on app creation, module assignment, and version updates (major-only)
 
+## Dependencies snapshot
+
+### Backend (.NET 8)
+
+- `AspNetCoreRateLimit` 5.0.0
+- `BCrypt.Net-Next` 4.0.3
+- `Microsoft.ApplicationInsights.AspNetCore` 2.23.0
+- `Microsoft.AspNetCore.Authentication.JwtBearer` 8.0.0
+- `Microsoft.AspNetCore.OpenApi` 8.0.0
+- `Microsoft.EntityFrameworkCore.Design` 8.0.0
+- `Microsoft.EntityFrameworkCore.Sqlite` 8.0.0
+- `Microsoft.EntityFrameworkCore.SqlServer` 8.0.0
+- `Microsoft.EntityFrameworkCore.Tools` 8.0.0
+- `Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore` 8.0.0
+- `Microsoft.Identity.Web` 4.1.0
+- `Microsoft.IdentityModel.Protocols.OpenIdConnect` 8.15.0
+- `Npgsql.EntityFrameworkCore.PostgreSQL` 8.0.0
+- `QuestPDF` 2024.7.0
+- `Serilog.AspNetCore` 8.0.2
+- `Serilog.Enrichers.Environment` 2.2.0
+- `Serilog.Sinks.ApplicationInsights` 4.1.0
+- `Serilog.Sinks.Console` 5.0.1
+- `Serilog.Sinks.File` 5.0.0
+- `Swashbuckle.AspNetCore` 6.5.0
+
+### Frontend (portal/frontend)
+
+- `react` 18.3.1
+- `react-dom` 18.3.1
+- `react-router-dom` 6.28.0
+- `@azure/msal-browser` 4.26.2
+- `@azure/msal-react` 3.0.22
+- `@emotion/react` 11.13.5
+- `@emotion/styled` 11.13.5
+- `@mui/icons-material` 7.3.5
+- `@mui/material` 7.3.5
+- `zustand` 4.5.6
+- `axios` 1.7.7
+- `file-saver` 2.0.5
+- `jspdf` 3.0.4
+
+#### Frontend dev tools
+
+- `vite` 5.4.8
+- `typescript` 5.6.3
+- `vitest` 3.2.4
+- `@vitejs/plugin-react` 4.2.1
+- `eslint` 9.13.0 with `@typescript-eslint` 8.10.0 / 8.47.0 plugins
+- `@testing-library/react` 16.3.0 / `@testing-library/jest-dom` 6.9.1
+
 ## Prerequisites
 
-- .NET 7.0 SDK or higher
+- .NET 8.0 SDK or higher
+- Node.js 20+ (for building the portal frontend)
 - SQL Server (LocalDB or full instance)
 
 ## Getting Started

@@ -11,6 +11,7 @@ Structured, enriched logging with PII masking and correlation IDs. Works with Ex
 - **.NET**: `PrimusSaaS.Logging` (ILogger provider + middleware)
 - **Node.js**: `@primus-saas/logging` (Express middleware)
 
+Version source of truth: [Modules Version Matrix](/docs/modules/version-matrix).
 ## Highlights
 
 - Context enrichment: request/user/tenant scopes, correlation IDs, timers.

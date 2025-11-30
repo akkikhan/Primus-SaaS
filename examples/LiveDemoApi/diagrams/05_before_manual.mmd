@@ -1,0 +1,31 @@
+graph TD
+    Start([Need Authentication]) --> Research["📚 Research JWT Libraries<br/>⏱️ 4-8 hours"]
+    
+    Research --> Install["📦 Install Microsoft.AspNetCore<br/>.Authentication.JwtBearer"]
+    
+    Install --> Auth0Config["⚙️ Configure Auth0 Manually<br/>TokenValidationParameters<br/>JwtBearerEvents<br/>Custom error handling<br/>⏱️ 8-12 hours"]
+    
+    Auth0Config --> AzureConfig["⚙️ Configure Azure AD Manually<br/>Different issuer format<br/>Different claim names<br/>More custom logic<br/>⏱️ 8-12 hours"]
+    
+    AzureConfig --> Policies["🔐 Create Authorization Policies<br/>RequireAuth0<br/>RequireAzureAD<br/>Custom claim requirements<br/>⏱️ 4-6 hours"]
+    
+    Policies --> Diagnostics["🔍 Build Custom Diagnostics<br/>Extract configuration<br/>Display issuer info<br/>Show loaded schemes<br/>⏱️ 6-8 hours"]
+    
+    Diagnostics --> Testing["✅ Extensive Testing<br/>Test each provider<br/>Test edge cases<br/>Security review<br/>⏱️ 16-24 hours"]
+    
+    Testing --> Bugs["🐛 Fix Issues<br/>Issuer mismatches<br/>Audience problems<br/>Claim mapping<br/>⏱️ 8-16 hours"]
+    
+    Bugs --> Docs["📄 Write Documentation<br/>Configuration guide<br/>Troubleshooting<br/>Examples<br/>⏱️ 8-12 hours"]
+    
+    Docs --> Done([😓 Done After 2-3 Weeks<br/>500+ lines of code<br/>High maintenance burden])
+    
+    style Start fill:#f44336,stroke:#c62828,stroke-width:2px,color:#fff
+    style Done fill:#f44336,stroke:#c62828,stroke-width:3px,color:#fff
+    style Research fill:#FFEBEE,stroke:#f44336,stroke-width:2px
+    style Auth0Config fill:#FFCDD2,stroke:#f44336,stroke-width:2px
+    style AzureConfig fill:#FFCDD2,stroke:#f44336,stroke-width:2px
+    style Policies fill:#FFCDD2,stroke:#f44336,stroke-width:2px
+    style Diagnostics fill:#FFCDD2,stroke:#f44336,stroke-width:2px
+    style Testing fill:#FFCDD2,stroke:#f44336,stroke-width:2px
+    style Bugs fill:#EF5350,stroke:#c62828,stroke-width:2px,color:#fff
+    style Docs fill:#FFCDD2,stroke:#f44336,stroke-width:2px

@@ -1,6 +1,6 @@
 # Senior Management Live Demo Script (Revised)
 
-**Goal**: Demonstrate how quickly and securely we can integrate multiple identity providers (Azure AD and Auth0) into a new application using `PrimusSaaS.Identity.Validator`.
+**Goal**: Demonstrate how quickly and securely we can integrate **Identity, Logging, and Notifications** into a new application using Primus SaaS packages.
 
 **Time Estimate**: 5-7 Minutes
 
@@ -20,41 +20,59 @@ I'm going to build a secure API right now, live, to prove it."
 
 "I have a standard .NET 8 Web API here. It has no security. Anyone can access it.
 
-I've already installed our package: `PrimusSaaS.Identity.Validator`."
+I've already installed our packages: `PrimusSaaS.Logging`, `PrimusSaaS.Identity.Validator`, and `PrimusSaaS.Notifications`.
+But right now, they are all disabled. The app is insecure and has no logging."
 
 ---
 
 ## 3. The Integration (2 Minutes)
 *Open `Program.cs` and highlight the 4 key steps.*
 
-"To secure this app, I only need to add 4 things:"
+"To secure this app and add enterprise features, I only need to uncomment a few lines of code.
 
-**Step 1: Registration**
-"First, I register the Primus Identity service. This one line reads all our configuration."
+### Step 1: Logging (1 Minute)
+"First, let's turn on the lights. I'll enable Primus Logging."
+*Uncomment `LIVE DEMO STEP 1` in `Program.cs` (Service Registration & Middleware).*
+
 ```csharp
-builder.Services.AddPrimusIdentity(options =>
-{
-    builder.Configuration.GetSection("PrimusIdentity").Bind(options);
-});
+// 1. Register Service
+builder.Logging.AddPrimus(options => ... );
+
+// 2. Add Middleware
+app.UsePrimusLogging();
 ```
 
-**Step 2: Middleware**
-"Next, I add the security gates. Authentication checks who you are; Authorization checks what you can do."
+### Step 2: Identity (2 Minutes)
+"Now, let's secure the door. I'll enable Primus Identity."
+*Uncomment `LIVE DEMO STEP 2` in `Program.cs`.*
+
+**Registration:**
+```csharp
+builder.Services.AddPrimusIdentity(options => ... );
+```
+
+**Middleware:**
 ```csharp
 app.UseAuthentication();
 app.UseAuthorization();
 ```
 
-**Step 3: Configuration**
-*Switch to `appsettings.json`.*
-"This is where the magic happens. I don't write code for Azure or Auth0. I just define them here."
-*(Show the JSON structure)*
-"I can add as many providers as I want—Okta, Cognito, Google—just by adding to this list.
-*Note: I have pre-filled this with our demo tenant IDs so we don't have to type them out live.*"
+**Secure Endpoint:**
+*Uncomment `.RequireAuthorization()` on `/weatherforecast`.*
 
-**Step 4: Securing an Endpoint**
-*Back to `Program.cs`.*
-"Finally, I lock the door. I add `.RequireAuthorization()` to my weather forecast."
+### Step 3: Notifications (2 Minutes)
+"Finally, let's talk to our users. I'll enable Primus Notifications."
+*Uncomment `LIVE DEMO STEP 3` in `Program.cs`.*
+
+**Registration:**
+```csharp
+builder.Services.AddPrimusNotifications(notifications => ... );
+```
+
+**Endpoints:**
+*Uncomment the `/notifications/*` endpoints.*"
+
+
 
 ---
 

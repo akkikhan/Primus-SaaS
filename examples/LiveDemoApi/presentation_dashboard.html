@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Primus SaaS - Interactive Demo Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2196F3;
+            --secondary: #4CAF50;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --accent: #FF9800;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light);
+            color: var(--dark);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            background: #e2e8f0;
+            color: #64748b;
+        }
+
+        button.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        button:hover:not(.active) {
+            background: #cbd5e1;
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .slide-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            width: 90%;
+            height: 85vh;
+            padding: 2rem;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .slide-container.active {
+            display: flex;
+        }
+
+        .slide-header {
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .slide-title {
+            font-size: 2rem;
+            margin: 0;
+            color: var(--dark);
+        }
+
+        .slide-subtitle {
+            color: #64748b;
+            margin-top: 0.5rem;
+        }
+
+        .diagram-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+            background: #fafafa;
+            border-radius: 8px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .metric-card {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+            Primus SaaS
+        </div>
+        <div class="controls">
+            <button onclick="showSlide(0)" class="active" id="btn-0">1. Overview</button>
+            <button onclick="showSlide(1)" id="btn-1">2. The Problem</button>
+            <button onclick="showSlide(2)" id="btn-2">3. The Solution</button>
+            <button onclick="showSlide(3)" id="btn-3">4. Integration</button>
+            <button onclick="showSlide(4)" id="btn-4">5. ROI Impact</button>
+        </div>
+    </header>
+
+    <main>
+        <!-- Slide 1: Overview -->
+        <div class="slide-container active" id="slide-0">
+            <div class="slide-header">
+                <h1 class="slide-title">Primus SaaS Platform</h1>
+                <p class="slide-subtitle">Enterprise-grade modules for modern .NET applications</p>
+            </div>
+            <div class="diagram-wrapper">
+                <div class="mermaid">
+                    graph TB
+                    subgraph Platform["🚀 Primus SaaS Platform"]
+                    direction LR
+                    I["🛡️ Identity Validator<br />20 min integration"]
+                    L["📊 Logging Module<br />10 min integration"]
+                    N["🔔 Notifications<br />20 min integration"]
+                    end
+
+                    I --> Result
+                    L --> Result
+                    N --> Result
+
+                    Result["✅ Production Ready<br />in 60 Minutes"]
+
+                    style Platform fill:#f8fafc,stroke:#e2e8f0
+                    style I fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+                    style L fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px
+                    style N fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+                    style Result fill:#E8F5E9,stroke:#4CAF50,stroke-width:3px
+                </div>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value">3</div>
+                    <div class="metric-label">Core Modules</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">60m</div>
+                    <div class="metric-label">Total Integration Time</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">97%</div>
+                    <div class="metric-label">Cost Reduction</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2: The Problem -->
+        <div class="slide-container" id="slide-1">
+            <div class="slide-header">
+                <h1 class="slide-title">The Manual Approach</h1>
+                <p class="slide-subtitle">Why traditional development is slow and expensive</p>
+            </div>
+            <div class="diagram-wrapper">
+                <div class="mermaid">
+                    graph TD
+                    Start([Start Project]) --> Research["📚 Research & Planning<br />2 Days"]
+                    Research --> Auth["🔐 Build Auth System<br />2 Weeks"]
+                    Auth --> Logs["📝 Build Logging<br />1 Week"]
+                    Logs --> Notif["📧 Build Notifications<br />2 Weeks"]
+                    Notif --> Testing["🐛 Testing & Fixes<br />1 Week"]
+                    Testing --> Done([😓 Launch<br />6 Weeks Later])
+
+                    style Start fill:#f44336,color:white
+                    style Done fill:#f44336,color:white
+                    style Research fill:#ffebee
+                    style Auth fill:#ffcdd2
+                    style Logs fill:#ffcdd2
+                    style Notif fill:#ffcdd2
+                    style Testing fill:#ffcdd2
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: The Solution -->
+        <div class="slide-container" id="slide-2">
+            <div class="slide-header">
+                <h1 class="slide-title">The Primus Approach</h1>
+                <p class="slide-subtitle">Streamlined, secure, and production-ready</p>
+            </div>
+            <div class="diagram-wrapper">
+                <div class="mermaid">
+                    graph TD
+                    Start([Start Project]) --> Install["📦 Install Packages<br />5 Minutes"]
+                    Install --> Config["⚙️ Configure<br />20 Minutes"]
+                    Config --> Code["💻 Add Middleware<br />10 Minutes"]
+                    Code --> Test["✅ Verify<br />15 Minutes"]
+                    Test --> Done([🚀 Launch<br />1 Hour Later])
+
+                    style Start fill:#4CAF50,color:white
+                    style Done fill:#4CAF50,color:white
+                    style Install fill:#E8F5E9
+                    style Config fill:#C8E6C9
+                    style Code fill:#A5D6A7
+                    style Test fill:#81C784
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Integration Flow -->
+        <div class="slide-container" id="slide-3">
+            <div class="slide-header">
+                <h1 class="slide-title">Integration Journey</h1>
+                <p class="slide-subtitle">A seamless developer experience</p>
+            </div>
+            <div class="diagram-wrapper">
+                <div class="mermaid">
+                    sequenceDiagram
+                    participant Dev as 👨‍💻 Developer
+                    participant NuGet as 📦 NuGet
+                    participant App as 🚀 App
+                    participant Primus as 🛡️ Primus
+
+                    Dev->>NuGet: Install-Package PrimusSaaS.*
+                    NuGet-->>Dev: Packages Installed
+
+                    Dev->>App: Update appsettings.json
+                    Note right of Dev: Declarative Config
+
+                    Dev->>App: Add to Program.cs
+                    Note right of Dev: 3 Lines of Code
+
+                    App->>Primus: Initialize Services
+                    Primus-->>App: Ready (Auth, Logs, Notifs)
+
+                    Dev->>App: Run & Test
+                    App-->>Dev: ✅ All Systems Go
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: ROI -->
+        <div class="slide-container" id="slide-4">
+            <div class="slide-header">
+                <h1 class="slide-title">Business Impact</h1>
+                <p class="slide-subtitle">Massive savings per project</p>
+            </div>
+            <div class="diagram-wrapper">
+                <div class="mermaid">
+                    graph LR
+                    subgraph Manual["❌ Manual ($35,000)"]
+                    M1["Dev Time: $18k"]
+                    M2["Audit: $10k"]
+                    M3["QA: $5k"]
+                    M4["Docs: $2k"]
+                    end
+
+                    subgraph Primus["✅ Primus ($450)"]
+                    P1["Dev Time: $450"]
+                    P2["Audit: Included"]
+                    P3["QA: Minimal"]
+                    P4["Docs: Included"]
+                    end
+
+                    Manual -.-> Savings["💎 Savings: $34,550"]
+                    Primus -.-> Savings
+
+                    style Manual fill:#ffebee,stroke:#f44336
+                    style Primus fill:#e8f5e9,stroke:#4caf50
+                    style Savings fill:#fff9c4,stroke:#fbc02d,stroke-width:4px
+                </div>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value">$34.5k</div>
+                    <div class="metric-label">Savings Per Project</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">10x</div>
+                    <div class="metric-label">Faster Delivery</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">$345k</div>
+                    <div class="metric-label">Annual Savings (10 projs)</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                fontFamily: 'Inter',
+                fontSize: '16px'
+            }
+        });
+
+        function showSlide(index) {
+            // Hide all slides
+            document.querySelectorAll('.slide-container').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            // Show selected slide
+            const selectedSlide = document.getElementById(`slide-${index}`);
+            selectedSlide.classList.add('active');
+
+            // Update buttons
+            document.querySelectorAll('button').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById(`btn-${index}`).classList.add('active');
+        }
+    </script>
+
+</body>
+
+</html>

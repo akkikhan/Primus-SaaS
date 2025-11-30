@@ -9,7 +9,12 @@ const sidebars = {
       items: [
         'modules/identity-validator',
         'modules/logging-module',
-        'modules/client-integration-guide'
+        'modules/notifications',
+        'modules/document-renderer',
+        'modules/feature-flags',
+        'modules/client-integration-guide',
+        'modules/live-demo-api',
+        'modules/version-matrix'
       ]
     },
     'release-notes'

@@ -108,6 +108,12 @@ Fully implemented the official UI blueprint for the Application Details page (`/
 - ✅ **Export PDF Button**: Opens print dialog for PDF generation
 - Both buttons prominently placed at bottom of documentation section
 
+### 5. Module Integration Cards (added)
+- Logging: `dotnet add package PrimusSaaS.Logging` | `npm install @primus-saas/logging`; includes `UsePrimusLogging`, Application Insights note, and link to Docusaurus Logging + Version Matrix.
+- Notifications: `dotnet add package PrimusSaaS.Notifications`; SMTP/Twilio and template path snippet, queue defaults, link to Docusaurus Notifications + Version Matrix.
+- Feature Flags: `dotnet add package PrimusSaaS.FeatureFlags`; appsettings flag example and `/feature-flags/test` endpoint note; link to Docusaurus Feature Flags + Version Matrix.
+- Document Renderer: `dotnet add package Primus.Documents`; config path and `/documents/render` + `/documents/render/link` endpoints; link to Docusaurus Document Renderer + Version Matrix.
+
 ## 🔧 Backend Implementation
 
 ### Enhanced DTOs

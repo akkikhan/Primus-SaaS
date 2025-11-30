@@ -1,0 +1,11 @@
+Task ID,Task Name,Start Date,End Date,Duration (Days),Dependency,Owner,Status
+1,Phase 1: Foundation,2025-10-01,2025-10-31,30,,Akki,Done
+1.1,Identity Module Dev,2025-10-01,2025-10-15,15,,Dev Team,Done
+1.2,Logging Module Dev,2025-10-10,2025-10-20,10,1.1,Dev Team,Done
+1.3,Notification Module Dev,2025-10-15,2025-10-31,16,1.2,Dev Team,Done
+2,Phase 2: Documentation,2025-11-01,2025-11-15,15,1,Tech Writer,In Progress
+2.1,Write API Docs,2025-11-01,2025-11-07,7,1.3,Tech Writer,Done
+2.2,Build Live Demo,2025-11-05,2025-11-15,10,1.3,Frontend Team,In Progress
+3,Phase 3: Beta Launch,2025-11-16,2025-11-30,14,2,Product Mgr,Pending
+3.1,Onboard Pilot Users,2025-11-16,2025-11-20,4,2.2,Sales,Pending
+3.2,Gather Feedback,2025-11-20,2025-11-30,10,3.1,Product Mgr,Pending

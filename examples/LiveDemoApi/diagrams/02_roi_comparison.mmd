@@ -1,0 +1,39 @@
+graph LR
+    subgraph Manual["❌ Manual Implementation"]
+        M1["Development Time<br/>⏱️ 2-3 weeks"]
+        M2["Developer Cost<br/>💵 ,000"]
+        M3["Security Audit<br/>💵 ,000"]
+        M4["Testing & QA<br/>💵 ,000"]
+        M5["Documentation<br/>💵 ,000"]
+        M6["Total Cost<br/>💰 ,000"]
+        
+        M1 --> M6
+        M2 --> M6
+        M3 --> M6
+        M4 --> M6
+        M5 --> M6
+    end
+    
+    subgraph Primus["✅ Primus SaaS"]
+        P1["Integration Time<br/>⏱️ 3 hours"]
+        P2["Developer Cost<br/>💵 "]
+        P3["Security Audit<br/>✅ Included"]
+        P4["Testing & QA<br/>✅ Minimal"]
+        P5["Documentation<br/>✅ Complete"]
+        P6["Total Cost<br/>💰 "]
+        
+        P1 --> P6
+        P2 --> P6
+        P3 --> P6
+        P4 --> P6
+        P5 --> P6
+    end
+    
+    M6 -.->|"97% Reduction"| Savings["💎 Savings Per Project<br/>,550<br/><br/>📈 10 Projects/Year<br/>,500 Annual Savings"]
+    P6 -.->|"97% Reduction"| Savings
+    
+    style Manual fill:#FFEBEE,stroke:#f44336,stroke-width:3px
+    style Primus fill:#E8F5E9,stroke:#4CAF50,stroke-width:3px
+    style Savings fill:#FFF9C4,stroke:#F57F17,stroke-width:4px
+    style M6 fill:#EF5350,color:#fff,stroke:#c62828,stroke-width:3px
+    style P6 fill:#66BB6A,color:#fff,stroke:#388E3C,stroke-width:3px

@@ -95,37 +95,44 @@ describe('Modules Store', () => {
   });
 
   it('should add version to module', async () => {
+    const existingVersion = {
+      id: 1,
+      moduleId: 1,
+      version: '1.0.0',
+      releaseNotes: 'Initial',
+      changelog: '',
+      demoCode: '',
+      isBreakingChange: false,
+      releasedAt: '2025-11-01T00:00:00.000Z',
+    };
     const versionData = {
       version: '2.0.0',
       releaseNotes: 'Major update',
       changelog: '',
       demoCode: '',
       isBreakingChange: true,
-      releasedAt: new Date().toISOString(),
+      releasedAt: '2025-11-10T00:00:00.000Z',
+    };
+    const createdVersion = { ...existingVersion, ...versionData, id: 2, moduleId: 1 };
+
+    const moduleState = {
+      modules: [
+        {
+          id: 1,
+          name: 'Module 1',
+          description: 'Desc 1',
+          latestVersion: existingVersion.version,
+          latestReleasedAt: existingVersion.releasedAt,
+          moduleVersions: [existingVersion],
+        },
+      ],
+      isLoading: false,
+      error: null,
     };
 
-    const mockModules = [
-      {
-        id: 1,
-        name: 'Module 1',
-        description: 'Desc 1',
-        moduleVersions: [
-          {
-            id: 1,
-            moduleId: 1,
-            version: '1.0.0',
-            releaseNotes: 'Initial',
-            changelog: '',
-            demoCode: '',
-            isBreakingChange: false,
-            releasedAt: new Date().toISOString(),
-          },
-        ],
-      },
-    ];
-
-    vi.mocked(apiClient.post).mockResolvedValue({ data: {} });
-    vi.mocked(apiClient.get).mockResolvedValue({ data: mockModules });
+    vi.mocked(apiClient.post).mockResolvedValue({ data: createdVersion });
+    const { setState } = useModulesStore;
+    setState(moduleState);
 
     const { result } = renderHook(() => useModulesStore());
 
@@ -134,6 +141,9 @@ describe('Modules Store', () => {
     });
 
     expect(apiClient.post).toHaveBeenCalledWith('/modules/1/versions', versionData);
+    expect(result.current.modules[0].latestVersion).toBe('2.0.0');
+    expect(result.current.modules[0].moduleVersions).toHaveLength(2);
+    expect(result.current.modules[0].moduleVersions[0].version).toBe('2.0.0');
   });
 
   it('should handle fetch errors gracefully', async () => {

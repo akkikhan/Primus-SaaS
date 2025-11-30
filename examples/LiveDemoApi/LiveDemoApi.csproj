@@ -18,4 +18,9 @@
     <PackageReference Include="PrimusSaaS.Notifications" Version="1.4.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\sdk\dotnet\PrimusSaaS.FeatureFlags\PrimusSaaS.FeatureFlags.csproj" />
+    <ProjectReference Include="..\..\sdk\dotnet\Primus.Documents\Primus.Documents.csproj" />
+  </ItemGroup>
+
 </Project>

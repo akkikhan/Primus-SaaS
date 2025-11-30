@@ -1,5 +1,7 @@
 # @primus-saas/logging
 
+**Version:** 1.2.1
+
 Enterprise-ready structured logging with PII masking and context enrichment.
 
 > Full client integration guide (Node + .NET + Identity + Logging): see `docs-site/docs/modules/client-integration-guide.md`.

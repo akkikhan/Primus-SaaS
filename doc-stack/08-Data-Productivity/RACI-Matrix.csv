@@ -1,0 +1,10 @@
+Task,Product Manager,Lead Developer,QA Engineer,DevOps,Stakeholders
+Define Requirements,A,C,I,I,C
+Architecture Design,C,A,I,C,I
+Code Implementation,I,A,C,I,I
+Write Tests,I,R,A,I,I
+Deploy to Staging,I,C,I,A,I
+User Acceptance Testing (UAT),A,I,R,I,C
+Deploy to Production,C,I,I,A,I
+Write Documentation,C,R,C,I,I
+Marketing Launch,A,I,I,I,C

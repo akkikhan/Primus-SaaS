@@ -1,0 +1,35 @@
+graph TD
+    Start([🚀 New .NET Project]) --> Install
+    
+    Install["📦 Step 1: Install Packages<br/>dotnet add package PrimusSaaS.Identity.Validator<br/>dotnet add package PrimusSaaS.Logging<br/>dotnet add package PrimusSaaS.Notifications<br/>⏱️ 5 minutes"]
+    
+    Install --> Config["⚙️ Step 2: Configure appsettings.json<br/>Add PrimusIdentity section<br/>Add PrimusLogging section<br/>Add Notifications section<br/>⏱️ 20 minutes"]
+    
+    Config --> Parallel{Parallel Setup}
+    
+    Parallel --> Identity["🛡️ Identity Setup<br/>AddPrimusIdentity in Program.cs<br/>⏱️ 3 minutes"]
+    Parallel --> Logging["📊 Logging Setup<br/>AddPrimus logging<br/>⏱️ 3 minutes"]
+    Parallel --> Notifications["🔔 Notifications Setup<br/>AddPrimusNotifications<br/>⏱️ 5 minutes"]
+    
+    Identity --> Templates
+    Logging --> Templates
+    Notifications --> Templates
+    
+    Templates["📄 Step 4: Create Templates<br/>Welcome.html<br/>Welcome.txt<br/>⏱️ 5 minutes"]
+    
+    Templates --> Middleware["🔧 Step 5: Add Middleware<br/>UseAuthentication<br/>UseAuthorization<br/>⏱️ 2 minutes"]
+    
+    Middleware --> Test["✅ Step 6: Test Components<br/>Health checks<br/>Auth flow<br/>Send notifications<br/>⏱️ 15 minutes"]
+    
+    Test --> Success([🎉 Production Ready!<br/>Total Time: ~60 minutes])
+    
+    style Start fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
+    style Success fill:#2196F3,stroke:#1565C0,stroke-width:3px,color:#fff
+    style Install fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+    style Config fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px
+    style Identity fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+    style Logging fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px
+    style Notifications fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+    style Templates fill:#FFF9C4,stroke:#F57F17,stroke-width:2px
+    style Middleware fill:#E0F2F1,stroke:#00897B,stroke-width:2px
+    style Test fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px

@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    
+    <!-- NuGet Package Metadata -->
+    <PackageId>PrimusSaaS.Documents</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Primus SaaS</Authors>
+    <Company>Primus SaaS</Company>
+    <Product>PrimusSaaS Document Renderer</Product>
+    <Description>Text-to-PDF document rendering for .NET applications. Supports plain text, markdown, and HTML input formats. Features multi-tenant safety, configurable layout, self-test capabilities, and ASP.NET Core DI integration.</Description>
+    <PackageTags>pdf;document;renderer;text-to-pdf;markdown;html;multi-tenant;aspnetcore;dotnet;primus-saas</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/primus-saas/documents</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/primus-saas/documents</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>v1.0.0:
+- Initial release with text-to-PDF rendering.
+- Supports PlainText, Markdown, and HTML content types.
+- Built-in self-test subsystem with basic/validation/complexity/full modes.
+- Multi-tenant safe with tenant-scoped operations.
+- ASP.NET Core DI integration via AddPrimusDocumentRenderer().</PackageReleaseNotes>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageOutputPath>$(MSBuildProjectDirectory)\..\..\..\nupkg</PackageOutputPath>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="7.0.0" />
+    <PackageReference Include="QuestPDF" Version="2024.3.0" />
+    <PackageReference Include="Markdig" Version="0.34.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Primus.Documents.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

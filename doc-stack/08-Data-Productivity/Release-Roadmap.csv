@@ -1,0 +1,7 @@
+Version,Release Date,Theme,Key Features,Status
+v0.1.0,2025-10-15,Alpha,Identity Validator (Basic),Released
+v0.2.0,2025-10-31,Alpha 2,Logging + Notifications,Released
+v0.9.0,2025-11-15,Beta,Live UI Demo + Docs Site,Planned
+v1.0.0,2025-12-01,GA,Public Launch + SLA Support,Planned
+v1.1.0,2026-01-15,Enhancement,Multi-Tenancy Module,Backlog
+v1.2.0,2026-02-15,Enhancement,Billing Module (Stripe),Backlog

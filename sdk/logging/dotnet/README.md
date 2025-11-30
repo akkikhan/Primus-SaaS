@@ -1,5 +1,7 @@
 # PrimusSaaS.Logging - Enterprise Logging for .NET
 
+**Package version:** 1.2.4
+
 Enterprise-grade structured logging library for .NET applications with automatic context enrichment, PII masking, and multiple output targets.
 
 > Full client integration guide (Node + .NET + Identity + Logging): see `docs-site/docs/modules/client-integration-guide.md`.

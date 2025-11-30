@@ -68,8 +68,14 @@ export const ApplicationDetailsPage = () => {
   };
 
   const getModuleDocLink = (moduleName: string) => {
-    const normalized = moduleName.toLowerCase().includes('log') ? '#add-logging' : '#5-integration-steps';
-    return `${docsIntegrationUrl}${normalized.startsWith('#') ? normalized : `#${normalized}`}`;
+    const lower = moduleName.toLowerCase();
+    if (lower.includes('log')) {
+      return `${docsIntegrationUrl}#add-logging`;
+    }
+    if (lower.includes('notif')) {
+      return `${docsBaseUrl}/docs/modules/notifications`;
+    }
+    return `${docsIntegrationUrl}#5-integration-steps`;
   };
 
   if (isLoading || !currentApplication) {
@@ -131,7 +137,16 @@ export const ApplicationDetailsPage = () => {
     const envSnippet = moduleName.toLowerCase().includes('log')
       ? `PRIMUS_APP_ID=PSP-CLI-XXXXXX
 NODE_ENV=development`
-      : `AZURE_TENANT_ID=<TENANT_ID>
+      : moduleName.toLowerCase().includes('notif')
+        ? `NOTIFICATIONS__SMTP__HOST=<SMTP_HOST>
+NOTIFICATIONS__SMTP__USERNAME=<SMTP_USERNAME>
+NOTIFICATIONS__SMTP__PASSWORD=<SMTP_PASSWORD>
+NOTIFICATIONS__SMTP__FROMADDRESS=no-reply@example.com
+NOTIFICATIONS__SMTP__FROMNAME=Primus Notifications
+NOTIFICATIONS__TWILIO__ACCOUNTSID=<TWILIO_SID>
+NOTIFICATIONS__TWILIO__AUTHTOKEN=<TWILIO_TOKEN>
+NOTIFICATIONS__TWILIO__FROMNUMBER=<TWILIO_FROM>`
+        : `AZURE_TENANT_ID=<TENANT_ID>
 AZURE_API_AUDIENCE=${currentApplication.primusClientId}
 LOCAL_ISSUER=http://localhost:4000
 LOCAL_AUDIENCE=${currentApplication.primusClientId}
@@ -230,6 +245,15 @@ ${getCodeSnippet(moduleName)}
           return '';
       }
     }
+
+    if (module.includes('notif')) {
+      switch (stack) {
+        case 'DotNet':
+          return 'dotnet add package PrimusSaaS.Notifications';
+        default:
+          return '';
+      }
+    }
     return '';
   };
 
@@ -294,6 +318,40 @@ NODE_ENV=development`;
         default:
           return '';
       }
+    } else if (module.toLowerCase().includes('notif')) {
+      switch (stack) {
+        case 'DotNet':
+          return `{
+  "Notifications": {
+    "Templates": {
+      "Path": "NotificationTemplates",
+      "Watch": true
+    },
+    "Queue": {
+      "Provider": "InMemory",
+      "BoundedCapacity": 500,
+      "MaxParallelHandlers": 2,
+      "BaseRetryDelayMs": 250
+    },
+    "Smtp": {
+      "Host": "<SMTP_HOST>",
+      "Port": 587,
+      "Username": "<SMTP_USERNAME>",
+      "Password": "<SMTP_PASSWORD>",
+      "EnableSsl": true,
+      "FromAddress": "no-reply@example.com",
+      "FromName": "Primus Notifications"
+    },
+    "Twilio": {
+      "AccountSid": "<TWILIO_SID>",
+      "AuthToken": "<TWILIO_TOKEN>",
+      "FromNumber": "<TWILIO_FROM>"
+    }
+  }
+}`;
+        default:
+          return '';
+      }
     }
     return '';
   };
@@ -303,7 +361,9 @@ NODE_ENV=development`;
     const module = moduleName || 'Identity Validator';
     const stack = currentApplication.stack;
 
-    if (module.toLowerCase() === 'identity validator') {
+    const lowerModule = module.toLowerCase();
+
+    if (lowerModule === 'identity validator') {
       switch (stack) {
         case 'DotNet':
           return `// Program.cs
@@ -448,7 +508,7 @@ if (result.isValid) {
       default:
         return '';
     }
-  } else if (module.toLowerCase() === 'logging' || module.toLowerCase() === 'logging sdk') {
+  } else if (lowerModule === 'logging' || lowerModule === 'logging sdk' || lowerModule.includes('log')) {
     switch (stack) {
       case 'DotNet':
         return `// Program.cs
@@ -518,6 +578,66 @@ export const logger = createLogger({
 export function logOperation(operation: string, data: any) {
   logger.info(\`Operation: \${operation}\`, data);
 }`;
+      default:
+        return '';
+    }
+  } else if (lowerModule.includes('notif')) {
+    switch (stack) {
+      case 'DotNet':
+        return `// Program.cs
+using PrimusSaaS.Notifications;
+using PrimusSaaS.Notifications.Configuration;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddPrimusNotifications(notifications =>
+{
+    var templatesPath = Path.Combine(builder.Environment.ContentRootPath, "NotificationTemplates");
+    notifications.UseFileTemplates(templatesPath, validateOnStartup: true, watchForChanges: builder.Environment.IsDevelopment());
+    notifications.UseLogger();
+    notifications.UseInMemoryQueue(options =>
+    {
+        options.BoundedCapacity = 500;
+        options.MaxParallelHandlers = 2;
+        options.BaseRetryDelayMs = 250;
+    });
+    notifications.UseSmtp(opts =>
+    {
+        opts.Host = builder.Configuration["Notifications:Smtp:Host"] ?? "";
+        opts.Port = builder.Configuration.GetValue("Notifications:Smtp:Port", 587);
+        opts.Username = builder.Configuration["Notifications:Smtp:Username"] ?? "";
+        opts.Password = builder.Configuration["Notifications:Smtp:Password"] ?? "";
+        opts.EnableSsl = builder.Configuration.GetValue("Notifications:Smtp:EnableSsl", true);
+        opts.FromAddress = builder.Configuration["Notifications:Smtp:FromAddress"] ?? "no-reply@example.com";
+        opts.FromName = builder.Configuration["Notifications:Smtp:FromName"] ?? "Primus Notifications";
+    });
+    notifications.UseTwilio(builder.Configuration, "Notifications:Twilio", validateOnStartup: false);
+    notifications.ConfigureDispatch(opts =>
+    {
+        opts.ThrowOnFailure = true;
+        opts.FallbackToLogger = false;
+        opts.QueueOnFailure = false;
+    });
+});
+
+var app = builder.Build();
+app.MapPost("/notifications/welcome", async (SendWelcomeRequest request, INotificationService notifications) =>
+{
+    var notification = new BasicNotification(
+        type: "Welcome",
+        data: new { request.Name },
+        recipient: new Recipient { Email = request.Email, Name = request.Name },
+        channels: new[] { "Email", "Logger" });
+
+    var result = await notifications.SendAsync(notification);
+    return result.Success
+        ? Results.Ok(new { message = "Notification dispatched", channel = result.ChannelUsed, queued = result.EnqueuedForRetry })
+        : Results.Problem(result.FailureReason ?? "Failed to dispatch notification.");
+});
+
+app.Run();
+
+record SendWelcomeRequest(string Email, string Name);`;
       default:
         return '';
     }

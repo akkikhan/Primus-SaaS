@@ -1,6 +1,6 @@
 # Primus SaaS Platform
 
-**Version**: Identity (Node) 1.3.2 · Identity (.NET) 1.3.0 · Logging (Node/.NET) 1.2.1  
+**Version**: Identity (Node) 1.3.2 · Identity (.NET) 1.3.0 · Logging (Node) 1.2.4 / (.NET) 1.2.4  
 **Type**: Developer Platform for reusable backend modules (Identity + Logging)
 
 ---
@@ -58,8 +58,8 @@ Internal web application for:
   - npm: `@primus-saas/identity-validator@1.3.2`  
   - NuGet: `PrimusSaaS.Identity.Validator` 1.3.0
 - **Logging Module** — Structured logging with enrichment, correlation IDs, timers, file/AI targets, PII masking.  
-  - npm: `@primus-saas/logging@1.2.1`  
-  - NuGet: `PrimusSaaS.Logging` 1.2.1
+  - npm: `@primus-saas/logging@1.2.4`  
+  - NuGet: `PrimusSaaS.Logging` 1.2.4
 
 🚀 **Quick install**
 ```bash
@@ -69,7 +69,7 @@ dotnet add package PrimusSaaS.Identity.Validator --version 1.3.0
 
 # Logging
 npm install @primus-saas/logging
-dotnet add package PrimusSaaS.Logging --version 1.2.1
+dotnet add package PrimusSaaS.Logging --version 1.2.4
 ```
 
 For detailed integration steps, see the unified [Client Integration Guide](docs-site/docs/modules/client-integration-guide.md) and the example apps under `examples/`.
@@ -100,7 +100,7 @@ For detailed integration steps, see the unified [Client Integration Guide](docs-
 
    # Logging
    npm install @primus-saas/logging
-   dotnet add package PrimusSaaS.Logging --version 1.2.1
+   dotnet add package PrimusSaaS.Logging --version 1.2.4
    ```
 
 4. Configure authentication using provided Portal URL, ClientId, and JwtSecret

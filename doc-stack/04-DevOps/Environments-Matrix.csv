@@ -1,0 +1,6 @@
+Environment,Type,Purpose,Data Sensitivity,Deployment Branch,Config Source
+Local,Dev,Developer workstation testing,Mock Data Only,feature/*,.env + appsettings.Development.json
+Development,Shared,Integration testing & PR validation,Mock Data Only,develop,CI Variables / K8s ConfigMap
+Staging,Pre-Prod,UAT & Load Testing,Sanitized Prod Data,release/*,Azure Key Vault (Staging)
+Production,Live,Real user traffic,Real PII (Encrypted),main,Azure Key Vault (Prod)
+Disaster Recovery,Backup,Failover site,Real PII (Encrypted),main,Azure Key Vault (DR)

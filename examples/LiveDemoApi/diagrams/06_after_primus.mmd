@@ -1,0 +1,17 @@
+graph TD
+    Start([Need Authentication]) --> Install["📦 Install Package<br/>dotnet add package<br/>PrimusSaaS.Identity.Validator<br/>⏱️ 2 minutes"]
+    
+    Install --> Config["⚙️ Configure appsettings.json<br/>Add PrimusIdentity section<br/>List issuers declaratively<br/>⏱️ 10 minutes"]
+    
+    Config --> Code["💻 Add to Program.cs<br/>builder.Services.AddPrimusIdentity()<br/>app.MapPrimusIdentityDiagnostics()<br/>⏱️ 3 minutes"]
+    
+    Code --> Test["✅ Test & Verify<br/>Check diagnostics endpoint<br/>Get token and test<br/>⏱️ 5 minutes"]
+    
+    Test --> Done([🎉 Done in 20 Minutes!<br/>15 lines of code<br/>Zero maintenance<br/>Enterprise-grade security])
+    
+    style Start fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff
+    style Done fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
+    style Install fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+    style Config fill:#C8E6C9,stroke:#4CAF50,stroke-width:2px
+    style Code fill:#A5D6A7,stroke:#4CAF50,stroke-width:2px
+    style Test fill:#81C784,stroke:#4CAF50,stroke-width:2px

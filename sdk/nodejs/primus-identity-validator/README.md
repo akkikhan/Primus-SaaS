@@ -1,6 +1,6 @@
 # Primus SaaS Identity Validator - Node.js SDK
 
-**Version:** 1.3.2
+**Version:** 1.3.3
 
 Library-only validator for JWT/OIDC tokens from your configured issuers (Azure AD, local, or any JWT provider). No Primus-hosted login or Primus-issued tokens.
 
@@ -46,7 +46,7 @@ const primusAuth = primusIdentityMiddleware({
       name: 'LocalAuth',
       type: 'jwt',
       issuer: 'https://auth.yourcompany.com',
-      secret: process.env.LOCAL_JWT_SECRET,
+      secret: process.env.LOCAL_SECRET,
       audiences: ['api://your-app-id']
     }
   ]
@@ -321,7 +321,7 @@ const token = signLocalToken({
   roles: ['Admin'],
   issuer: 'https://auth.example.com',
   audience: 'api://my-app',
-  secret: process.env.LOCAL_JWT_SECRET || '',
+  secret: process.env.LOCAL_SECRET || '',
   expiresInSeconds: 3600
 });
 ```

@@ -1,7 +1,7 @@
 ---
 id: client-integration-guide
 title: Client Integration Guide (Identity + Logging)
-description: End-to-end integration guide for Primus SaaS Identity Validator and Logging modules for Node.js and .NET.
+description: End-to-end integration guide for Primus SaaS Identity Validator and Logging modules for Node.js (Express, NestJS, TypeScript library) and .NET.
 ---
 
 Audience: first-time developers integrating Primus SaaS modules into their own APIs. Scope: latest verified package versions (Node.js and .NET), required dependencies, Azure AD setup, API surface, FAQs, and validation steps.
@@ -12,12 +12,15 @@ Audience: first-time developers integrating Primus SaaS modules into their own A
 - **No hosted runtime**: all logic runs inside your app; Primus never stores user data or tokens.
 
 ## 2) Supported Stacks & Versions
+See the shared source of truth: [Modules Version Matrix](/docs/modules/version-matrix).
+
 | Module | Runtime | Package | Version | Notes |
 |--------|---------|---------|---------|-------|
-| Identity Validator | Node.js 16+ | `@primus-saas/identity-validator` | 1.3.2 | Express/NestJS middleware + direct validator |
-| Identity Validator | .NET 6/7/8 | `PrimusSaaS.Identity.Validator` | 1.3.3 | ASP.NET Core authentication handler + helpers |
-| Logging | Node.js 16+ | `@primus-saas/logging` | 1.2.2 | Structured logger + Express middleware |
-| Logging | .NET 6/7/8 | `PrimusSaaS.Logging` | 1.2.2 | ILogger provider, middleware, file/App Insights targets |
+| Identity Validator | Node.js 16+ | `@primus-saas/identity-validator` | 1.3.3 | Express/NestJS middleware + headless validator (TS library use) |
+| Identity Validator | .NET 6/7/8 | `PrimusSaaS.Identity.Validator` | 1.3.6 | ASP.NET Core authentication handler + diagnostics |
+| Logging | Node.js 16+ | `@primus-saas/logging` | 1.2.4 | Structured logger + Express middleware (correlation IDs, timers) |
+| Logging | .NET 6/7/8 | `PrimusSaaS.Logging` | 1.2.4 | ILogger provider, middleware, console/file/App Insights targets |
+| Notifications | .NET 6/7/8 | `PrimusSaaS.Notifications` | 1.4.2 | Email/SMS/templates/queues; ASP.NET Core service + health diagnostics |
 
 ## 3) Getting Started / Setup
 ### Prerequisites
@@ -42,8 +45,8 @@ dotnet add package PrimusSaaS.Logging
 ```bash
 AZURE_TENANT_ID=<tenant-guid>
 AZURE_API_AUDIENCE=api://<azure-client-id>
-LOCAL_ISSUER=https://auth.local
-LOCAL_JWT_SECRET=<32+char-secret>
+LOCAL_ISSUER=http://localhost:4000
+LOCAL_SECRET=<32+char-secret>
 LOCAL_AUDIENCE=api://local-app
 PRIMUS_APP_ID=PSP-CLI-XXXXXX  # label for logging only
 NODE_ENV=development
@@ -81,7 +84,7 @@ Use User Secrets for local development (`dotnet user-secrets set "Azure:TenantId
 Azure registration guide: https://learn.microsoft.com/azure/active-directory/develop/quickstart-register-app
 
 ## 5) Integration Steps (keep versions in table above for npm/NuGet parity)
-### Node.js (Express/Nest)
+### Node.js (Express)
 ```typescript
 import express from 'express';
 import { primusIdentityMiddleware, requireRoles } from '@primus-saas/identity-validator';
@@ -100,8 +103,8 @@ const primusAuth = primusIdentityMiddleware({
     {
       name: 'LocalAuth',
       type: 'jwt',
-      issuer: process.env.LOCAL_ISSUER,
-      secret: process.env.LOCAL_JWT_SECRET,
+      issuer: process.env.LOCAL_ISSUER || 'http://localhost:4000',
+      secret: process.env.LOCAL_SECRET,
       audiences: [process.env.LOCAL_AUDIENCE]
     }
   ],
@@ -113,6 +116,76 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 app.get('/api/secure', primusAuth, (req, res) => res.json({ user: req.primusUser }));
 app.get('/api/admin', primusAuth, requireRoles('Admin'), (_req, res) => res.json({ ok: true }));
 app.listen(3000);
+```
+
+### Node.js (NestJS)
+```typescript
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { primusIdentityMiddleware } from '@primus-saas/identity-validator';
+
+const primusAuth = primusIdentityMiddleware({
+  issuers: [
+    {
+      name: 'AzureAD',
+      type: 'oidc',
+      issuer: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/v2.0`,
+      authority: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/v2.0`,
+      audiences: [process.env.AZURE_API_AUDIENCE]
+    },
+    {
+      name: 'LocalAuth',
+      type: 'jwt',
+      issuer: process.env.LOCAL_ISSUER || 'http://localhost:4000',
+      secret: process.env.LOCAL_SECRET || '<LOCAL_DEV_SECRET_32+>',
+      audiences: [process.env.LOCAL_AUDIENCE]
+    }
+  ],
+  jwksCacheTtl: 24,
+  clockSkew: 300
+});
+
+@Module({
+  providers: [],
+  exports: []
+})
+export class AuthModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(primusAuth).forRoutes('*');
+  }
+}
+```
+
+### TypeScript library (headless validation)
+```typescript
+import { PrimusIdentityValidator } from '@primus-saas/identity-validator';
+
+export const validator = new PrimusIdentityValidator({
+  issuers: [
+    {
+      name: 'AzureAD',
+      type: 'oidc',
+      issuer: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/v2.0`,
+      authority: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/v2.0`,
+      audiences: [process.env.AZURE_API_AUDIENCE]
+    },
+    {
+      name: 'LocalAuth',
+      type: 'jwt',
+      issuer: process.env.LOCAL_ISSUER || 'http://localhost:4000',
+      secret: process.env.LOCAL_SECRET || '<LOCAL_DEV_SECRET_32+>',
+      audiences: [process.env.LOCAL_AUDIENCE]
+    }
+  ]
+});
+
+const token = 'eyJ...';  // Without "Bearer " prefix
+const result = await validator.validateToken(token);
+
+if (result.isValid) {
+  console.log('Claims:', result.claims);
+} else {
+  console.error('Validation failed:', result.error);
+}
 ```
 
 ### .NET (ASP.NET Core)
@@ -143,7 +216,7 @@ builder.Services.AddPrimusIdentity(options =>
             Audiences = new() { builder.Configuration["Local:Audience"]! }
         }
     };
-    options.RequireHttpsMetadata = true;
+    options.RequireHttpsMetadata = builder.Environment.IsProduction();
     options.ClockSkew = TimeSpan.FromMinutes(5);
     // Dev: Allow HTTP on localhost while keeping HTTPS elsewhere
     options.AllowHttpOnLocalhost = true;
@@ -167,20 +240,23 @@ app.Run();
 **Node**
 ```typescript
 import express from 'express';
-import { createLogger, LogLevel, primusLoggingMiddleware } from '@primus-saas/logging';
+import { createLogger, primusLoggingMiddleware } from '@primus-saas/logging';
 
 const app = express();
 const logger = createLogger({
   applicationId: process.env.PRIMUS_APP_ID || 'APP-UNKNOWN',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-  minLevel: LogLevel.INFO
+  targets: [
+    { type: 'console', pretty: true },
+    { type: 'file', path: 'logs/app.log', async: true }
+  ]
 });
 
 app.use(primusLoggingMiddleware(logger));
 app.get('/api/orders', (req, res) => {
   const timer = req.logger.startTimer();
-  req.logger.info('Listing orders');
-  timer.done('Orders fetched', { count: 0 });
+  req.logger.info('Listing orders', { correlationId: req.logger.correlationId });
+  timer.done('Orders fetched', { count: 0, correlationId: req.logger.correlationId });
   res.json({ items: [] });
 });
 app.listen(3000);
@@ -214,6 +290,74 @@ app.MapGet("/health", () => Results.Ok(new { ok = true }));
 app.Run();
 ```
 
+### Add Notifications (.NET)
+```csharp
+using PrimusSaaS.Notifications;
+using PrimusSaaS.Notifications.Configuration;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddPrimusNotifications(notifications =>
+{
+    // File-based Liquid templates (see NotificationTemplates/*)
+    var templatesPath = Path.Combine(builder.Environment.ContentRootPath, "NotificationTemplates");
+    notifications.UseFileTemplates(templatesPath, validateOnStartup: true, watchForChanges: builder.Environment.IsDevelopment());
+
+    // Always log deliveries for local/dev
+    notifications.UseLogger();
+
+    // Lightweight in-memory queue (swap for Redis/ServiceBus in prod)
+    notifications.UseInMemoryQueue(options =>
+    {
+        options.BoundedCapacity = 500;
+        options.MaxParallelHandlers = 2;
+        options.BaseRetryDelayMs = 250;
+    });
+
+    // SMTP only if creds supplied
+    notifications.UseSmtp(opts =>
+    {
+        opts.Host = builder.Configuration["Notifications:Smtp:Host"] ?? "";
+        opts.Port = builder.Configuration.GetValue("Notifications:Smtp:Port", 587);
+        opts.Username = builder.Configuration["Notifications:Smtp:Username"] ?? "";
+        opts.Password = builder.Configuration["Notifications:Smtp:Password"] ?? "";
+        opts.EnableSsl = builder.Configuration.GetValue("Notifications:Smtp:EnableSsl", true);
+        opts.FromAddress = builder.Configuration["Notifications:Smtp:FromAddress"] ?? "no-reply@example.com";
+        opts.FromName = builder.Configuration["Notifications:Smtp:FromName"] ?? "Primus Notifications";
+        opts.MaxRetryCount = builder.Configuration.GetValue("Notifications:Smtp:MaxRetryCount", 2);
+    });
+
+    // Twilio SMS if configured; otherwise falls back to logger SMS
+    notifications.UseTwilio(builder.Configuration, "Notifications:Twilio", validateOnStartup: false);
+
+    notifications.ConfigureDispatch(opts =>
+    {
+        opts.ThrowOnFailure = true;
+        opts.FallbackToLogger = false;
+        opts.QueueOnFailure = false;
+    });
+});
+
+var app = builder.Build();
+app.MapPost("/notifications/welcome", async (SendWelcomeRequest request, INotificationService notifications) =>
+{
+    var notification = new BasicNotification(
+        type: "Welcome",
+        data: new { request.Name },
+        recipient: new Recipient { Email = request.Email, Name = request.Name },
+        channels: new[] { "Email", "Logger" });
+
+    var result = await notifications.SendAsync(notification);
+    return result.Success
+        ? Results.Ok(new { message = "Notification dispatched", channel = result.ChannelUsed, queued = result.EnqueuedForRetry })
+        : Results.Problem(result.FailureReason ?? "Failed to dispatch notification.");
+});
+
+app.Run();
+
+record SendWelcomeRequest(string Email, string Name);
+```
+
 ### Validate
 - Protected endpoint without token → `401 Unauthorized`.
 - Protected endpoint with valid token from configured issuer → `200 OK` and user context.
@@ -237,7 +381,7 @@ app.Run();
   - ASP.NET Core starter: `examples/dotnet-api` (appsettings template in README).
 
 ## 8) Portal Application Details / PDF
-- The Portal Application Details page mirrors this guide: install commands, env variables (with your `PrimusClientId`), config JSON/.env, and starter code per module/stack.
+- The Portal Application Details page mirrors this guide: install commands, env variables (with your `PrimusClientId`), config JSON/.env, and starter code per module/stack (Express, NestJS, TS library, .NET).
 - “Copy all” and “Download PDF” in the portal pull from this same content; anchors point to this page (`/docs/modules/client-integration-guide` with `#5-integration-steps` for Identity and `#add-logging` for Logging).
 - If you change package versions, update the portal docs base URL (`VITE_DOCS_BASE_URL`) and module metadata so the integration tab stays in sync.
 
@@ -257,8 +401,8 @@ app.Run();
 - Custom enrichers (Node/.NET) to attach tenant/user/request metadata.
 
 ## 11) Versioning
-- Aligned with: Node Identity 1.3.2, .NET Identity 1.3.0, Node Logging 1.2.1, .NET Logging 1.2.1.
-- SemVer: MAJOR breaking, MINOR features, PATCH fixes. Keep docs in sync with releases.
+- Aligned with: Node Identity 1.3.3, .NET Identity 1.3.6, Node Logging 1.2.4, .NET Logging 1.2.4, .NET Notifications 1.4.2.
+- SemVer: MAJOR breaking, MINOR features, PATCH fixes. Keep docs in sync with releases and update npm/NuGet READMEs + portal integration tab when bumping.
 
 ## 12) Validation Checklist
 - [ ] Azure AD app registered; Tenant ID, Client ID, secret, audience noted.

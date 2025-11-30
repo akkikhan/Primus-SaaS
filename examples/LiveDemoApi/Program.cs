@@ -1,76 +1,57 @@
 using PrimusSaaS.Identity.Validator;
+using PrimusSaaS.Logging.Extensions;
 using PrimusSaaS.Notifications;
 using PrimusSaaS.Notifications.Abstractions;
+using PrimusSaaS.Notifications.Configuration;
 using PrimusSaaS.Notifications.Core;
 using PrimusSaaS.Notifications.Services;
-using PrimusSaaS.Notifications.Configuration;
-using PrimusSaaS.Logging.Extensions;
-using Fluid;
+using PrimusSaaS.FeatureFlags;
+using Primus.Documents;
+using Primus.Documents.SelfTest;
+using Primus.Documents.LinkStore;
 
 var builder = WebApplication.CreateBuilder(args);
 var templatesRoot = Path.Combine(builder.Environment.ContentRootPath, "NotificationTemplates");
 
-// =========================================================================
-// Logging: structured logging with PII redaction + optional file sink
-// =========================================================================
+// =============================================================
+// 1) Logging (structured, PII redaction, optional AI/file sinks)
+// =============================================================
 builder.Logging.ClearProviders();
-builder.Logging.AddPrimus(options =>
-{
-    // Bind from configuration; safe defaults if section is missing
-    builder.Configuration.GetSection("PrimusLogging").Bind(options);
-});
+builder.Logging.AddPrimus(opts => builder.Configuration.GetSection("PrimusLogging").Bind(opts));
 
-// =========================================================================
-// Application Insights: Full request/dependency telemetry + Primus traces
-// =========================================================================
-// Primus logging sends structured events as TraceTelemetry to AI.
-// AddApplicationInsightsTelemetry adds Request/Dependency telemetry.
-// Correlation IDs from Primus logging appear in trace properties.
 var aiConnectionString = builder.Configuration["PrimusLogging:ApplicationInsights:ConnectionString"];
 if (!string.IsNullOrWhiteSpace(aiConnectionString) && aiConnectionString != "your-application-insights-connection-string")
 {
-    builder.Services.AddApplicationInsightsTelemetry(options =>
-    {
-        options.ConnectionString = aiConnectionString;
-    });
+    builder.Services.AddApplicationInsightsTelemetry(o => o.ConnectionString = aiConnectionString);
 }
 
-// Add services to the container.
+// Basic ASP.NET services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddControllers();
 
-// =========================================================================
-// DEMO STEP 1: Register Primus Identity Services
-// =========================================================================
-// This single line binds the configuration from appsettings.json
-// and sets up all necessary validation logic for multiple providers.
-builder.Services.AddPrimusIdentity(options =>
-{
-    builder.Configuration.GetSection("PrimusIdentity").Bind(options);
-});
+// =============================================================
+// 2) Identity (multi-issuer validation + diagnostics)
+// =============================================================
+builder.Services.AddPrimusIdentity(opts => builder.Configuration.GetSection("PrimusIdentity").Bind(opts));
+builder.Services.AddAuthorization();
 
-// =========================================================================
-// DEMO STEP 1B: Register Primus Notifications Services
-// =========================================================================
-// Uses file-based templates and a logger channel by default.
-// SMTP turns on only when real credentials are provided via configuration.
+// =============================================================
+// 3) Notifications (templates + logger; SMTP/Twilio if configured)
+// =============================================================
 builder.Services.AddPrimusNotifications(notifications =>
 {
-    var templatesPath = Path.Combine(builder.Environment.ContentRootPath, "NotificationTemplates");
     notifications.UseFileTemplates(
-        templatesPath,
+        templatesRoot,
         validateOnStartup: true,
         watchForChanges: builder.Environment.IsDevelopment());
 
-    // Always include a logger sink so demos run without external providers.
     notifications.UseLogger();
-
-    // Optional async queue to mimic production dispatch behavior.
-    notifications.UseInMemoryQueue(options =>
+    notifications.UseInMemoryQueue(o =>
     {
-        options.BoundedCapacity = 500;
-        options.MaxParallelHandlers = 2;
-        options.BaseRetryDelayMs = 250;
+        o.BoundedCapacity = 500;
+        o.MaxParallelHandlers = 2;
+        o.BaseRetryDelayMs = 250;
     });
 
     var smtpSection = builder.Configuration.GetSection("Notifications:Smtp");
@@ -92,95 +73,55 @@ builder.Services.AddPrimusNotifications(notifications =>
         });
     }
 
-    // SMS: use Twilio when configured, otherwise fall back to logger SMS channel.
-    var twilioSection = builder.Configuration.GetSection("Notifications:Twilio");
-    var twilioOptions = twilioSection.Get<TwilioOptions>() ?? new TwilioOptions();
+    var twilioOptions = builder.Configuration.GetSection("Notifications:Twilio").Get<TwilioOptions>() ?? new TwilioOptions();
     if (twilioOptions.IsConfigured())
     {
         notifications.UseTwilio(builder.Configuration, "Notifications:Twilio", validateOnStartup: false);
     }
     else
     {
-        notifications.UseSms(); // logging sender for local/dev if no Twilio creds
+        notifications.UseSms(); // logger SMS for local/dev
     }
 
-    notifications.ConfigureDispatch(opts =>
+    notifications.ConfigureDispatch(o =>
     {
-        // Surface failures so Twilio issues are visible; avoid silent logger fallback.
-        opts.ThrowOnFailure = true;
-        opts.FallbackToLogger = false;
-        opts.QueueOnFailure = false;
+        o.ThrowOnFailure = true;
+        o.FallbackToLogger = false;
+        o.QueueOnFailure = false;
     });
 });
 
+// =============================================================
+// 4) Feature Flags (in-memory provider; percentage/user targeting)
+// =============================================================
+builder.Services.AddPrimusFeatureFlags(opts => builder.Configuration.GetSection("PrimusFeatureFlags").Bind(opts));
 
+// =============================================================
+// 5) Document Renderer (text/markdown/html -> PDF + self-test)
+// =============================================================
+builder.Services.AddPrimusDocumentRenderer(opts => builder.Configuration.GetSection("PrimusDocuments").Bind(opts));
 
-// Standard ASP.NET Core Authorization
-builder.Services.AddAuthorization();
-
-// Enable CORS
+// Misc services
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend",
-        policy =>
-        {
-            policy.WithOrigins(
-                    "http://localhost:5173",
-                    "https://localhost:5173") // Vite dev server (http/https)
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
-        });
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(
+                  "http://localhost:5173",
+                  "https://localhost:5173",
+                  "http://localhost:5174",
+                  "https://localhost:5174")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
 });
-
-// Add HttpClient for Auth0 proxy
 builder.Services.AddHttpClient();
-
-// Enable PII for debugging
+builder.Services.AddMemoryCache();
 Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
-
-// Demo log path (for /logs/recent and UI viewer)
-var demoLogDir = Path.Combine(builder.Environment.ContentRootPath, "logs");
-Directory.CreateDirectory(demoLogDir);
-var demoLogPath = Path.Combine(demoLogDir, "livedemo-api.log");
-
-void WriteDemoLog(string message)
-{
-    try
-    {
-        File.AppendAllText(demoLogPath, $"[{DateTimeOffset.UtcNow:u}] {message}{Environment.NewLine}");
-    }
-    catch
-    {
-        // ignore for demo
-    }
-}
-
-// Helper to log JSON payloads for demo visibility (writes to ILogger + demo log file)
-void LogJson(ILogger logger, string message, object data)
-{
-    try
-    {
-        var json = System.Text.Json.JsonSerializer.Serialize(data);
-        logger.LogInformation("{Message}: {Payload}", message, json);
-        WriteDemoLog($"{message}: {json}");
-    }
-    catch
-    {
-        logger.LogInformation("{Message}: (unserializable payload)", message);
-        WriteDemoLog($"{message}: (unserializable payload)");
-    }
-}
 
 var app = builder.Build();
 
-// Warm up logging so a file is created early for the demo log viewer
-var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
-startupLogger.LogInformation("Primus LiveDemo starting at {Time} (Environment: {Env})",
-    DateTimeOffset.UtcNow,
-    app.Environment.EnvironmentName);
-WriteDemoLog($"Primus LiveDemo starting (Env: {app.Environment.EnvironmentName})");
-
-// Configure the HTTP request pipeline.
+// Swagger for demo
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -188,472 +129,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowFrontend");
-
 app.UseHttpsRedirection();
-
-// Structured request logging (with correlation IDs and PII redaction by default)
 app.UsePrimusLogging();
-
-// =========================================================================
-// DEMO STEP 2: Add Middleware
-// =========================================================================
-// Ensure these are placed between UseHttpsRedirection and MapControllers
 app.UseAuthentication();
 app.UseAuthorization();
 
-// =========================================================================
-// DEMO STEP 3: Diagnostics (Optional)
-// =========================================================================
-// This endpoint (/primus/diagnostics) allows us to verify our configuration
-// and see exactly which keys are loaded from Azure AD and Auth0.
-app.MapPrimusIdentityDiagnostics();
+app.MapPrimusIdentityDiagnostics(); // /primus/diagnostics
 
-// =========================================================================
-// DEMO HELPER: Application Insights Telemetry Summary
-// =========================================================================
-// This endpoint provides a live summary of telemetry metrics for the frontend dashboard.
-// In production, you'd query Azure Monitor directly via API or use Azure SDK.
-app.MapGet("/telemetry/summary", (IConfiguration config) =>
-{
-    var aiEnabled = !string.IsNullOrWhiteSpace(config["PrimusLogging:ApplicationInsights:ConnectionString"]) 
-        && config["PrimusLogging:ApplicationInsights:ConnectionString"] != "your-application-insights-connection-string";
-    
-    // Track basic in-memory metrics (for demo purposes)
-    // In production, use TelemetryClient.GetMetric() or query Azure Monitor API
-    var uptime = DateTime.UtcNow - System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime();
-    var process = System.Diagnostics.Process.GetCurrentProcess();
-    
-    return Results.Json(new
-    {
-        applicationInsights = new
-        {
-            enabled = aiEnabled,
-            instrumentationKey = aiEnabled ? config["PrimusLogging:ApplicationInsights:ConnectionString"]?.Split(';').FirstOrDefault()?.Replace("InstrumentationKey=", "") : null,
-            portalUrl = aiEnabled ? "https://portal.azure.com/#blade/HubsExtension/BrowseResource/resourceType/microsoft.insights%2Fcomponents" : null
-        },
-        server = new
-        {
-            name = Environment.MachineName,
-            uptime = new { 
-                hours = (int)uptime.TotalHours, 
-                minutes = uptime.Minutes, 
-                seconds = uptime.Seconds,
-                formatted = $"{(int)uptime.TotalHours}h {uptime.Minutes}m {uptime.Seconds}s"
-            },
-            startedAt = System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime().ToString("o")
-        },
-        memory = new
-        {
-            workingSetMB = process.WorkingSet64 / (1024 * 1024),
-            privateMemoryMB = process.PrivateMemorySize64 / (1024 * 1024),
-            gcTotalMemoryMB = GC.GetTotalMemory(false) / (1024 * 1024)
-        },
-        runtime = new
-        {
-            framework = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription,
-            os = System.Runtime.InteropServices.RuntimeInformation.OSDescription,
-            processId = Environment.ProcessId,
-            threadCount = process.Threads.Count
-        },
-        timestamp = DateTime.UtcNow.ToString("o")
-    });
-}).WithName("GetTelemetrySummary");
-
-// =========================================================================
-// DEMO HELPER: Log viewer (for demo only — consider securing/removing for prod)
-// =========================================================================
-app.MapGet("/logs/recent", () =>
-{
-    var logDirs = new[]
-    {
-        Path.Combine(builder.Environment.ContentRootPath, "logs"),
-        Path.Combine(AppContext.BaseDirectory, "logs")
-    };
-    foreach (var dir in logDirs)
-    {
-        Directory.CreateDirectory(dir);
-    }
-
-    // Prefer the dev log file name, fall back to any log in the directory.
-    var candidates = logDirs
-        .SelectMany(dir => new[]
-        {
-            Path.Combine(dir, "livedemo-api.dev.log"),
-            Path.Combine(dir, "livedemo-api.log")
-        }.Concat(Directory.GetFiles(dir, "*.log")))
-        .Distinct()
-        .ToList();
-
-    var logFile = candidates.FirstOrDefault(File.Exists);
-    if (logFile == null)
-    {
-        // Create a default file with a starter entry
-        var defaultFile = Path.Combine(logDirs.First(), "livedemo-api.log");
-        File.AppendAllText(defaultFile, $"[{DateTimeOffset.UtcNow:u}] Warmup log created by /logs/recent endpoint.{Environment.NewLine}");
-        logFile = defaultFile;
-    }
-
-    const int maxBytes = 32 * 1024; // tail ~32KB
-    var info = new FileInfo(logFile);
-    var start = Math.Max(0, info.Length - maxBytes);
-    using var stream = new FileStream(logFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-    stream.Seek(start, SeekOrigin.Begin);
-    using var reader = new StreamReader(stream);
-    var content = reader.ReadToEnd();
-
-    return Results.Json(new
-    {
-        file = Path.GetFileName(logFile),
-        size = info.Length,
-        tail = content
-    });
-}).WithName("GetRecentLogs");
-
-// =========================================================================
-// DEMO HELPER: Real Token Proxy
-// =========================================================================
-// 1. Auth0 Proxy (Client Credentials Flow)
-app.MapPost("/auth/auth0", async (IHttpClientFactory httpClientFactory, ILogger<Program> logger) =>
-{
-    logger.LogInformation("=== AUTH0 TOKEN REQUEST STARTED ===");
-    var client = httpClientFactory.CreateClient();
-    
-    var requestBody = new
-    {
-        client_id = "h4CjtEYT0HiXwJVr3JkOSkJnr1aq3bHc",
-        client_secret = "6Si0dfpi89xei4GGGcxblXIb2dc6r8RpfLqPAqaleN_sy3c6PmSLbrTfDAfm_sLm",
-        audience = "https://saas-api/",
-        grant_type = "client_credentials"
-    };
-    
-    logger.LogInformation("Request Body: ClientId={ClientId}, Audience={Audience}", 
-        requestBody.client_id, requestBody.audience);
-    
-    var response = await client.PostAsJsonAsync("https://dev-ft7bykiq2exe4ua4.us.auth0.com/oauth/token", requestBody);
-    
-    logger.LogInformation("Auth0 Response Status: {StatusCode}", response.StatusCode);
-    
-    var content = await response.Content.ReadAsStringAsync();
-    
-    if (response.IsSuccessStatusCode)
-    {
-        logger.LogInformation("✅ Token received successfully from Auth0");
-        logger.LogInformation("Token preview: {TokenPreview}...", content.Substring(0, Math.Min(100, content.Length)));
-    }
-    else
-    {
-        logger.LogError("❌ Auth0 token request failed: {Content}", content);
-    }
-    
-    LogJson(logger, "Auth0 token response", new { Status = response.StatusCode, ContentLength = content.Length });
-    
-    return Results.Content(content, "application/json");
-});
-
-// 2. Azure Proxy (CLI Token)
-app.MapPost("/auth/azure", async () =>
-{
-    try
-    {
-        var process = new System.Diagnostics.Process
-        {
-            StartInfo = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = "cmd.exe",
-                Arguments = "/c az account get-access-token --resource https://management.azure.com/ --query accessToken -o tsv",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            }
-        };
-        process.Start();
-        var token = await process.StandardOutput.ReadToEndAsync();
-        var error = await process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
-
-        if (process.ExitCode != 0 || string.IsNullOrWhiteSpace(token))
-            return Results.BadRequest(new { error = $"Azure CLI Error: {error}. Ensure you are logged in with 'az login'." });
-
-        return Results.Ok(new { access_token = token.Trim(), token_type = "Bearer" });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { error = ex.Message });
-    }
-});
-
-// 3. Local JWT (shared secret for demo/local development)
-app.MapPost("/auth/local", (LocalLoginRequest request, IConfiguration config, ILogger<Program> logger) =>
-{
-    var primusOptions = config.GetSection("PrimusIdentity").Get<PrimusIdentityOptions>() ?? new PrimusIdentityOptions();
-    var localIssuer = primusOptions.Issuers.FirstOrDefault(i =>
-        string.Equals(i.Name, "LocalJwt", StringComparison.OrdinalIgnoreCase));
-
-    if (localIssuer == null)
-    {
-        return Results.BadRequest(new { error = "LocalJwt issuer not configured. Add PrimusIdentity:Issuers entry named 'LocalJwt'." });
-    }
-
-    if (string.IsNullOrWhiteSpace(localIssuer.Secret))
-    {
-        return Results.BadRequest(new { error = "LocalJwt secret is missing. Set PrimusIdentity:Issuers:LocalJwt:Secret." });
-    }
-
-    var demoAuth = config.GetSection("DemoLocalAuth");
-    var expectedEmail = demoAuth["Email"] ?? "demo@primus.local";
-    var expectedPassword = demoAuth["Password"] ?? "PrimusDemo123!";
-    var displayName = demoAuth["Name"] ?? "Local Demo User";
-    var subject = demoAuth["Subject"] ?? "local-demo-user";
-
-    if (!string.Equals(request.Email, expectedEmail, StringComparison.OrdinalIgnoreCase) ||
-        request.Password != expectedPassword)
-    {
-        logger.LogWarning("Local JWT login failed for {Email}", request.Email);
-        return Results.BadRequest(new { error = "Invalid email or password for Local JWT demo user." });
-    }
-
-    var audience = localIssuer.Audiences.FirstOrDefault() ?? "api://primus-livedemo";
-    var token = TestTokenBuilder.Create()
-        .WithIssuer(localIssuer.Issuer)
-        .WithAudience(audience)
-        .WithSecret(localIssuer.Secret)
-        .WithClaim("sub", subject)
-        .WithClaim("email", request.Email)
-        .WithClaim("name", displayName)
-        .Build();
-
-    logger.LogInformation("✅ Issued Local JWT for {Email} (issuer: {Issuer}, audience: {Audience})", request.Email, localIssuer.Issuer, audience);
-    return Results.Ok(new { access_token = token, token_type = "Bearer", provider = localIssuer.Name });
-});
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", (HttpContext context, ILogger<Program> logger) =>
-{
-    logger.LogInformation("=== WEATHERFORECAST REQUEST ===");
-    logger.LogInformation("User authenticated: {IsAuthenticated}", context.User.Identity?.IsAuthenticated);
-    
-    if (context.User.Identity?.IsAuthenticated == true)
-    {
-        logger.LogInformation("User claims:");
-        foreach (var claim in context.User.Claims)
-        {
-            logger.LogInformation("  {Type}: {Value}", claim.Type, claim.Value);
-        }
-    }
-    else
-    {
-        logger.LogWarning("❌ User is NOT authenticated");
-    }
-    
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi()
-.RequireAuthorization(); // <--- DEMO STEP 4: Secure the endpoint
-
-// =========================================================================
-// DEMO: Notifications playground endpoints
-// =========================================================================
-app.MapGet("/notifications/health", async (NotificationHealthService health) =>
-{
-    var snapshot = await health.GetChannelHealthAsync();
-    return Results.Json(snapshot);
-});
-
-app.MapPost("/notifications/welcome", async (SendWelcomeRequest request, INotificationService notifications, ILogger<Program> logger) =>
-{
-    LogJson(logger, "Notifications - welcome request", request);
-    var notification = new BasicNotification(
-        type: "Welcome",
-        data: new { request.Name },
-        recipient: new Recipient { Email = request.Email, Name = request.Name },
-        channels: new[] { "Email", "Logger" });
-
-    try
-    {
-        var result = await notifications.SendAsync(notification);
-
-        if (result.Success)
-        {
-            LogJson(logger, "Notifications - welcome sent", result);
-            return Results.Ok(new
-            {
-                message = "Notification dispatched",
-                channel = result.ChannelUsed,
-                queued = result.EnqueuedForRetry
-            });
-        }
-
-        logger.LogWarning("Notification failed: {Reason}", result.FailureReason);
-        LogJson(logger, "Notifications - welcome failed", result);
-        return Results.Problem(
-            detail: result.FailureReason ?? "Failed to dispatch notification.",
-            statusCode: result.ServiceUnavailable ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status400BadRequest);
-    }
-    catch (NotificationFailedException ex)
-    {
-        logger.LogError(ex, "Notification threw");
-        LogJson(logger, "Notifications - welcome threw", new { ex.Result.FailureReason, ex.Message });
-        return Results.Problem(ex.Result.FailureReason ?? ex.Message);
-    }
-});
-
-app.MapPost("/notifications/sms", async (SendSmsRequest request, INotificationService notifications, ILogger<Program> logger) =>
-{
-    LogJson(logger, "Notifications - sms request", request);
-    try
-    {
-        var notification = new BasicNotification(
-            type: "SmsDemo", // maps to NotificationTemplates/SmsDemo/SmsBody.liquid
-            data: new { request.Message, request.PhoneNumber },
-            recipient: new Recipient { PhoneNumber = request.PhoneNumber },
-            channels: new[] { "Sms" });
-
-        var result = await notifications.SendAsync(notification);
-
-        if (result.Success)
-        {
-            LogJson(logger, "Notifications - sms sent", result);
-            return Results.Ok(new
-            {
-                message = "SMS dispatched",
-                channel = result.ChannelUsed,
-                queued = result.EnqueuedForRetry
-            });
-        }
-
-        logger.LogWarning("SMS failed: {Reason}", result.FailureReason);
-        LogJson(logger, "Notifications - sms failed", result);
-        return Results.Problem(
-            detail: result.FailureReason ?? "Failed to dispatch SMS.",
-            statusCode: result.ServiceUnavailable ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status400BadRequest);
-    }
-    catch (NotificationFailedException ex)
-    {
-        var detail = ex.Result.FailureReason ?? ex.Message;
-        var channels = ex.Result.Channels.Select(c => new { c.Channel, c.Status, c.Detail }).ToArray();
-        logger.LogError(ex, "SMS notification threw: {Detail}", detail);
-        LogJson(logger, "Notifications - sms threw", new { detail, channels });
-        return Results.Problem(detail: detail, statusCode: StatusCodes.Status502BadGateway, extensions: new Dictionary<string, object?>
-        {
-            ["channels"] = channels
-        });
-    }
-});
-
-// =========================================================================
-// DEMO HELPER: Template preview (renders without sending)
-// =========================================================================
-app.MapPost("/notifications/templates/preview", async (TemplatePreviewRequest request, ITemplateService templates, ILogger<Program> logger) =>
-{
-    var type = string.IsNullOrWhiteSpace(request.Type) ? "SmsDemo" : request.Type!;
-    var channel = string.IsNullOrWhiteSpace(request.Channel) ? "SmsBody" : request.Channel!;
-
-    var model = new
-    {
-        Message = request.Message ?? "Your code is 123456",
-        PhoneNumber = request.PhoneNumber ?? "+15551234567",
-        Name = request.Name ?? "Primus Demo User",
-        Email = request.Email ?? "demo@primus.local"
-    };
-
-    try
-    {
-        string content;
-
-        if (!IsSafeSegment(type) || !IsSafeSegment(channel))
-            return Results.BadRequest(new { error = "Invalid type/channel." });
-
-        if (!string.IsNullOrWhiteSpace(request.Content))
-        {
-            var parser = new FluidParser();
-            if (!parser.TryParse(request.Content, out var template, out var error))
-            {
-                return Results.BadRequest(new { error = $"Template parse failed: {error}" });
-            }
-
-            var options = new TemplateOptions();
-            options.MemberAccessStrategy.Register(model.GetType());
-            var context = new TemplateContext(model, options);
-            content = await template.RenderAsync(context);
-        }
-        else
-        {
-            content = await templates.RenderAsync(type, channel, model);
-        }
-
-        logger.LogInformation("Template preview rendered for {Type}/{Channel}", type, channel);
-        return Results.Ok(new { content, type, channel });
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "Template preview failed for {Type}/{Channel}", type, channel);
-        return Results.BadRequest(new { error = ex.Message, type, channel });
-    }
-}).WithName("PreviewTemplates");
-
-app.MapGet("/notifications/templates/{type}/{channel}", async (string type, string channel) =>
-{
-    if (!IsSafeSegment(type) || !IsSafeSegment(channel))
-        return Results.BadRequest(new { error = "Invalid type/channel." });
-
-    var path = GetTemplatePath(type, channel);
-    if (!File.Exists(path))
-        return Results.NotFound(new { error = $"Template not found at {type}/{channel}" });
-
-    var content = await File.ReadAllTextAsync(path);
-    return Results.Ok(new { content, type, channel });
-}).WithName("GetTemplate");
-
-app.MapPut("/notifications/templates/{type}/{channel}", async (TemplateSaveRequest request, string type, string channel, ILogger<Program> logger) =>
-{
-    if (!IsSafeSegment(type) || !IsSafeSegment(channel))
-        return Results.BadRequest(new { error = "Invalid type/channel." });
-
-    if (string.IsNullOrWhiteSpace(request.Content))
-        return Results.BadRequest(new { error = "Content is required." });
-
-    var path = GetTemplatePath(type, channel);
-    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-    await File.WriteAllTextAsync(path, request.Content);
-    logger.LogInformation("Template saved at {Type}/{Channel}", type, channel);
-    return Results.Ok(new { saved = true, type, channel });
-}).WithName("SaveTemplate");
-
-bool IsSafeSegment(string segment)
-{
-    return !string.IsNullOrWhiteSpace(segment)
-           && segment.IndexOfAny(Path.GetInvalidFileNameChars()) == -1
-           && !segment.Contains("..", StringComparison.Ordinal);
-}
-
-string GetTemplatePath(string type, string channel)
-{
-    return Path.Combine(templatesRoot, type, $"{channel}.liquid");
-}
+app.MapControllers();
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
-
-record LocalLoginRequest(string Email, string Password);
-record SendWelcomeRequest(string Email, string Name);
-record SendSmsRequest(string PhoneNumber, string Message);
-record TemplatePreviewRequest(string? Type, string? Channel, string? Message, string? PhoneNumber, string? Name, string? Email, string? Content);
-record TemplateSaveRequest(string Content);
+public partial class Program { }

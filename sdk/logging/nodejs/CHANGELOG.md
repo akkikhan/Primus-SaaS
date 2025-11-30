@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.4] - 2025-11-26
+
+### Changed
+- Version bump to align with NuGet Logging 1.2.4; no code changes from 1.2.1.
+- Revalidated middleware/enricher/targets through test suite.
+
+---
+
 ## [1.2.1] - 2025-11-25
 
 ### Added

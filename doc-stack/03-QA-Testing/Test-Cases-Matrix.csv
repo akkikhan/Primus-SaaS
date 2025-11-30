@@ -1,0 +1,12 @@
+ID,Module,Category,Test Case Description,Expected Result,Priority,Status
+TC-ID-001,Identity,Auth,Login with valid Azure AD token,200 OK + Claims JSON,P0,Automated
+TC-ID-002,Identity,Auth,Login with expired token,401 Unauthorized,P0,Automated
+TC-ID-003,Identity,Auth,Login with wrong audience,401 Unauthorized,P1,Automated
+TC-ID-004,Identity,Config,Missing PrimusIdentity section,App Crash / Startup Error,P1,Manual
+TC-LOG-001,Logging,PII,Log email address in message,Redacted as [REDACTED],P0,Automated
+TC-LOG-002,Logging,Context,Check CorrelationId in logs,Present and matching header,P1,Automated
+TC-NOT-001,Notifications,SMTP,Send valid email,202 Accepted + Email in Inbox,P0,Automated
+TC-NOT-002,Notifications,Template,Render template with missing variable,Render empty string (no crash),P2,Manual
+TC-NOT-003,Notifications,Provider,SMTP Auth Failure,Throw Exception / Log Error,P1,Manual
+TC-DEMO-001,LiveDemo,UI,Load Dashboard,200 OK,P0,Automated
+TC-DEMO-002,LiveDemo,UI,Navigate to Identity Page,200 OK,P1,Automated

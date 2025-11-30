@@ -1,0 +1,35 @@
+graph TB
+    subgraph Platform["🚀 Primus SaaS Platform"]
+        subgraph Identity["🛡️ Identity Validator"]
+            I1["Multi-Provider Auth<br/>Auth0 • Azure AD • Custom OIDC"]
+            I2["JWT Validation<br/>Automatic token verification"]
+            I3["Built-in Diagnostics<br/>Configuration visibility"]
+            I4["⏱️ Integration: 20 minutes"]
+        end
+        
+        subgraph Logging["📊 Logging Module"]
+            L1["Structured JSON Logging<br/>Easy parsing & monitoring"]
+            L2["PII Redaction<br/>GDPR/HIPAA compliant"]
+            L3["Multi-Target Output<br/>Console • File • Cloud"]
+            L4["⏱️ Integration: 10 minutes"]
+        end
+        
+        subgraph Notifications["🔔 Notifications Module"]
+            N1["Multi-Channel Delivery<br/>Email • SMS • Push"]
+            N2["Template Engine<br/>HTML/Text with variables"]
+            N3["Auto-Retry Logic<br/>Exponential backoff"]
+            N4["⏱️ Integration: 20 minutes"]
+        end
+    end
+    
+    Total["✅ Total Integration Time: 60 minutes<br/>💰 Cost Savings: ,550 per project"]
+    
+    Identity --> Total
+    Logging --> Total
+    Notifications --> Total
+    
+    style Platform fill:#f5f5f5,stroke:#333,stroke-width:2px
+    style Identity fill:#E3F2FD,stroke:#2196F3,stroke-width:3px
+    style Logging fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+    style Notifications fill:#FFF3E0,stroke:#FF9800,stroke-width:3px
+    style Total fill:#E8F5E9,stroke:#4CAF50,stroke-width:4px,color:#2E7D32

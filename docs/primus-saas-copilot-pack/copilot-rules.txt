@@ -1,0 +1,24 @@
+Always:
+- Use the DI + configuration patterns shown in examples/LiveDemoApi and copilot-instructions.md.
+- Add or maintain a Golden Path (minimal working example) for every module.
+- Add or update Live UI Demo coverage (API + frontend) when adding or changing module behavior.
+- Use strongly-typed options and environment-variable-driven configuration.
+- Use events or contracts when modules need to interact, not direct references.
+- Keep notification templates simple and free of business logic.
+
+Never:
+- Log full JWT tokens, secrets, PII, or session cookies.
+- Hardcode environment names, URLs, or credentials.
+- Create tight coupling between modules or share private DB tables.
+- Put business logic inside Liquid templates.
+- Implement behavior that only works in Development and breaks in real environments.
+
+When debugging JWT:
+- Validate in order: issuer (iss) → audience (aud) → signature → expiry / not-before → environment mismatch.
+
+Definition of "done" for any module:
+- Golden Path works end to end.
+- Live UI Demo behavior works and reflects the feature.
+- Configuration is fully environment-driven and documented via .env.example.
+- Tests (unit, integration, Golden Path) pass.
+- No forbidden patterns are introduced.

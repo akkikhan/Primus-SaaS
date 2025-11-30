@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Primus SaaS - Integration Flows</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2196F3;
+            --secondary: #4CAF50;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light);
+            color: var(--dark);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            background: #f1f5f9;
+            padding: 0.25rem;
+            border-radius: 8px;
+        }
+
+        .nav-tab {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #64748b;
+            background: transparent;
+            transition: all 0.2s;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: white;
+            border-right: 1px solid var(--border);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .sidebar-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .menu-item {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #475569;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .menu-item:hover {
+            background: #f1f5f9;
+            color: var(--primary);
+        }
+
+        .menu-item.active {
+            background: #e0f2fe;
+            color: var(--primary);
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .diagram-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            width: 90%;
+            max-width: 1200px;
+            margin-bottom: 2rem;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .diagram-container.active {
+            display: block;
+        }
+
+        .diagram-header {
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        .diagram-title {
+            font-size: 1.5rem;
+            margin: 0;
+            color: var(--dark);
+        }
+
+        .diagram-desc {
+            color: #64748b;
+            margin-top: 0.5rem;
+        }
+
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            background: #fafafa;
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid #f1f5f9;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+            Primus Integration Flows
+        </div>
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchModule('identity')">Identity</button>
+            <button class="nav-tab" onclick="switchModule('logging')">Logging</button>
+            <button class="nav-tab" onclick="switchModule('notifications')">Notifications</button>
+        </div>
+    </header>
+
+    <main>
+        <div class="sidebar">
+            <div>
+                <div class="sidebar-title">Flow Type</div>
+                <div class="menu-item active" onclick="switchFlow('runtime')" id="menu-runtime">
+                    <span>⚡</span> Runtime Flow
+                </div>
+                <div class="menu-item" onclick="switchFlow('portal')" id="menu-portal">
+                    <span>🚀</span> Portal Flow
+                </div>
+                <div class="menu-item" onclick="switchFlow('install')" id="menu-install">
+                    <span>📦</span> Installation Flow
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <!-- Identity Diagrams -->
+            <div id="identity-runtime" class="diagram-container active">
+                <div class="diagram-header">
+                    <h2 class="diagram-title">Identity: Runtime Integration Flow</h2>
+                    <p class="diagram-desc">End-to-end authentication flow from user login to token validation.</p>
+                </div>
+                <div class="mermaid">
+                    sequenceDiagram
+                    actor User as 👤 User
+                    participant FE as 💻 Frontend
+                    participant Auth as 🔐 Auth Provider
+                    participant BE as ⚙️ Backend API
+                    participant Primus as 🛡️ Primus Identity
+                    participant Portal as 🚀 Primus Portal
+
+                    User->>FE: Clicks Login
+                    FE->>Auth: Redirect for Authentication
+                    Auth-->>FE: Return Access Token (JWT)
+                    FE->>BE: API Request + Bearer Token
+                    BE->>Primus: Validate Token
+
+                    rect rgb(240, 248, 255)
+                    Note right of Primus: Validation Steps
+                    Primus->>Primus: Check Signature & Claims
+                    end
+
+                    alt Token Valid
+                    Primus-->>BE: Token Valid
+                    Primus->>Portal: Report Active Session (Async)
+                    BE-->>FE: 200 OK + Data
+                    else Token Invalid
+                    Primus-->>BE: Validation Failed
+                    BE-->>FE: 401 Unauthorized
+                    end
+                </div>
+            </div>
+
+            <div id="identity-portal" class="diagram-container">
+                <div class="diagram-header">
+                    <h2 class="diagram-title">Identity: Portal Configuration</h2>
+                    <p class="diagram-desc">How a developer configures the Identity module in the Primus Portal.</p>
+                </div>
+                <div class="mermaid">
+                    sequenceDiagram
+                    actor Dev as 👨‍💻 Developer
+                    participant Portal as 🚀 Primus Portal
+                    participant Config as ⚙️ Config Service
+
+                    Dev->>Portal: Create New Project
+                    Dev->>Portal: Add Identity Provider (Auth0/Azure)
+                    Portal->>Config: Validate & Store Settings
+                    Config-->>Portal: Config Saved
+                    Portal-->>Dev: Generate appsettings.json snippet
+                </div>
+            </div>
+
+            <div id="identity-install" class="diagram-container">
+                <div class="diagram-header">
+                    <h2 class="diagram-title">Identity: Installation Flow</h2>
+                    <p class="diagram-desc">Steps to install and integrate the package.</p>
+                </div>
+                <div class="mermaid">
+                    sequenceDiagram
+                    actor Dev as 👨‍💻 Developer
+                    participant IDE as 💻 IDE
+                    participant App as 🚀 Application
+
+                    Dev->>IDE: dotnet add package PrimusSaaS.Identity
+                    Dev->>IDE: Update appsettings.json
+                    Dev->>IDE: Add builder.Services.AddPrimusIdentity()
+                    Dev->>IDE: Add app.UseAuthentication()
+                    Dev->>IDE: Run & Verify
+                </div>
+            </div>
+
+            <!-- Logging Diagrams -->
+            <div id="logging-runtime" class="diagram-container">
+                <div class="diagram-header">
+                    <h2 class="diagram-title">Logging: Runtime Flow</h2>
+                    <p class="diagram-desc">Log generation, redaction, and ingestion flow.</p>
+                </div>
+                <div class="mermaid">
+                    sequenceDiagram
+                    participant App as 🚀 Application
+                    participant Logger as 📊 Primus Logger
+                    participant Portal as 🚀 Primus Portal
+                    participant Disk as 💾 Local Disk
+
+                    App->>Logger: LogInformation("User {Email} logged in")
+                    Logger->>Logger: Redact PII ({Email} -> [REDACTED])
+
+                    par Local Output
+                    Logger->>Disk: Write to rolling file
+                    and Remote Ingestion
+                    Logger->>Portal: Bulk Ingest Logs (Async)
+                    end
+                </div>
+            </div>
+
+            <div id="logging-portal" class="diagram-container">
+                <div class="diagram-header">
+                    <h2 class="diagram-title">Logging: Portal View</h2>
+                    <p class="diagram-desc">Real-time log viewing and searching.</p>
+                </div>
+                <div class="mermaid">
+                    sequenceDiagram
+                    actor User as 👤 Admin
+                    participant FE as 💻 Portal UI
+                    participant API as ⚙️ Portal API
+
+                    User->>FE: Open Logs Dashboard
+                    FE->>API: Subscribe to Live Stream
+
+                    loop Real-time Updates
+                    API-->>FE: Push New Log Entries
+                    end
+
+                    User->>FE: Search "Error"
+                    FE->>API: Query Logs
+                    API-->>FE: Return Results
+                </div>
+            </div>
+
+            <div id="logging-install" class="diagram-container">
+                <div class="diagram-header">
+                    <h2 class="diagram-title">Logging: Installation Flow</h2>
+                    <p class="diagram-desc">Steps to install and configure logging.</p>
+                </div>
+                <div class="mermaid">
+                    sequenceDiagram
+                    actor Dev as 👨‍💻 Developer
+                    participant IDE as 💻 IDE
+                    participant App as 🚀 Application
+
+                    Dev->>IDE: dotnet add package PrimusSaaS.Logging
+                    Dev->>IDE: Configure targets in appsettings.json
+                    Dev->>IDE: Add builder.Logging.AddPrimus()
+                    Dev->>IDE: Run & Verify Console Output
+                </div>
+            </div>
+
+            <!-- Notifications Diagrams -->
+            <div id="notifications-runtime" class="diagram-container">
+                <div class="diagram-header">
+                    <h2 class="diagram-title">Notifications: Runtime Flow</h2>
+                    <p class="diagram-desc">Notification dispatch flow with templates and retries.</p>
+                </div>
+                <div class="mermaid">
+                    sequenceDiagram
+                    participant App as 🚀 Application
+                    participant Service as 🔔 Notification Service
+                    participant Template as 🎨 Template Engine
+                    participant Dispatcher as 📤 Dispatcher
+                    participant Provider as ☁️ Provider
+                    participant Portal as 🚀 Primus Portal
+
+                    App->>Service: SendAsync()
+                    Service->>Template: Render Template
+                    Service->>Dispatcher: Dispatch
+
+                    Dispatcher->>Portal: Track Request
+                    Dispatcher->>Provider: Send API Call
+
+                    alt Success
+                    Provider-->>Dispatcher: 200 OK
+                    Dispatcher->>Portal: Update Status: Sent
+                    else Failure
+                    Provider-->>Dispatcher: Error
+                    Dispatcher->>Dispatcher: Retry / Fallback
+                    end
+                </div>
+            </div>
+
+            <div id="notifications-portal" class="diagram-container">
+                <div class="diagram-header">
+                    <h2 class="diagram-title">Notifications: Template Management</h2>
+                    <p class="diagram-desc">Creating and managing templates in the portal.</p>
+                </div>
+                <div class="mermaid">
+                    sequenceDiagram
+                    actor User as 👤 Content Manager
+                    participant Portal as 🚀 Primus Portal
+                    participant App as 🚀 Client App
+
+                    User->>Portal: Create "Welcome Email" Template
+                    User->>Portal: Preview & Publish
+
+                    Note over Portal, App: Sync
+                    App->>Portal: Fetch Latest Templates
+                    Portal-->>App: Return Template Bundle
+                </div>
+            </div>
+
+            <div id="notifications-install" class="diagram-container">
+                <div class="diagram-header">
+                    <h2 class="diagram-title">Notifications: Installation Flow</h2>
+                    <p class="diagram-desc">Steps to install and configure notifications.</p>
+                </div>
+                <div class="mermaid">
+                    sequenceDiagram
+                    actor Dev as 👨‍💻 Developer
+                    participant IDE as 💻 IDE
+                    participant App as 🚀 Application
+
+                    Dev->>IDE: dotnet add package PrimusSaaS.Notifications
+                    Dev->>IDE: Create Templates Folder
+                    Dev->>IDE: Add SMTP/Twilio Creds
+                    Dev->>IDE: Add builder.Services.AddPrimusNotifications()
+                    Dev->>IDE: Call SendAsync()
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                fontFamily: 'Inter',
+                fontSize: '16px',
+                primaryColor: '#e0f2fe',
+                primaryTextColor: '#1e293b',
+                primaryBorderColor: '#2196F3',
+                lineColor: '#64748b',
+                secondaryColor: '#f0fdf4',
+                tertiaryColor: '#fff7ed'
+            }
+        });
+
+        let currentModule = 'identity';
+        let currentFlow = 'runtime';
+
+        function updateView() {
+            // Hide all diagrams
+            document.querySelectorAll('.diagram-container').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            // Show selected diagram
+            const id = `${currentModule}-${currentFlow}`;
+            const selected = document.getElementById(id);
+            if (selected) selected.classList.add('active');
+
+            // Update tabs
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('active');
+                if (el.textContent.toLowerCase().includes(currentModule)) {
+                    el.classList.add('active');
+                }
+            });
+
+            // Update sidebar
+            document.querySelectorAll('.menu-item').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById(`menu-${currentFlow}`).classList.add('active');
+        }
+
+        function switchModule(module) {
+            currentModule = module;
+            updateView();
+        }
+
+        function switchFlow(flow) {
+            currentFlow = flow;
+            updateView();
+        }
+    </script>
+
+</body>
+
+</html>

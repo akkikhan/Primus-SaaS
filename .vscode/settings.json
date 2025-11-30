@@ -1,4 +1,11 @@
 {
+    "github.copilot.chat.codeGeneration.instructions": [
+        { "file": ".github/copilot-instructions.md" },
+        { "text": "Always: Use DI + configuration patterns from examples/LiveDemoApi. Add Golden Path for every module. Use events/contracts for cross-module interaction. Keep notification templates simple." },
+        { "text": "Never: Log full JWT tokens, secrets, PII. Hardcode environment names/URLs. Create tight coupling between modules. Put business logic in Liquid templates." },
+        { "text": "JWT debugging order: issuer (iss) → audience (aud) → signature → expiry → environment mismatch." },
+        { "text": "Done = Golden Path works E2E + Live Demo reflects feature + config is env-driven + tests pass + no forbidden patterns." }
+    ],
     "chat.mcp.serverSampling": {
         "Primus SaaS/.vscode/mcp.json: github/github-mcp-server": {
             "allowedModels": [
