@@ -151,6 +151,46 @@ app.UseAuthorization();
 app.MapPrimusIdentityDiagnostics();
 
 // =========================================================================
+// DEMO HELPER: Log viewer (for demo only — consider securing/removing for prod)
+// =========================================================================
+app.MapGet("/logs/recent", () =>
+{
+    var logsDir = Path.Combine(builder.Environment.ContentRootPath, "logs");
+    if (!Directory.Exists(logsDir))
+    {
+        return Results.Json(new { message = "Log directory not found." });
+    }
+
+    // Prefer the dev log file name, fall back to any log in the directory.
+    var candidates = new[]
+    {
+        Path.Combine(logsDir, "livedemo-api.dev.log"),
+        Path.Combine(logsDir, "livedemo-api.log")
+    }.Concat(Directory.GetFiles(logsDir, "*.log")).Distinct().ToList();
+
+    var logFile = candidates.FirstOrDefault(File.Exists);
+    if (logFile == null)
+    {
+        return Results.Json(new { message = "No log file found." });
+    }
+
+    const int maxBytes = 32 * 1024; // tail ~32KB
+    var info = new FileInfo(logFile);
+    var start = Math.Max(0, info.Length - maxBytes);
+    using var stream = new FileStream(logFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+    stream.Seek(start, SeekOrigin.Begin);
+    using var reader = new StreamReader(stream);
+    var content = reader.ReadToEnd();
+
+    return Results.Json(new
+    {
+        file = Path.GetFileName(logFile),
+        size = info.Length,
+        tail = content
+    });
+}).WithName("GetRecentLogs");
+
+// =========================================================================
 // DEMO HELPER: Real Token Proxy
 // =========================================================================
 // 1. Auth0 Proxy (Client Credentials Flow)

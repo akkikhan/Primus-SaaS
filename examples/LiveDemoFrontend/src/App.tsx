@@ -24,6 +24,10 @@ function App() {
   const [smsResult, setSmsResult] = useState<any>(null);
   const [smsError, setSmsError] = useState<any>(null);
   const [isSendingSms, setIsSendingSms] = useState(false);
+  const [logs, setLogs] = useState<string>('');
+  const [logsMeta, setLogsMeta] = useState<{ file?: string; size?: number } | null>(null);
+  const [logsError, setLogsError] = useState<any>(null);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
   // Prefer env override; fall back to http dev port (5221) to avoid HTTPS cert hassles
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5221';
@@ -124,6 +128,23 @@ function App() {
       setSmsError(err);
     } finally {
       setIsSendingSms(false);
+    }
+  };
+
+  const fetchLogs = async () => {
+    setIsLoadingLogs(true);
+    setLogsError(null);
+    try {
+      const response = await axios.get(`${apiBaseUrl}/logs/recent`);
+      setLogs(response.data.tail || '');
+      setLogsMeta({ file: response.data.file, size: response.data.size });
+    } catch (err: any) {
+      console.error(err);
+      setLogsError(err);
+      setLogs('');
+      setLogsMeta(null);
+    } finally {
+      setIsLoadingLogs(false);
     }
   };
 
@@ -343,6 +364,43 @@ function App() {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="card" style={{ maxWidth: '100%', textAlign: 'left', marginTop: '1.5rem' }}>
+          <h2><Activity size={20} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.5rem' }} /> API Logs</h2>
+          <p className="subtitle">Tail of the backend structured log (demo-only endpoint).</p>
+
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginTop: '1rem' }}>
+            <button className="btn" style={{ width: 'auto' }} onClick={fetchLogs} disabled={isLoadingLogs}>
+              {isLoadingLogs ? <div className="loader" style={{ borderColor: '#3b82f6', borderTopColor: 'transparent' }}></div> : 'Fetch latest logs'}
+            </button>
+            {logsMeta?.file && (
+              <span style={{ color: '#22c55e', fontSize: '0.9rem' }}>
+                {logsMeta.file} ({logsMeta.size} bytes)
+              </span>
+            )}
+            {logsError && (
+              <span style={{ color: '#ef4444', fontSize: '0.9rem' }}>
+                {logsError.response?.data?.message || logsError.message}
+              </span>
+            )}
+          </div>
+
+          {logs && (
+            <pre style={{
+              marginTop: '1rem',
+              padding: '1rem',
+              borderRadius: '12px',
+              background: 'rgba(148, 163, 184, 0.08)',
+              border: '1px solid rgba(148, 163, 184, 0.2)',
+              color: '#e2e8f0',
+              maxHeight: '320px',
+              overflow: 'auto',
+              fontSize: '0.85rem'
+            }}>
+{logs}
+            </pre>
+          )}
         </div>
       </motion.div>
     </div>
