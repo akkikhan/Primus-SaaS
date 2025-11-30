@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Shield, Lock, LayoutDashboard, LogIn, CheckCircle, AlertTriangle, Cloud, Server } from 'lucide-react';
+import { Shield, Lock, LayoutDashboard, LogIn, CheckCircle, AlertTriangle, Cloud, Server, Mail, Activity, Phone } from 'lucide-react';
 import './App.css';
 
 function App() {
@@ -11,6 +11,19 @@ function App() {
   const [token, setToken] = useState<string>('');
   const [apiData, setApiData] = useState<any>(null);
   const [error, setError] = useState<any>(null);
+  const [health, setHealth] = useState<any>(null);
+  const [healthError, setHealthError] = useState<any>(null);
+  const [isHealthLoading, setIsHealthLoading] = useState(false);
+  const [notificationEmail, setNotificationEmail] = useState('akki@primussoft.com');
+  const [notificationName, setNotificationName] = useState('Akki');
+  const [notificationResult, setNotificationResult] = useState<any>(null);
+  const [notificationError, setNotificationError] = useState<any>(null);
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
+  const [smsPhone, setSmsPhone] = useState('+15551234567');
+  const [smsMessage, setSmsMessage] = useState('Your Primus demo code is 123456');
+  const [smsResult, setSmsResult] = useState<any>(null);
+  const [smsError, setSmsError] = useState<any>(null);
+  const [isSendingSms, setIsSendingSms] = useState(false);
 
   // Prefer env override; fall back to http dev port (5221) to avoid HTTPS cert hassles
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5221';
@@ -61,6 +74,56 @@ function App() {
       setError(err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const checkNotificationHealth = async () => {
+    setIsHealthLoading(true);
+    setHealthError(null);
+    try {
+      const response = await axios.get(`${apiBaseUrl}/notifications/health`);
+      setHealth(response.data);
+    } catch (err: any) {
+      console.error(err);
+      setHealthError(err);
+    } finally {
+      setIsHealthLoading(false);
+    }
+  };
+
+  const sendWelcomeEmail = async () => {
+    setIsSendingNotification(true);
+    setNotificationError(null);
+    setNotificationResult(null);
+    try {
+      const response = await axios.post(`${apiBaseUrl}/notifications/welcome`, {
+        email: notificationEmail,
+        name: notificationName
+      });
+      setNotificationResult(response.data);
+    } catch (err: any) {
+      console.error(err);
+      setNotificationError(err);
+    } finally {
+      setIsSendingNotification(false);
+    }
+  };
+
+  const sendSms = async () => {
+    setIsSendingSms(true);
+    setSmsError(null);
+    setSmsResult(null);
+    try {
+      const response = await axios.post(`${apiBaseUrl}/notifications/sms`, {
+        phoneNumber: smsPhone,
+        message: smsMessage
+      });
+      setSmsResult(response.data);
+    } catch (err: any) {
+      console.error(err);
+      setSmsError(err);
+    } finally {
+      setIsSendingSms(false);
     }
   };
 
@@ -186,6 +249,100 @@ function App() {
             </motion.div>
           )}
 
+        </div>
+
+        <div className="card" style={{ maxWidth: '100%', textAlign: 'left', marginTop: '1.5rem' }}>
+          <h2><Activity size={20} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.5rem' }} /> Notification Health</h2>
+          <p className="subtitle">Check the configured channels (SMTP/Logger).</p>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginTop: '1rem' }}>
+            <button className="btn" style={{ width: 'auto' }} onClick={checkNotificationHealth} disabled={isHealthLoading}>
+              {isHealthLoading ? <div className="loader" style={{ borderColor: '#3b82f6', borderTopColor: 'transparent' }}></div> : 'Run health check'}
+            </button>
+            {health && (
+              <span style={{ color: '#22c55e', fontSize: '0.9rem' }}>
+                Email: {health.channels?.email} | SMS: {health.channels?.sms} | Logger: {health.channels?.logger}
+              </span>
+            )}
+            {healthError && (
+              <span style={{ color: '#ef4444', fontSize: '0.9rem' }}>
+                {healthError.response?.status || ''} {healthError.message}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="card" style={{ maxWidth: '100%', textAlign: 'left', marginTop: '1.5rem' }}>
+          <h2><Mail size={20} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.5rem' }} /> Send Welcome Email</h2>
+          <p className="subtitle">Uses /notifications/welcome with the configured SMTP (Gmail) and logger fallback.</p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <input
+                style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid #334155', background: 'rgba(255,255,255,0.03)', color: '#e2e8f0', minWidth: '240px' }}
+                placeholder="Recipient email"
+                value={notificationEmail}
+                onChange={(e) => setNotificationEmail(e.target.value)}
+              />
+              <input
+                style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid #334155', background: 'rgba(255,255,255,0.03)', color: '#e2e8f0', minWidth: '180px' }}
+                placeholder="Recipient name"
+                value={notificationName}
+                onChange={(e) => setNotificationName(e.target.value)}
+              />
+              <button className="btn" style={{ width: 'auto' }} onClick={sendWelcomeEmail} disabled={isSendingNotification}>
+                {isSendingNotification ? <div className="loader" style={{ borderColor: '#3b82f6', borderTopColor: 'transparent' }}></div> : 'Send test email'}
+              </button>
+            </div>
+
+            {notificationResult && (
+              <div className="status-card success" style={{ background: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.25)' }}>
+                <strong>Sent via:</strong> {notificationResult.channel || 'Logger'} | queued: {String(notificationResult.queued)}
+              </div>
+            )}
+
+            {notificationError && (
+              <div className="status-card error" style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.25)' }}>
+                <strong>Error:</strong> {notificationError.response?.data?.detail || notificationError.message}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="card" style={{ maxWidth: '100%', textAlign: 'left', marginTop: '1.5rem' }}>
+          <h2><Phone size={20} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.5rem' }} /> Send SMS</h2>
+          <p className="subtitle">Uses /notifications/sms with Twilio if configured; otherwise falls back to logger.</p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <input
+                style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid #334155', background: 'rgba(255,255,255,0.03)', color: '#e2e8f0', minWidth: '200px' }}
+                placeholder="Recipient phone (E.164)"
+                value={smsPhone}
+                onChange={(e) => setSmsPhone(e.target.value)}
+              />
+              <input
+                style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid #334155', background: 'rgba(255,255,255,0.03)', color: '#e2e8f0', minWidth: '260px' }}
+                placeholder="Message"
+                value={smsMessage}
+                onChange={(e) => setSmsMessage(e.target.value)}
+              />
+              <button className="btn" style={{ width: 'auto' }} onClick={sendSms} disabled={isSendingSms}>
+                {isSendingSms ? <div className="loader" style={{ borderColor: '#3b82f6', borderTopColor: 'transparent' }}></div> : 'Send SMS'}
+              </button>
+            </div>
+
+            {smsResult && (
+              <div className="status-card success" style={{ background: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.25)' }}>
+                <strong>Sent via:</strong> {smsResult.channel || 'Logger'} | queued: {String(smsResult.queued)}
+              </div>
+            )}
+
+            {smsError && (
+              <div className="status-card error" style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.25)' }}>
+                <strong>Error:</strong> {smsError.response?.data?.detail || smsError.message}
+              </div>
+            )}
+          </div>
         </div>
       </motion.div>
     </div>
