@@ -213,8 +213,11 @@ function App() {
     }
   };
 
-  const fetchTelemetry = async () => {
-    setIsLoadingTelemetry(true);
+  const fetchTelemetry = async (isAutoRefresh = false) => {
+    // Only show loading spinner on manual refresh, not auto-refresh
+    if (!isAutoRefresh) {
+      setIsLoadingTelemetry(true);
+    }
     setTelemetryError(null);
     try {
       const response = await axios.get(`${apiBaseUrl}/telemetry/summary`);
@@ -222,9 +225,14 @@ function App() {
     } catch (err: any) {
       console.error('Telemetry fetch failed', err);
       setTelemetryError(err);
-      setTelemetry(null);
+      // Don't clear telemetry on auto-refresh errors to avoid flicker
+      if (!isAutoRefresh) {
+        setTelemetry(null);
+      }
     } finally {
-      setIsLoadingTelemetry(false);
+      if (!isAutoRefresh) {
+        setIsLoadingTelemetry(false);
+      }
     }
   };
 
@@ -238,10 +246,10 @@ function App() {
 
   useEffect(() => {
     // Always fetch telemetry on mount
-    fetchTelemetry();
+    fetchTelemetry(false);
     if (!autoTelemetry) return;
-    // Poll every 5s when auto-refresh is on
-    const id = setInterval(fetchTelemetry, 5000);
+    // Poll every 5s when auto-refresh is on (silent updates)
+    const id = setInterval(() => fetchTelemetry(true), 5000);
     return () => clearInterval(id);
   }, [autoTelemetry]);
 
@@ -610,7 +618,8 @@ function App() {
                 padding: '1rem',
                 borderRadius: '12px',
                 background: telemetry.applicationInsights?.enabled ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
-                border: `1px solid ${telemetry.applicationInsights?.enabled ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`
+                border: `1px solid ${telemetry.applicationInsights?.enabled ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
+                transition: 'all 0.3s ease'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <Wifi size={18} color={telemetry.applicationInsights?.enabled ? '#22c55e' : '#ef4444'} />
@@ -619,7 +628,7 @@ function App() {
                   </strong>
                 </div>
                 {telemetry.applicationInsights?.instrumentationKey && (
-                  <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#94a3b8', transition: 'all 0.3s ease' }}>
                     Key: {telemetry.applicationInsights.instrumentationKey.substring(0, 8)}...
                   </div>
                 )}
@@ -630,13 +639,14 @@ function App() {
                 padding: '1rem',
                 borderRadius: '12px',
                 background: 'rgba(59,130,246,0.08)',
-                border: '1px solid rgba(59,130,246,0.25)'
+                border: '1px solid rgba(59,130,246,0.25)',
+                transition: 'all 0.3s ease'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <Server size={18} color="#3b82f6" />
                   <strong style={{ color: '#3b82f6' }}>{telemetry.server?.name}</strong>
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                <div style={{ fontSize: '0.85rem', color: '#94a3b8', transition: 'all 0.3s ease' }}>
                   PID: {telemetry.runtime?.processId}
                 </div>
               </div>
@@ -646,13 +656,14 @@ function App() {
                 padding: '1rem',
                 borderRadius: '12px',
                 background: 'rgba(168,85,247,0.08)',
-                border: '1px solid rgba(168,85,247,0.25)'
+                border: '1px solid rgba(168,85,247,0.25)',
+                transition: 'all 0.3s ease'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <Clock size={18} color="#a855f7" />
                   <strong style={{ color: '#a855f7' }}>Uptime</strong>
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#e2e8f0' }}>
+                <div style={{ fontSize: '0.85rem', color: '#e2e8f0', transition: 'all 0.3s ease' }}>
                   {telemetry.server?.uptime?.formatted}
                 </div>
               </div>
@@ -662,16 +673,17 @@ function App() {
                 padding: '1rem',
                 borderRadius: '12px',
                 background: 'rgba(236,72,153,0.08)',
-                border: '1px solid rgba(236,72,153,0.25)'
+                border: '1px solid rgba(236,72,153,0.25)',
+                transition: 'all 0.3s ease'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <HardDrive size={18} color="#ec4899" />
                   <strong style={{ color: '#ec4899' }}>Memory</strong>
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#e2e8f0' }}>
+                <div style={{ fontSize: '0.85rem', color: '#e2e8f0', transition: 'all 0.3s ease' }}>
                   {telemetry.memory?.workingSetMB} MB working set
                 </div>
-                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                <div style={{ fontSize: '0.8rem', color: '#94a3b8', transition: 'all 0.3s ease' }}>
                   GC: {telemetry.memory?.gcTotalMemoryMB} MB
                 </div>
               </div>
@@ -681,13 +693,14 @@ function App() {
                 padding: '1rem',
                 borderRadius: '12px',
                 background: 'rgba(245,158,11,0.08)',
-                border: '1px solid rgba(245,158,11,0.25)'
+                border: '1px solid rgba(245,158,11,0.25)',
+                transition: 'all 0.3s ease'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <Cpu size={18} color="#f59e0b" />
                   <strong style={{ color: '#f59e0b' }}>Threads</strong>
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#e2e8f0' }}>
+                <div style={{ fontSize: '0.85rem', color: '#e2e8f0', transition: 'all 0.3s ease' }}>
                   {telemetry.runtime?.threadCount} active
                 </div>
               </div>
@@ -697,13 +710,14 @@ function App() {
                 padding: '1rem',
                 borderRadius: '12px',
                 background: 'rgba(20,184,166,0.08)',
-                border: '1px solid rgba(20,184,166,0.25)'
+                border: '1px solid rgba(20,184,166,0.25)',
+                transition: 'all 0.3s ease'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <Activity size={18} color="#14b8a6" />
                   <strong style={{ color: '#14b8a6' }}>Runtime</strong>
                 </div>
-                <div style={{ fontSize: '0.8rem', color: '#94a3b8', wordBreak: 'break-word' }}>
+                <div style={{ fontSize: '0.8rem', color: '#94a3b8', wordBreak: 'break-word', transition: 'all 0.3s ease' }}>
                   {telemetry.runtime?.framework?.replace('.NET ', '.NET\n')}
                 </div>
               </div>
