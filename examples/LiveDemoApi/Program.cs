@@ -121,17 +121,36 @@ builder.Services.AddHttpClient();
 // Enable PII for debugging
 Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
 
-// Helper to log JSON payloads for demo visibility
-static void LogJson(ILogger logger, string message, object data)
+// Demo log path (for /logs/recent and UI viewer)
+var demoLogDir = Path.Combine(builder.Environment.ContentRootPath, "logs");
+Directory.CreateDirectory(demoLogDir);
+var demoLogPath = Path.Combine(demoLogDir, "livedemo-api.log");
+
+void WriteDemoLog(string message)
+{
+    try
+    {
+        File.AppendAllText(demoLogPath, $"[{DateTimeOffset.UtcNow:u}] {message}{Environment.NewLine}");
+    }
+    catch
+    {
+        // ignore for demo
+    }
+}
+
+// Helper to log JSON payloads for demo visibility (writes to ILogger + demo log file)
+void LogJson(ILogger logger, string message, object data)
 {
     try
     {
         var json = System.Text.Json.JsonSerializer.Serialize(data);
         logger.LogInformation("{Message}: {Payload}", message, json);
+        WriteDemoLog($"{message}: {json}");
     }
     catch
     {
         logger.LogInformation("{Message}: (unserializable payload)", message);
+        WriteDemoLog($"{message}: (unserializable payload)");
     }
 }
 
@@ -142,6 +161,7 @@ var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
 startupLogger.LogInformation("Primus LiveDemo starting at {Time} (Environment: {Env})",
     DateTimeOffset.UtcNow,
     app.Environment.EnvironmentName);
+WriteDemoLog($"Primus LiveDemo starting (Env: {app.Environment.EnvironmentName})");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
