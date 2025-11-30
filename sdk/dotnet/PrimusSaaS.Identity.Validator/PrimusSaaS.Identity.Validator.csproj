@@ -70,7 +70,6 @@ v1.3.3:
     <None Include="REFRESH_GUIDE.md" Pack="true" PackagePath="\" />
     <None Include="POLICY_HELPERS_SCOPE.md" Pack="true" PackagePath="\" />
     <None Include="RELEASE_AND_ROADMAP.md" Pack="true" PackagePath="\" />
-    <None Include="TESTING_GUIDE.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>
