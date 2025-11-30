@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Shield, Lock, LayoutDashboard, LogIn, CheckCircle, AlertTriangle, Cloud, Server, Mail, Activity, Phone } from 'lucide-react';
@@ -30,6 +30,7 @@ function App() {
   const [logsMeta, setLogsMeta] = useState<{ file?: string; size?: number } | null>(null);
   const [logsError, setLogsError] = useState<any>(null);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [autoLogs, setAutoLogs] = useState(false);
 
   // Prefer env override; fall back to http dev port (5221) to avoid HTTPS cert hassles
   const apiBaseUrl =
@@ -174,6 +175,14 @@ function App() {
       setIsLoadingLogs(false);
     }
   };
+
+  useEffect(() => {
+    if (!autoLogs) return;
+    // Start immediate fetch, then poll every 3s
+    fetchLogs();
+    const id = setInterval(fetchLogs, 3000);
+    return () => clearInterval(id);
+  }, [autoLogs]);
 
   if (!isLoggedIn) {
     return (
@@ -435,6 +444,14 @@ function App() {
             <button className="btn" style={{ width: 'auto' }} onClick={fetchLogs} disabled={isLoadingLogs}>
               {isLoadingLogs ? <div className="loader" style={{ borderColor: '#3b82f6', borderTopColor: 'transparent' }}></div> : 'Fetch latest logs'}
             </button>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#cbd5e1', fontSize: '0.9rem' }}>
+              <input
+                type="checkbox"
+                checked={autoLogs}
+                onChange={(e) => setAutoLogs(e.target.checked)}
+              />
+              Live refresh (3s)
+            </label>
             {logsMeta?.file && (
               <span style={{ color: '#22c55e', fontSize: '0.9rem' }}>
                 {logsMeta.file} ({logsMeta.size} bytes)
