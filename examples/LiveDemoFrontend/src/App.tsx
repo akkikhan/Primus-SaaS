@@ -12,6 +12,8 @@ function App() {
   const [apiData, setApiData] = useState<any>(null);
   const [error, setError] = useState<any>(null);
 
+  const apiBaseUrl = 'https://localhost:7287'; // Backend https port from launchSettings.json
+
   const handleLogin = async (selectedProvider: string) => {
     setIsLoading(true);
     setProvider(selectedProvider);
@@ -20,10 +22,10 @@ function App() {
     try {
       let response;
       if (selectedProvider === 'Auth0') {
-        response = await axios.post('http://localhost:5221/auth/auth0');
+        response = await axios.post(`${apiBaseUrl}/auth/auth0`);
         setToken(response.data.access_token);
       } else {
-        response = await axios.post('http://localhost:5221/auth/azure');
+        response = await axios.post(`${apiBaseUrl}/auth/azure`);
         setToken(response.data.access_token);
       }
       setIsLoggedIn(true);
@@ -37,8 +39,16 @@ function App() {
 
   const fetchData = async () => {
     setIsLoading(true);
+    setError(null);
+
+    if (!token) {
+      setIsLoading(false);
+      setError(new Error('Missing access token. Please log in again.'));
+      return;
+    }
+
     try {
-      const response = await axios.get('http://localhost:5221/weatherforecast', {
+      const response = await axios.get(`${apiBaseUrl}/weatherforecast`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
