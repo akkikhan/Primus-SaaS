@@ -738,6 +738,13 @@ The SDK automatically logs authentication events to the console. For more detail
 - .NET 7.0 or later
 - ASP.NET Core 7.0 or later
 
+## ✅ Integration checklist (Auth0 + Azure AD)
+- Auth0: Create an API (Machine-to-Machine Application) with `audience = https://your-api`. Enable **Client Credentials**. Docs: https://auth0.com/docs/get-started/auth0-overview/set-up-apis.
+- Auth0 app settings to capture: `Domain` (issuer/authority), `Client ID/Secret`, `Audience`. M2M tokens use `gty: "client-credentials"` (hyphen) and `sub` ends with `@clients`.
+- Azure AD: Register an app, expose API scopes or set `Application ID URI` (audience), and add a client app with `Client credentials`. Docs: https://learn.microsoft.com/azure/active-directory/develop/quickstart-register-app.
+- Configuration (appsettings): set `Issuer`, `Authority`, and `Audiences` exactly; for Auth0 allow M2M with `AllowMachineToMachine = true` and include `AllowedGrantTypes: ["client_credentials", "client-credentials"]`.
+- CORS: allow your frontend origin (e.g., `http://localhost:5173` / `https://localhost:5173`) on the API.
+
 ## Known Issues
 
 ### Namespace Conflict with PrimusSaaS.Logging
@@ -758,6 +765,11 @@ using PrimusLogging = PrimusSaaS.Logging.Extensions;
 
 PrimusLogging.LoggingExtensions.UsePrimusLogging(app);
 ```
+
+## Common pitfalls (save time)
+- Logging options type is `PrimusIdentityLoggingOptions` (not `LoggingOptions`).
+- Auth0 M2M: set `AllowMachineToMachine = true` and include both grant spellings: `client_credentials` and `client-credentials`.
+- Azure AD v1 vs v2 issuers: client_credentials tokens often use `https://sts.windows.net/{tenantId}/` (v1). Ensure your `Issuer`/`Authority` matches the actual token issuer or add both.
 
 ## Documentation
 
