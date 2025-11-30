@@ -12,7 +12,8 @@ function App() {
   const [apiData, setApiData] = useState<any>(null);
   const [error, setError] = useState<any>(null);
 
-  const apiBaseUrl = 'https://localhost:7287'; // Backend https port from launchSettings.json
+  // Prefer env override; fall back to http dev port (5221) to avoid HTTPS cert hassles
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5221';
 
   const handleLogin = async (selectedProvider: string) => {
     setIsLoading(true);
