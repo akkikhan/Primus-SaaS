@@ -16,9 +16,23 @@ builder.Logging.AddPrimus(options =>
 {
     // Bind from configuration; safe defaults if section is missing
     builder.Configuration.GetSection("PrimusLogging").Bind(options);
+
+    // Ensure logs directory exists and resolve relative file paths
+    var contentRootLogs = Path.Combine(builder.Environment.ContentRootPath, "logs");
+    var baseDirLogs = Path.Combine(AppContext.BaseDirectory, "logs");
+    Directory.CreateDirectory(contentRootLogs);
+    Directory.CreateDirectory(baseDirLogs);
+
+    if (options.Targets.File.Enabled)
+    {
+        var currentPath = options.Targets.File.Path ?? "livedemo-api.log";
+        if (!Path.IsPathRooted(currentPath))
+        {
+            // Write under content root logs
+            options.Targets.File.Path = Path.Combine(contentRootLogs, Path.GetFileName(currentPath));
+        }
+    }
 });
-// Ensure logs directory exists so the log viewer can find files
-Directory.CreateDirectory(Path.Combine(builder.Environment.ContentRootPath, "logs"));
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
@@ -158,15 +172,25 @@ app.MapPrimusIdentityDiagnostics();
 // =========================================================================
 app.MapGet("/logs/recent", () =>
 {
-    var logsDir = Path.Combine(builder.Environment.ContentRootPath, "logs");
-    Directory.CreateDirectory(logsDir);
+    var logDirs = new[]
+    {
+        Path.Combine(builder.Environment.ContentRootPath, "logs"),
+        Path.Combine(AppContext.BaseDirectory, "logs")
+    };
+    foreach (var dir in logDirs)
+    {
+        Directory.CreateDirectory(dir);
+    }
 
     // Prefer the dev log file name, fall back to any log in the directory.
-    var candidates = new[]
-    {
-        Path.Combine(logsDir, "livedemo-api.dev.log"),
-        Path.Combine(logsDir, "livedemo-api.log")
-    }.Concat(Directory.GetFiles(logsDir, "*.log")).Distinct().ToList();
+    var candidates = logDirs
+        .SelectMany(dir => new[]
+        {
+            Path.Combine(dir, "livedemo-api.dev.log"),
+            Path.Combine(dir, "livedemo-api.log")
+        }.Concat(Directory.GetFiles(dir, "*.log")))
+        .Distinct()
+        .ToList();
 
     var logFile = candidates.FirstOrDefault(File.Exists);
     if (logFile == null)
