@@ -224,7 +224,7 @@ export default function Home() {
                   <div>
                     <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.35rem' }}>dotnet</div>
                     <pre style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '1.05rem', borderRadius: '10px', margin: 0, border: '1px solid rgba(148,163,184,0.1)' }}>
-                      <code style={{ color: '#e2e8f0', fontSize: '0.95rem' }}>{`dotnet add package PrimusSaaS.Logging --version 1.2.1`}</code>
+                      <code style={{ color: '#e2e8f0', fontSize: '0.95rem' }}>{`dotnet add package PrimusSaaS.Logging --version 1.2.4`}</code>
                     </pre>
                   </div>
                 </div>

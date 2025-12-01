@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - main
+      - master
       - AG-nine
+      - AG-23-New-odule
     paths:
       - 'docs-site/**'
       - '.github/workflows/deploy-docs.yml'

@@ -1,6 +1,5 @@
 // using Microsoft.AspNetCore.Authentication.JwtBearer; // Traditional auth example
 // using Microsoft.IdentityModel.Tokens;                // Traditional auth example
-using LiveDemoApi;
 using LiveDemoApi.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using PrimusSaaS.Identity.Validator;
@@ -203,6 +202,9 @@ if (primusIdentityRegistered)
 
 app.MapControllers();
 
+app.Run();
+
+public partial class Program { }
 
 static bool IsPrimusIdentityRegistered(IServiceCollection services)
 {
@@ -222,6 +224,3 @@ static bool IsPrimusIdentityRegistered(IServiceCollection services)
     });
 }
 
-app.Run();
-
-public partial class Program { }

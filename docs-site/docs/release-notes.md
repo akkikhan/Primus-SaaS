@@ -69,9 +69,9 @@ Special thanks to our clients for providing detailed feedback on the TenantResol
 
 ---
 
-## PrimusSaaS.Logging 1.2.1
+## PrimusSaaS.Logging 1.2.4
 
-**Release Date:** November 24, 2025
+**Release Date:** November 26, 2025
 
 ### Major Improvements
 
@@ -142,7 +142,7 @@ builder.Logging.AddPrimusLogging(options => { ... });  // Alias
 
 ### Package Changes
 
-- Version: 1.1.x → **1.2.1**
+- Version: 1.1.x → **1.2.4**
 - Dependencies: net6/net7 (net8 optional)
 - All documentation files included in NuGet package
 - No breaking changes
@@ -152,7 +152,7 @@ builder.Logging.AddPrimusLogging(options => { ... });  // Alias
 **No code changes required!** Simply update the package:
 
 ```bash
-dotnet add package PrimusSaaS.Logging --version 1.2.1
+dotnet add package PrimusSaaS.Logging --version 1.2.4
 ```
 
 **Optional improvements:**
@@ -191,7 +191,7 @@ Special thanks to our clients for comprehensive hands-on testing and detailed fe
 
 **After:**
 - Identity.Validator 1.3.0: Hardened JWKS, diagnostics helper, aligned docs
-- Logging 1.2.1: Async buffering, rotation guidance, clarified middleware, aligned docs
+- Logging 1.2.4: Async buffering, rotation guidance, clarified middleware, aligned docs
 - Expected Rating: A- (9/10) - Production Ready
 
 ### All Critical Issues Resolved
@@ -200,7 +200,7 @@ Special thanks to our clients for comprehensive hands-on testing and detailed fe
 |-------|----------|--------|
 | JWKS discovery failures | HIGH | Fixed in 1.3.0 |
 | Need diagnostics helper | HIGH | Added in 1.3.0 |
-| Rotation/async clarity | MEDIUM | Fixed in 1.2.1 |
+| Rotation/async clarity | MEDIUM | Fixed in 1.2.4 |
 | Missing documentation | MEDIUM | Unified guide across Node/.NET/Logging |
 
 ### Upgrade Instructions
@@ -208,7 +208,7 @@ Special thanks to our clients for comprehensive hands-on testing and detailed fe
 ```bash
 # Update both packages
 dotnet add package PrimusSaaS.Identity.Validator --version 1.3.0
-dotnet add package PrimusSaaS.Logging --version 1.2.1
+dotnet add package PrimusSaaS.Logging --version 1.2.4
 
 # Clean and rebuild
 dotnet clean

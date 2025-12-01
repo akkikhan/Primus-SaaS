@@ -11,12 +11,18 @@ public class TelemetryController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _environment;
     private readonly ILogger<TelemetryController> _logger;
+    private readonly LiveDemoRuntimeState _runtimeState;
 
-    public TelemetryController(IConfiguration configuration, IWebHostEnvironment environment, ILogger<TelemetryController> logger)
+    public TelemetryController(
+        IConfiguration configuration,
+        IWebHostEnvironment environment,
+        ILogger<TelemetryController> logger,
+        LiveDemoRuntimeState runtimeState)
     {
         _configuration = configuration;
         _environment = environment;
         _logger = logger;
+        _runtimeState = runtimeState;
     }
 
     [HttpGet("summary")]
@@ -41,6 +47,11 @@ public class TelemetryController : ControllerBase
             {
                 applicationInsights = aiConfigured,
                 logFile = Path.GetFullPath(_configuration["PrimusLogging:Targets:File:Path"] ?? "logs/livedemo-api.log", _environment.ContentRootPath)
+            },
+            identity = new
+            {
+                enabled = _runtimeState.IdentityEnabled,
+                message = _runtimeState.IdentityMessage
             },
             timestamp = DateTime.UtcNow.ToString("o")
         };

@@ -26,6 +26,25 @@ public class AuthController : ControllerBase
     [HttpPost("local")]
     public IActionResult Local(LocalAuthRequest request)
     {
+        return IssueLocalToken(request, "LocalJwt");
+    }
+
+    [HttpPost("auth0")]
+    public IActionResult Auth0Fallback()
+    {
+        _logger.LogInformation("Auth0 button pressed; issuing local demo token because Auth0 is not configured.");
+        return IssueLocalToken(new LocalAuthRequest("demo@primus.local", "PrimusDemo123!", "Auth0 Demo User"), "Auth0Fallback");
+    }
+
+    [HttpPost("azure")]
+    public IActionResult AzureFallback()
+    {
+        _logger.LogInformation("Azure AD button pressed; issuing local demo token because Azure AD is not configured.");
+        return IssueLocalToken(new LocalAuthRequest("demo@primus.local", "PrimusDemo123!", "Azure Demo User"), "AzureFallback");
+    }
+
+    private IActionResult IssueLocalToken(LocalAuthRequest request, string provider)
+    {
         var demo = _configuration.GetSection("DemoLocalAuth");
         var expectedEmail = demo["Email"] ?? "demo@primus.local";
         var expectedPassword = demo["Password"] ?? "PrimusDemo123!";
@@ -58,7 +77,7 @@ public class AuthController : ControllerBase
             new(JwtRegisteredClaimNames.Sub, subject),
             new(JwtRegisteredClaimNames.Email, expectedEmail),
             new("name", name),
-            new("provider", "LocalJwt"),
+            new("provider", provider),
             new("demo", "true")
         };
 
@@ -70,26 +89,13 @@ public class AuthController : ControllerBase
             signingCredentials: signingCredentials);
 
         var accessToken = _tokenHandler.WriteToken(jwt);
-        _logger.LogInformation("✅ Issued local JWT for {Email}", request.Email);
+        _logger.LogInformation("✅ Issued local JWT for {Email} via provider {Provider}", request.Email, provider);
         return Ok(new
         {
             access_token = accessToken,
             token_type = "Bearer",
-            expires_in = 3600
+            expires_in = 3600,
+            provider
         });
-    }
-
-    [HttpPost("auth0")]
-    public IActionResult Auth0Fallback()
-    {
-        _logger.LogWarning("Auth0 proxy endpoint called but not configured. Returning guidance.");
-        return BadRequest(new { error = "Auth0 proxy not configured in this demo. Use Local JWT login." });
-    }
-
-    [HttpPost("azure")]
-    public IActionResult AzureFallback()
-    {
-        _logger.LogWarning("Azure proxy endpoint called but not configured. Returning guidance.");
-        return BadRequest(new { error = "Azure CLI token proxy not configured in this demo. Use Local JWT login." });
     }
 }

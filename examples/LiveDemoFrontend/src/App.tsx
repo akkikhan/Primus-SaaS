@@ -530,6 +530,25 @@ Thank you for using Primus SaaS!`);
           <strong className={telemetry ? 'success' : 'muted'}>{telemetry ? 'Online' : 'Unknown'}</strong>
         </div>
         <div className="health-item">
+          <span className="label">Identity</span>
+          <strong className={
+            telemetry?.identity?.enabled === undefined
+              ? 'muted'
+              : telemetry.identity.enabled
+                ? 'success'
+                : 'danger'
+          }>
+            {telemetry?.identity?.enabled === undefined
+              ? 'Unknown'
+              : telemetry.identity.enabled
+                ? 'Enabled'
+                : 'Disabled'}
+          </strong>
+          {telemetry?.identity?.enabled === false && telemetry?.identity?.message && (
+            <div className="helper">{telemetry.identity.message}</div>
+          )}
+        </div>
+        <div className="health-item">
           <span className="label">Notifications</span>
           <strong className={health ? 'success' : healthError ? 'danger' : 'muted'}>
             {health ? 'Ready' : healthError ? 'Error' : 'Unknown'}
@@ -701,6 +720,11 @@ Thank you for using Primus SaaS!`);
                 {whoamiError && (
                   <div className="result-block danger">
                     <strong>Error:</strong> {whoamiError.response?.data?.error || whoamiError.message}
+                    {whoamiError.response?.data?.hint && (
+                      <div className="helper" style={{ marginTop: '6px' }}>
+                        {whoamiError.response.data.hint}
+                      </div>
+                    )}
                   </div>
                 )}
                 {whoamiResult && (
