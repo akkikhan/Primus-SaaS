@@ -1,0 +1,406 @@
+# Primus Identity Validator for Python
+
+[![PyPI version](https://badge.fury.io/py/primus-identity-validator.svg)](https://badge.fury.io/py/primus-identity-validator)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**Multi-issuer JWT validation for Python applications** - Azure AD, Auth0, Google, Cognito, and local JWT support.
+
+Part of the [Primus SaaS Platform](https://github.com/akkikhan/Primus-SaaS) - Production-ready backend modules for modern applications.
+
+## Features
+
+✅ **Multi-Issuer Support** - Validate tokens from multiple identity providers in a single application  
+✅ **OIDC Auto-Discovery** - Automatic JWKS fetching for Azure AD, Auth0, Google, Cognito  
+✅ **Local JWT** - Symmetric (HS256) and asymmetric (RS256) key support  
+✅ **FastAPI Integration** - Middleware and dependency injection  
+✅ **Flask Integration** - Decorators and extensions  
+✅ **Role & Permission Checks** - Built-in authorization helpers  
+✅ **Tenant Resolution** - Custom tenant context from token claims  
+✅ **Fully Typed** - Complete type hints for IDE support  
+
+## Installation
+
+```bash
+# Core package
+pip install primus-identity-validator
+
+# With FastAPI support
+pip install primus-identity-validator[fastapi]
+
+# With Flask support
+pip install primus-identity-validator[flask]
+
+# Full installation (all frameworks + dev tools)
+pip install primus-identity-validator[all]
+```
+
+## Quick Start
+
+### Basic Usage
+
+```python
+from primus_identity import (
+    PrimusIdentityValidator,
+    PrimusIdentityOptions,
+    IssuerConfig,
+)
+
+# Configure issuers
+options = PrimusIdentityOptions(
+    issuers=[
+        # Azure AD (OIDC)
+        IssuerConfig(
+            name="AzureAD",
+            type="oidc",
+            issuer="https://login.microsoftonline.com/{tenant-id}/v2.0",
+            authority="https://login.microsoftonline.com/{tenant-id}/v2.0",
+            audiences=["api://your-client-id"],
+        ),
+        # Local JWT for development
+        IssuerConfig(
+            name="LocalAuth",
+            type="jwt",
+            issuer="https://auth.local",
+            secret="your-local-secret-key",
+            audiences=["api://my-api"],
+        ),
+    ]
+)
+
+# Create validator
+validator = PrimusIdentityValidator(options)
+
+# Validate a token
+result = await validator.validate_token(token)
+
+if result.is_valid:
+    print(f"User: {result.user.sub}")
+    print(f"Email: {result.user.email}")
+    print(f"Roles: {result.user.roles}")
+else:
+    print(f"Error: {result.error}")
+```
+
+### FastAPI Integration
+
+```python
+from fastapi import FastAPI, Depends
+from primus_identity import PrimusIdentityValidator, PrimusIdentityOptions, IssuerConfig, PrimusUser
+from primus_identity.fastapi import (
+    PrimusIdentityMiddleware,
+    create_auth_dependency,
+    require_roles,
+)
+
+app = FastAPI()
+
+# Configure validator
+options = PrimusIdentityOptions(
+    issuers=[
+        IssuerConfig(
+            name="AzureAD",
+            type="oidc",
+            issuer="https://login.microsoftonline.com/{tenant-id}/v2.0",
+            authority="https://login.microsoftonline.com/{tenant-id}/v2.0",
+            audiences=["api://your-client-id"],
+        ),
+    ]
+)
+validator = PrimusIdentityValidator(options)
+
+# Option 1: Use middleware (validates all requests)
+app.add_middleware(
+    PrimusIdentityMiddleware,
+    validator=validator,
+    exclude_paths=["/health", "/docs", "/openapi.json"],
+)
+
+# Option 2: Use dependency injection (per-route)
+get_current_user = create_auth_dependency(validator)
+
+@app.get("/me")
+async def get_me(user: PrimusUser = Depends(get_current_user)):
+    return {
+        "user_id": user.sub,
+        "email": user.email,
+        "roles": user.roles,
+    }
+
+# Option 3: With role requirements
+@app.get("/admin")
+@require_roles("admin", "superuser")
+async def admin_endpoint(user: PrimusUser = Depends(get_current_user)):
+    return {"message": "Welcome, admin!"}
+```
+
+### Flask Integration
+
+```python
+from flask import Flask, jsonify
+from primus_identity import PrimusIdentityValidator, PrimusIdentityOptions, IssuerConfig
+from primus_identity.flask import (
+    PrimusIdentityExtension,
+    get_current_user,
+    login_required,
+    require_roles,
+)
+
+app = Flask(__name__)
+
+# Configure validator
+options = PrimusIdentityOptions(
+    issuers=[
+        IssuerConfig(
+            name="LocalAuth",
+            type="jwt",
+            issuer="https://auth.local",
+            secret="your-secret-key",
+            audiences=["api://my-api"],
+        ),
+    ]
+)
+validator = PrimusIdentityValidator(options)
+
+# Option 1: Use extension (validates all requests)
+primus = PrimusIdentityExtension(app, validator)
+
+# Option 2: Use decorators (per-route)
+@app.route("/protected")
+@login_required(validator)
+def protected_route():
+    user = get_current_user()
+    return jsonify({"user_id": user.sub})
+
+# Option 3: With role requirements
+@app.route("/admin")
+@require_roles("admin", validator=validator)
+def admin_route():
+    return jsonify({"message": "Welcome, admin!"})
+```
+
+## Configuration
+
+### Issuer Types
+
+#### OIDC (Azure AD, Auth0, Google, Cognito)
+
+```python
+IssuerConfig(
+    name="AzureAD",
+    type="oidc",  # or IssuerType.OIDC
+    issuer="https://login.microsoftonline.com/{tenant-id}/v2.0",
+    authority="https://login.microsoftonline.com/{tenant-id}/v2.0",
+    audiences=["api://your-client-id"],
+)
+```
+
+#### Local JWT (Symmetric Secret)
+
+```python
+IssuerConfig(
+    name="LocalAuth",
+    type="jwt",
+    issuer="https://auth.local",
+    secret="your-hs256-secret-key",
+    audiences=["api://my-api"],
+)
+```
+
+#### JWT with JWKS Endpoint
+
+```python
+IssuerConfig(
+    name="CustomAuth",
+    type="jwt",
+    issuer="https://auth.custom.com",
+    jwks_url="https://auth.custom.com/.well-known/jwks.json",
+    audiences=["api://my-api"],
+)
+```
+
+### Claim Mappings
+
+Map provider-specific claims to standard names:
+
+```python
+IssuerConfig(
+    name="Auth0",
+    type="oidc",
+    issuer="https://your-tenant.auth0.com/",
+    authority="https://your-tenant.auth0.com/",
+    audiences=["api://your-api"],
+    claim_mappings={
+        "https://myapp.com/roles": "roles",
+        "https://myapp.com/org_id": "org_id",
+    },
+    role_claim_name="https://myapp.com/roles",
+)
+```
+
+### Tenant Resolution
+
+Resolve tenant context from token claims:
+
+```python
+from primus_identity import TenantContext
+
+def resolve_tenant(claims: dict) -> TenantContext:
+    org_id = claims.get("org_id", "default")
+    return TenantContext(
+        tenant_id=org_id,
+        roles=["tenant-user"],
+        metadata={"plan": "enterprise"},
+    )
+
+options = PrimusIdentityOptions(
+    issuers=[...],
+    tenant_resolver=resolve_tenant,
+)
+```
+
+## PrimusUser API
+
+The `PrimusUser` object provides convenient methods for authorization:
+
+```python
+user: PrimusUser = result.user
+
+# Basic properties
+user.sub          # Subject (user ID)
+user.email        # Email address
+user.name         # Display name
+user.roles        # List of roles
+user.permissions  # List of permissions
+user.claims       # All original claims
+
+# Role checks
+user.has_role("admin")                    # Has specific role
+user.has_any_role("admin", "superuser")   # Has at least one role
+user.has_all_roles("admin", "user")       # Has all roles
+
+# Permission checks
+user.has_permission("read:users")         # Has specific permission
+
+# Scope checks (OAuth)
+user.has_scope("openid")                  # Has specific scope
+```
+
+## Testing with TokenBuilder
+
+Create test tokens easily:
+
+```python
+from primus_identity import TokenBuilder
+
+builder = TokenBuilder(
+    secret="test-secret",
+    issuer="https://auth.local",
+    audience="api://my-api",
+)
+
+# Create a valid token
+token = builder.build(
+    sub="user-123",
+    email="test@example.com",
+    roles=["admin"],
+)
+
+# Create an expired token (for testing expiration handling)
+expired_token = builder.build_expired_token(
+    sub="user-123",
+    expired_seconds_ago=3600,
+)
+
+# Create a machine-to-machine token
+m2m_token = builder.build_m2m_token(
+    client_id="service-client",
+    scopes=["read:data", "write:data"],
+)
+```
+
+## Error Handling
+
+```python
+result = await validator.validate_token(token)
+
+if not result.is_valid:
+    match result.error_code:
+        case "ISSUER_NOT_CONFIGURED":
+            # Token from unknown issuer
+            pass
+        case "TOKEN_EXPIRED":
+            # Token has expired
+            pass
+        case "SIGNATURE_INVALID":
+            # Invalid signature
+            pass
+        case "AUDIENCE_MISMATCH":
+            # Wrong audience
+            pass
+        case _:
+            # Other validation error
+            pass
+```
+
+## API Reference
+
+### PrimusIdentityOptions
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `issuers` | `List[IssuerConfig]` | Required | List of trusted identity providers |
+| `require_https_metadata` | `bool` | `True` | Require HTTPS for OIDC endpoints |
+| `allow_http_on_localhost` | `bool` | `True` | Allow HTTP for localhost development |
+| `clock_skew_seconds` | `int` | `300` | Clock skew tolerance (5 minutes) |
+| `validate_lifetime` | `bool` | `True` | Validate token expiration |
+| `jwks_cache_ttl_hours` | `int` | `24` | JWKS cache TTL |
+| `tenant_resolver` | `Callable` | `None` | Custom tenant resolver function |
+
+### IssuerConfig
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `name` | `str` | Yes | Friendly name for the issuer |
+| `type` | `"oidc" \| "jwt"` | Yes | Issuer type |
+| `issuer` | `str` | Yes | Expected `iss` claim value |
+| `audiences` | `List[str]` | Yes | Valid audience values |
+| `authority` | `str` | OIDC only | OIDC authority URL |
+| `secret` | `str` | JWT only | Symmetric signing key |
+| `jwks_url` | `str` | JWT only | JWKS endpoint URL |
+| `claim_mappings` | `Dict[str, str]` | No | Claim name mappings |
+| `role_claim_name` | `str` | No | Custom role claim name |
+
+## Migration from Other Libraries
+
+### From python-jose
+
+```python
+# Before (python-jose)
+from jose import jwt
+claims = jwt.decode(token, key, algorithms=["RS256"], audience="api://my-api")
+
+# After (primus-identity-validator)
+from primus_identity import PrimusIdentityValidator, PrimusIdentityOptions, IssuerConfig
+
+validator = PrimusIdentityValidator(PrimusIdentityOptions(
+    issuers=[IssuerConfig(...)]
+))
+result = await validator.validate_token(token)
+user = result.user
+```
+
+## Related Packages
+
+- **[primus-identity-validator (NuGet)](https://www.nuget.org/packages/PrimusSaaS.Identity.Validator)** - .NET SDK
+- **[@primus-saas/identity-validator (npm)](https://www.npmjs.com/package/@primus-saas/identity-validator)** - Node.js SDK
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+## Support
+
+- 📖 [Documentation](https://akkikhan.github.io/Primus-SaaS/docs/modules/identity-validator)
+- 🐛 [Issue Tracker](https://github.com/akkikhan/Primus-SaaS/issues)
+- 💬 [Discussions](https://github.com/akkikhan/Primus-SaaS/discussions)

@@ -1,6 +1,6 @@
 # Primus SaaS Identity Validator - .NET SDK
 
-**Package version:** 1.3.6
+**Package version:** 1.5.0
 
 Official .NET SDK for validating JWT/OIDC tokens from your configured identity providers (Azure AD, Auth0, Cognito, Google, or any JWT issuer). The package is library-only: no Primus-hosted login, no Primus-issued tokens, no outbound calls to Primus.
 
@@ -12,11 +12,14 @@ Official .NET SDK for validating JWT/OIDC tokens from your configured identity p
 
 ### Supported Frameworks
 
-| Framework | Status | Notes |
-|-----------|--------|-------|
-| .NET 8.0 | ✅ Supported | Recommended for new projects |
-| .NET 7.0 | ✅ Supported | Full feature parity |
-| .NET 6.0 | ✅ Supported | LTS - production ready |
+| Framework | Status | JwtBearer Version | Notes |
+|-----------|--------|-------------------|-------|
+| .NET 9.0 | ✅ Supported | 9.0.11 | **Latest** - full feature parity |
+| .NET 8.0 | ✅ Supported | 8.0.22 | Recommended LTS |
+| .NET 7.0 | ✅ Supported | 7.0.20 | Full feature parity |
+| .NET 6.0 | ✅ Supported | 6.0.36 | LTS - production ready |
+
+> **Dependency Note:** Each target framework uses the matching `Microsoft.AspNetCore.Authentication.JwtBearer` version (e.g., .NET 9 projects pull JwtBearer 9.0.11). All frameworks share `System.IdentityModel.Tokens.Jwt` 8.14.0.
 
 ### SDK Requirements
 
@@ -24,6 +27,7 @@ Official .NET SDK for validating JWT/OIDC tokens from your configured identity p
 
 | Your Project Targets | Required SDK | Download |
 |---------------------|--------------|----------|
+| .NET 9.0 | .NET SDK 9.0+ | [Download](https://dotnet.microsoft.com/download/dotnet/9.0) |
 | .NET 8.0 | .NET SDK 8.0+ | [Download](https://dotnet.microsoft.com/download/dotnet/8.0) |
 | .NET 7.0 | .NET SDK 7.0+ | [Download](https://dotnet.microsoft.com/download/dotnet/7.0) |
 | .NET 6.0 | .NET SDK 6.0+ | [Download](https://dotnet.microsoft.com/download/dotnet/6.0) |
@@ -131,6 +135,349 @@ curl -H "Authorization: Bearer YOUR_TOKEN_HERE" https://localhost:5001/api/secur
 ```
 
 ✅ **Done!** Your API is now secured with Auth0.
+
+---
+
+## 🆕 Modern Minimal API Integration (.NET 8/9)
+
+This section shows how to wire the validator into modern minimal API and controller pipelines.
+
+### Minimal API (Complete Example)
+
+```csharp
+using PrimusSaaS.Identity.Validator;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// 1. Services: Add Primus Identity with your preferred provider
+builder.Services.AddPrimusIdentity(options =>
+{
+    // Option A: Auth0 (one-liner)
+    options.UseAuth0("your-tenant.auth0.com", "https://your-api");
+
+    // Option B: Azure AD
+    // options.Issuers.Add(new IssuerConfig
+    // {
+    //     Name = "AzureAD",
+    //     Type = IssuerType.AzureAD,
+    //     Issuer = "https://login.microsoftonline.com/{tenant-id}/v2.0",
+    //     Authority = "https://login.microsoftonline.com/{tenant-id}/v2.0",
+    //     Audiences = { "api://your-api-id" }
+    // });
+
+    // Logging options (optional)
+    options.Logging = new PrimusIdentityLoggingOptions
+    {
+        MinimumLevel = LogLevel.Information,
+        RedactSensitiveData = true,
+        LogValidationSteps = true
+    };
+});
+
+builder.Services.AddAuthorization();
+
+var app = builder.Build();
+
+// 2. Middleware: Order matters!
+app.UseAuthentication();
+app.UseAuthorization();
+
+// 3. Diagnostics: Exposes auth failure hints (optional but recommended)
+app.MapPrimusIdentityDiagnostics();
+
+// 4. Endpoints: Use .RequireAuthorization() for minimal APIs
+app.MapGet("/", () => "Hello, World!");
+
+app.MapGet("/whoami", (HttpContext ctx) =>
+{
+    var user = ctx.GetPrimusUser();
+    return Results.Ok(new
+    {
+        userId = user?.UserId,
+        email = user?.Email,
+        name = user?.Name,
+        roles = user?.Roles,
+        issuer = user?.Issuer
+    });
+}).RequireAuthorization();
+
+app.MapGet("/admin", () => Results.Ok(new { message = "Admin access granted" }))
+    .RequireAuthorization(policy => policy.RequireRole("Admin"));
+
+app.Run();
+```
+
+### Controller-Based API (Complete Example)
+
+```csharp
+// Program.cs
+using PrimusSaaS.Identity.Validator;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Services
+builder.Services.AddPrimusIdentity(options =>
+{
+    builder.Configuration.GetSection("PrimusIdentity").Bind(options);
+});
+builder.Services.AddAuthorization();
+builder.Services.AddControllers();
+
+var app = builder.Build();
+
+// Middleware pipeline
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Map controllers and diagnostics
+app.MapControllers();
+app.MapPrimusIdentityDiagnostics();
+
+app.Run();
+```
+
+```csharp
+// Controllers/SecureController.cs
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using PrimusSaaS.Identity.Validator;
+
+[ApiController]
+[Route("api/[controller]")]
+public class SecureController : ControllerBase
+{
+    [HttpGet("public")]
+    public IActionResult Public() => Ok(new { message = "Public endpoint" });
+
+    [HttpGet("protected")]
+    [Authorize]
+    public IActionResult Protected()
+    {
+        var user = HttpContext.GetPrimusUser();
+        return Ok(new
+        {
+            message = "Authenticated!",
+            user = new { user?.UserId, user?.Email, user?.Roles }
+        });
+    }
+
+    [HttpGet("admin")]
+    [Authorize(Roles = "Admin")]
+    public IActionResult AdminOnly() => Ok(new { message = "Admin access" });
+}
+```
+
+### Configuration via appsettings.json
+
+```json
+{
+  "PrimusIdentity": {
+    "Issuers": [
+      {
+        "Name": "Auth0",
+        "Type": "Oidc",
+        "Issuer": "https://your-tenant.auth0.com/",
+        "Authority": "https://your-tenant.auth0.com/",
+        "Audiences": ["https://your-api"],
+        "AllowMachineToMachine": true
+      }
+    ],
+    "RequireHttpsMetadata": true,
+    "ValidateLifetime": true,
+    "ClockSkew": "00:05:00"
+  }
+}
+```
+
+### Middleware Order (Critical!)
+
+```csharp
+// CORRECT ORDER - Authentication must come before Authorization
+app.UseAuthentication();    // 1. Validates JWT, sets HttpContext.User
+app.UseAuthorization();     // 2. Checks policies, roles, claims
+
+// WRONG - Authorization before Authentication will always fail
+// app.UseAuthorization();
+// app.UseAuthentication();
+```
+
+### Extension Methods Reference
+
+| Method | Purpose |
+|--------|---------|
+| `services.AddPrimusIdentity(options)` | Register authentication services |
+| `services.AddPrimusIdentityForAzureAD(tenantId, clientId)` | One-liner Azure AD setup |
+| `services.AddPrimusIdentityForAuth0(domain, audience)` | One-liner Auth0 setup |
+| `services.AddPrimusDevDiagnostics()` | Enable dev-mode diagnostics |
+| `app.MapPrimusIdentityDiagnostics()` | Expose `/primus-identity/diagnostics` endpoint |
+| `app.MapPrimusDevDiagnostics()` | Expose detailed dev diagnostics endpoints |
+| `options.AddPrimusSwagger()` | Auto-configure Swagger security definitions |
+| `HttpContext.GetPrimusUser()` | Get authenticated user info |
+| `HttpContext.GetMatchedIssuer()` | Get which issuer validated the token |
+
+---
+
+## 🎯 Primus Authorization Attributes (v1.5.0+)
+
+Custom authorization attributes that clearly indicate auth is handled by Primus, improving discoverability.
+
+### Available Attributes
+
+| Attribute | Purpose |
+|-----------|---------|
+| `[PrimusAuthorize]` | Requires authentication with optional policy/roles |
+| `[PrimusAuthorizeRoles("Admin", "Manager")]` | Requires specific roles |
+| `[PrimusAuthorizePermissions("read:users")]` | Requires specific scope/permission claims |
+| `[PrimusAuthenticated]` | Simply requires authentication (no policy) |
+
+### Usage Examples
+
+```csharp
+using PrimusSaaS.Identity.Validator;
+
+[ApiController]
+[Route("api/[controller]")]
+public class UsersController : ControllerBase
+{
+    // Requires authentication only
+    [HttpGet]
+    [PrimusAuthenticated]
+    public IActionResult GetUsers() => Ok();
+
+    // Requires Admin OR Manager role
+    [HttpPost]
+    [PrimusAuthorizeRoles("Admin", "Manager")]
+    public IActionResult CreateUser() => Ok();
+
+    // Requires specific permission/scope
+    [HttpDelete("{id}")]
+    [PrimusAuthorizePermissions("delete:users")]
+    public IActionResult DeleteUser(int id) => Ok();
+
+    // Class-level with method override
+    [HttpGet("public")]
+    [AllowAnonymous]  // Override for public endpoint
+    public IActionResult PublicEndpoint() => Ok();
+}
+```
+
+---
+
+## 🔧 One-Liner Provider Setup (v1.5.0+)
+
+### Azure AD / Microsoft Entra ID
+
+```csharp
+// Handles both v1.0 (M2M) and v2.0 (interactive) issuers automatically
+builder.Services.AddPrimusIdentityForAzureAD(
+    tenantId: "your-tenant-id",
+    clientId: "api://your-client-id",
+    allowMachineToMachine: true);  // default: true
+```
+
+### Auth0
+
+```csharp
+builder.Services.AddPrimusIdentityForAuth0(
+    domain: "your-tenant.auth0.com",
+    audience: "https://your-api",
+    allowMachineToMachine: true);  // default: false
+```
+
+---
+
+## 📊 Swagger/OpenAPI Integration (v1.5.0+)
+
+Auto-configure Swagger security definitions based on your Primus Identity issuers.
+
+```csharp
+builder.Services.AddSwaggerGen(options =>
+{
+    // Auto-add security schemes for all configured issuers
+    options.AddPrimusSwagger(primusOptions);
+    
+    // Or simple Bearer-only setup
+    options.AddPrimusBearerSwagger();
+    
+    // Or Azure AD OAuth2 flow
+    options.AddPrimusAzureAdSwagger(
+        tenantId: "your-tenant-id",
+        clientId: "your-client-id");
+    
+    // Or Auth0 OAuth2 flow
+    options.AddPrimusAuth0Swagger(
+        domain: "your-tenant.auth0.com",
+        audience: "https://your-api");
+});
+```
+
+---
+
+## 🔍 Development Diagnostics (v1.5.0+)
+
+Enhanced diagnostics for debugging authentication issues during development.
+
+### Enable Dev Diagnostics
+
+```csharp
+builder.Services.AddPrimusDevDiagnostics(options =>
+{
+    options.EnableDetailedErrors = true;        // Detailed error messages
+    options.IncludeTokenHintsInChallenges = true;  // Hints in WWW-Authenticate
+    options.IncludeDebugHeaders = true;         // X-Primus-* debug headers
+    options.LogTokenRejectionReasons = true;    // Log why tokens fail
+    options.MaxRecentFailures = 100;            // Track last 100 failures
+});
+
+// Or auto-detect development environment
+builder.Services.AddPrimusDevDiagnostics();  // Uses safe defaults in prod
+```
+
+### Map Diagnostics Endpoints
+
+```csharp
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    // Maps these endpoints under /_primus/diagnostics:
+    // GET /_primus/diagnostics - Overview of auth configuration
+    // GET /_primus/diagnostics/failures - Recent auth failures
+    // GET /_primus/diagnostics/failures/stats - Failure statistics
+    // POST /_primus/diagnostics/validate-token - Test token validation
+    // DELETE /_primus/diagnostics/failures - Clear failure history
+    app.MapPrimusDevDiagnostics();
+}
+```
+
+### Diagnostics Options Presets
+
+```csharp
+// For development - all diagnostics enabled
+options.Diagnostics = PrimusDiagnosticsOptions.ForDevelopment();
+
+// For production - safe defaults, no sensitive info exposed
+options.Diagnostics = PrimusDiagnosticsOptions.ForProduction();
+```
+
+### Example Diagnostics Response
+
+```json
+GET /_primus/diagnostics/failures
+{
+  "totalSinceStartup": 15,
+  "count": 5,
+  "failures": [
+    {
+      "timestamp": "2025-12-01T10:30:00Z",
+      "reason": "IssuerNotConfigured",
+      "reasonDescription": "Token issuer not found in configured issuers",
+      "tokenIssuer": "https://wrong-issuer.auth0.com/",
+      "configuredIssuers": ["Auth0", "AzureAD"]
+    }
+  ]
+}
+```
 
 ---
 
@@ -737,8 +1084,10 @@ The SDK automatically logs authentication events to the console. For more detail
 
 ## Requirements
 
-- .NET 7.0 or later
-- ASP.NET Core 7.0 or later
+- .NET 6.0, 7.0, 8.0, or 9.0
+- ASP.NET Core 6.0, 7.0, 8.0, or 9.0
+
+> **Dependency Matrix:** See the [Supported Frameworks](#supported-frameworks) table at the top for the exact `Microsoft.AspNetCore.Authentication.JwtBearer` version used per framework.
 
 ## ✅ Integration checklist (Auth0 + Azure AD)
 - Auth0: Create an API (Machine-to-Machine Application) with `audience = https://your-api`. Enable **Client Credentials**. Docs: https://auth0.com/docs/get-started/auth0-overview/set-up-apis.

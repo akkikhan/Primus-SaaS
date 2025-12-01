@@ -4,17 +4,66 @@ const sidebars = {
     'intro',
     {
       type: 'category',
-      label: 'Modules',
+      label: 'Identity Validator',
       collapsible: true,
       items: [
+        'modules/identity-quick-start',
+        'modules/identity-auth0',
+        'modules/identity-azure-ad',
+        'modules/identity-local-jwt',
+        'modules/identity-multi-issuer',
+        'modules/identity-advanced',
         'modules/identity-validator',
+      ]
+    },
+    {
+      type: 'category',
+      label: 'Logging',
+      collapsible: true,
+      items: [
+        'modules/logging-quick-start',
+        'modules/logging-advanced',
         'modules/logging-module',
+      ]
+    },
+    {
+      type: 'category',
+      label: 'Notifications',
+      collapsible: true,
+      items: [
+        'modules/notifications-quick-start',
+        'modules/notifications-advanced',
         'modules/notifications',
-        'modules/document-renderer',
+      ]
+    },
+    {
+      type: 'category',
+      label: 'Feature Flags',
+      collapsible: true,
+      items: [
+        'modules/feature-flags-quick-start',
+        'modules/feature-flags-advanced',
         'modules/feature-flags',
+      ]
+    },
+    {
+      type: 'category',
+      label: 'Document Renderer',
+      collapsible: true,
+      items: [
+        'modules/document-renderer-quick-start',
+        'modules/document-renderer-advanced',
+        'modules/document-renderer',
+      ]
+    },
+    {
+      type: 'category',
+      label: 'Integration Guides',
+      collapsible: true,
+      items: [
         'modules/client-integration-guide',
         'modules/live-demo-api',
-        'modules/version-matrix'
+        'modules/version-matrix',
       ]
     },
     'release-notes'

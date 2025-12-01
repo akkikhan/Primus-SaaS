@@ -39,7 +39,10 @@ portal/frontend/src/vite-env.d.ts
 .env.local
 .env.*.local
 portal/backend/appsettings.Development.json
+examples/LiveDemoApi/appsettings.Development.json
+examples/**/.env
 !.env.example
+!**/.env.example
 
 # Test outputs
 **/test_output*.txt

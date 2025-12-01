@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using PrimusSaaS.Identity.Validator.Services;
 
@@ -19,8 +20,16 @@ public static class PrimusDiagnosticsExtensions
         this IEndpointRouteBuilder endpoints,
         string pattern = "/primus/diagnostics")
     {
-        endpoints.MapGet(pattern, (IdentityDiagnosticsService diagService) =>
+        endpoints.MapGet(pattern, ([FromServices] IdentityDiagnosticsService? diagService) =>
         {
+            if (diagService is null)
+            {
+                return Results.Json(new
+                {
+                    error = "Primus Identity is not configured",
+                    message = "Call builder.Services.AddPrimusIdentity() to enable identity diagnostics"
+                }, statusCode: 503);
+            }
             var snapshot = diagService.GetSnapshot();
             return Results.Json(snapshot);
         })

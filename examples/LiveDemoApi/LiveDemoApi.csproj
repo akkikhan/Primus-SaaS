@@ -9,7 +9,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.22" />
-    <PackageReference Include="PrimusSaaS.Identity.Validator" Version="1.3.6" />
     <PackageReference Include="PrimusSaaS.Logging" Version="1.2.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
@@ -21,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\sdk\dotnet\PrimusSaaS.FeatureFlags\PrimusSaaS.FeatureFlags.csproj" />
     <ProjectReference Include="..\..\sdk\dotnet\Primus.Documents\Primus.Documents.csproj" />
+    <ProjectReference Include="..\..\sdk\dotnet\PrimusSaaS.Identity.Validator\PrimusSaaS.Identity.Validator.csproj" />
   </ItemGroup>
 
 </Project>

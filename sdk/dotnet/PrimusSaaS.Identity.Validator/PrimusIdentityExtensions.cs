@@ -382,6 +382,22 @@ public static class PrimusIdentityExtensions
     /// <summary>
     /// Convenience helper for Auth0 APIs with explicit machine-to-machine allowance.
     /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="domain">Auth0 domain (e.g., "my-tenant.auth0.com").</param>
+    /// <param name="audience">API identifier/audience (e.g., "https://my-api").</param>
+    /// <param name="allowMachineToMachine">Whether to allow client_credentials (M2M) tokens. Default: true.</param>
+    /// <param name="configure">Optional callback to further configure the issuer.</param>
+    /// <returns>The service collection for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// // Minimal setup
+    /// builder.Services.AddPrimusIdentityForAuth0("my-tenant.auth0.com", "https://my-api");
+    /// 
+    /// // With additional configuration
+    /// builder.Services.AddPrimusIdentityForAuth0("my-tenant.auth0.com", "https://my-api", 
+    ///     configure: issuer => issuer.RoleClaimName = "https://my-api/roles");
+    /// </code>
+    /// </example>
     public static IServiceCollection AddPrimusIdentityForAuth0(
         this IServiceCollection services,
         string domain,
@@ -406,6 +422,143 @@ public static class PrimusIdentityExtensions
             };
 
             configure?.Invoke(options.Issuers[0]);
+        });
+    }
+
+    /// <summary>
+    /// Convenience helper for Azure AD / Microsoft Entra ID APIs.
+    /// Configures both v2.0 (interactive) and v1.0 (client_credentials) issuers automatically.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="tenantId">Azure AD tenant ID (GUID or domain name).</param>
+    /// <param name="clientId">Application (client) ID or API identifier (e.g., "api://my-api-id").</param>
+    /// <param name="allowMachineToMachine">Whether to allow client_credentials (M2M) tokens. Default: true.</param>
+    /// <param name="configure">Optional callback to further configure the issuer.</param>
+    /// <returns>The service collection for chaining.</returns>
+    /// <remarks>
+    /// <para>Azure AD client_credentials tokens use the v1.0 issuer format (sts.windows.net) while 
+    /// interactive tokens typically use v2.0. This helper configures both automatically.</para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Minimal setup - supports both interactive and M2M tokens
+    /// builder.Services.AddPrimusIdentityForAzureAD("your-tenant-id", "api://your-client-id");
+    /// 
+    /// // Interactive-only (no M2M)
+    /// builder.Services.AddPrimusIdentityForAzureAD("your-tenant-id", "api://your-client-id", 
+    ///     allowMachineToMachine: false);
+    /// </code>
+    /// </example>
+    public static IServiceCollection AddPrimusIdentityForAzureAD(
+        this IServiceCollection services,
+        string tenantId,
+        string clientId,
+        bool allowMachineToMachine = true,
+        Action<IssuerConfig>? configure = null)
+    {
+        return services.AddPrimusIdentity(options =>
+        {
+            // v2.0 issuer for interactive/user tokens
+            var v2Issuer = new IssuerConfig
+            {
+                Name = "AzureAD-v2",
+                Type = IssuerType.AzureAD,
+                Issuer = $"https://login.microsoftonline.com/{tenantId}/v2.0",
+                Authority = $"https://login.microsoftonline.com/{tenantId}/v2.0",
+                Audiences = new List<string> { clientId },
+                AllowMachineToMachine = false
+            };
+
+            options.Issuers = new List<IssuerConfig> { v2Issuer };
+
+            if (allowMachineToMachine)
+            {
+                // v1.0 issuer for client_credentials (M2M) tokens
+                // Azure AD app-only tokens use sts.windows.net issuer format
+                options.Issuers.Add(new IssuerConfig
+                {
+                    Name = "AzureAD-v1-M2M",
+                    Type = IssuerType.AzureAD,
+                    Issuer = $"https://sts.windows.net/{tenantId}/",
+                    Authority = $"https://login.microsoftonline.com/{tenantId}/v2.0", // Use v2 for JWKS
+                    Audiences = new List<string> { clientId },
+                    AllowMachineToMachine = true,
+                    AllowedGrantTypes = new List<string> { "client_credentials" }
+                });
+            }
+
+            configure?.Invoke(v2Issuer);
+        });
+    }
+
+    /// <summary>
+    /// Convenience helper for Google OIDC / Google Identity.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="clientId">Google OAuth 2.0 Client ID.</param>
+    /// <param name="configure">Optional callback to further configure the issuer.</param>
+    /// <returns>The service collection for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// builder.Services.AddPrimusIdentityForGoogle("your-google-client-id.apps.googleusercontent.com");
+    /// </code>
+    /// </example>
+    public static IServiceCollection AddPrimusIdentityForGoogle(
+        this IServiceCollection services,
+        string clientId,
+        Action<IssuerConfig>? configure = null)
+    {
+        return services.AddPrimusIdentity(options =>
+        {
+            var issuer = new IssuerConfig
+            {
+                Name = "Google",
+                Type = IssuerType.Oidc,
+                Issuer = "https://accounts.google.com",
+                Authority = "https://accounts.google.com",
+                Audiences = new List<string> { clientId }
+            };
+
+            options.Issuers = new List<IssuerConfig> { issuer };
+            configure?.Invoke(issuer);
+        });
+    }
+
+    /// <summary>
+    /// Convenience helper for AWS Cognito User Pools.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="region">AWS region (e.g., "us-east-1").</param>
+    /// <param name="userPoolId">Cognito User Pool ID (e.g., "us-east-1_ABC123").</param>
+    /// <param name="clientId">Cognito App Client ID.</param>
+    /// <param name="configure">Optional callback to further configure the issuer.</param>
+    /// <returns>The service collection for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// builder.Services.AddPrimusIdentityForCognito("us-east-1", "us-east-1_ABC123", "app-client-id");
+    /// </code>
+    /// </example>
+    public static IServiceCollection AddPrimusIdentityForCognito(
+        this IServiceCollection services,
+        string region,
+        string userPoolId,
+        string clientId,
+        Action<IssuerConfig>? configure = null)
+    {
+        return services.AddPrimusIdentity(options =>
+        {
+            var issuerUrl = $"https://cognito-idp.{region}.amazonaws.com/{userPoolId}";
+            var issuer = new IssuerConfig
+            {
+                Name = "Cognito",
+                Type = IssuerType.Oidc,
+                Issuer = issuerUrl,
+                Authority = issuerUrl,
+                Audiences = new List<string> { clientId }
+            };
+
+            options.Issuers = new List<IssuerConfig> { issuer };
+            configure?.Invoke(issuer);
         });
     }
 

@@ -5,6 +5,37 @@ All notable changes to the Primus SaaS Identity Validator SDKs will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-02-01
+
+### Added - .NET SDK
+
+#### .NET 9.0 / ASP.NET Core 9.0 Support
+- **NEW:** Added `net9.0` to target frameworks - SDK now ships builds for .NET 6.0, 7.0, 8.0, and 9.0
+- **NEW:** JwtBearer 9.0.11 package reference for .NET 9.0 projects
+- **UPDATED:** JwtBearer 8.0.22 (latest patch) for .NET 8.0 projects
+
+#### Documentation Improvements
+- Added comprehensive framework compatibility table with JWT bearer version pins per TFM
+- Added Modern Minimal API Integration section with complete Program.cs examples
+- Added Controller-Based API integration examples
+- Added middleware order guidance and extension methods reference
+- Updated Requirements section to reflect all supported frameworks
+
+### Changed
+
+#### Dependencies
+| Framework | JwtBearer Version | Notes |
+|-----------|-------------------|-------|
+| .NET 9.0 | 9.0.11 | **NEW** |
+| .NET 8.0 | 8.0.22 | Updated from 8.0.10 |
+| .NET 7.0 | 7.0.20 | No change |
+| .NET 6.0 | 6.0.36 | No change |
+
+#### Build Notes
+- Multi-target builds require all SDK versions (6, 7, 8, 9) installed
+- Use `/p:TargetFrameworks="net6.0;net7.0;net8.0"` to build without .NET 9 SDK
+- CI/CD pipelines should install all required SDKs for full package builds
+
 ## [1.0.0] - 2025-11-15
 
 ### Added - .NET SDK

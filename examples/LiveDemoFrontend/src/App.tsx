@@ -6,7 +6,9 @@ import {
   Lock,
   LayoutDashboard,
   LogIn,
+  LogOut,
   CheckCircle,
+  CheckCircle2,
   AlertTriangle,
   Cloud,
   Server,
@@ -21,7 +23,8 @@ import {
   Send,
   RefreshCw,
   FileText,
-  Download
+  Download,
+  Zap
 } from 'lucide-react';
 import './App.css';
 
@@ -293,8 +296,11 @@ Thank you for using Primus SaaS!`);
     }
   };
 
-  const fetchLogs = async () => {
-    setIsLoadingLogs(true);
+  const fetchLogs = async (isAutoRefresh = false) => {
+    // Only show loading state for manual fetches, not auto-refresh
+    if (!isAutoRefresh) {
+      setIsLoadingLogs(true);
+    }
     setLogsError(null);
     try {
       const response = await axios.get(`${apiBaseUrl}/logs/recent`);
@@ -302,10 +308,14 @@ Thank you for using Primus SaaS!`);
       setLogsMeta({ file: response.data.file, size: response.data.size });
     } catch (err: any) {
       setLogsError(err);
-      setLogs('');
-      setLogsMeta(null);
+      if (!isAutoRefresh) {
+        setLogs('');
+        setLogsMeta(null);
+      }
     } finally {
-      setIsLoadingLogs(false);
+      if (!isAutoRefresh) {
+        setIsLoadingLogs(false);
+      }
     }
   };
 
@@ -428,10 +438,17 @@ Thank you for using Primus SaaS!`);
     }
   };
 
+  // Fetch logs when Logs tab is opened
+  useEffect(() => {
+    if (activeTab === 'logs') {
+      fetchLogs(false);
+    }
+  }, [activeTab]);
+
   useEffect(() => {
     if (!autoLogs) return;
-    fetchLogs();
-    const id = setInterval(fetchLogs, 3000);
+    fetchLogs(false); // Initial fetch shows loading
+    const id = setInterval(() => fetchLogs(true), 3000); // Auto-refresh is seamless
     return () => clearInterval(id);
   }, [autoLogs]);
 
@@ -558,6 +575,44 @@ Thank you for using Primus SaaS!`);
     </div>
   );
 
+  // Dynamic chart data based on telemetry
+  const getInsightsChartData = () => {
+    if (!telemetry) return [];
+    return [
+      { label: 'Memory', value: Math.min(100, (telemetry.memory?.workingSetMB || 0) / 5), color: '#f26b4f' },
+      { label: 'Threads', value: Math.min(100, (telemetry.runtime?.threadCount || 0) * 2), color: '#2fa66c' },
+      { label: 'Uptime', value: Math.min(100, Math.log10((telemetry.server?.uptime?.seconds || 1) + 1) * 25), color: '#6366f1' },
+      { label: 'GC Mem', value: Math.min(100, (telemetry.memory?.gcTotalMemoryMB || 0) / 2), color: '#f59e0b' },
+    ];
+  };
+
+  const renderInsightsChart = () => {
+    const data = getInsightsChartData();
+    if (data.length === 0) return null;
+    
+    return (
+      <div className="insights-chart-container">
+        <h3 className="chart-title">Resource Usage</h3>
+        <div className="insights-chart">
+          {data.map((item) => (
+            <div className="insights-bar-group" key={item.label}>
+              <div className="insights-bar-track">
+                <div 
+                  className="insights-bar-fill" 
+                  style={{ width: `${item.value}%`, backgroundColor: item.color }}
+                />
+              </div>
+              <div className="insights-bar-label">
+                <span>{item.label}</span>
+                <span className="insights-bar-value">{Math.round(item.value)}%</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const chartData = [
     { label: 'Income', value: 78 },
     { label: 'Alerts', value: 54 },
@@ -599,47 +654,227 @@ Thank you for using Primus SaaS!`);
     </div>
   );
 
+  /* ========================================================================
+   * LOGIN / LANDING PAGE
+   * Enterprise-grade split-screen layout with value proposition hero
+   * and clean authentication options
+   * ======================================================================== */
   if (!isLoggedIn) {
     return (
-      <div className="page">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card auth-card">
-          <div className="icon-circle primary">
-            <Shield size={36} />
-          </div>
-          <h1 className="title">Primus SaaS</h1>
-          <p className="subtitle">Enterprise Identity & Security Demo</p>
-
-          <div className="button-stack">
-            <button className="btn primary" onClick={() => handleLogin('Auth0')} disabled={isLoading}>
-              {isLoading && provider === 'Auth0' ? <div className="loader"></div> : <><Shield size={20} /> Sign in with Auth0</>}
-            </button>
-
-            <button className="btn azure" onClick={() => handleLogin('Azure')} disabled={isLoading}>
-              {isLoading && provider === 'Azure' ? <div className="loader"></div> : <><Cloud size={20} /> Sign in with Azure AD</>}
-            </button>
-          </div>
-
-          <div className="note-card">
-            <p className="subtitle">
-              Local JWT (shared secret) — exercise the Jwt issuer path without relying on Azure or Auth0.
-            </p>
-            <div className="form-column">
-              <div className="form-row">
-                <input className="input" placeholder="Email" value={localEmail} onChange={(e) => setLocalEmail(e.target.value)} />
-                <input type="password" className="input" placeholder="Password" value={localPassword} onChange={(e) => setLocalPassword(e.target.value)} />
-                <button className="btn ghost" onClick={() => handleLogin('LocalJwt')} disabled={isLoading}>
-                  {isLoading && provider === 'LocalJwt' ? <div className="loader"></div> : <><LogIn size={20} /> Sign in with Local JWT</>}
-                </button>
+      <main className="login-page">
+        {/* ----------------------------------------------------------------
+         * LEFT PANEL: Brand Hero with Value Proposition
+         * Communicates what the platform does at a glance
+         * ---------------------------------------------------------------- */}
+        <section className="login-hero">
+          <motion.div 
+            initial={{ opacity: 0, x: -30 }} 
+            animate={{ opacity: 1, x: 0 }} 
+            transition={{ duration: 0.6 }}
+            className="hero-content"
+          >
+            {/* Brand Identity */}
+            <div className="hero-brand">
+              <div className="hero-logo">
+                <Shield size={32} />
               </div>
-              <span className="helper">Default demo creds: demo@primus.local / PrimusDemo123! (override via appsettings or environment vars)</span>
+              <span className="hero-brand-name">Primus</span>
             </div>
-          </div>
 
-          {error && <div className="inline-error">Error: {error.response?.data?.error || error.message}</div>}
+            {/* Main Value Proposition */}
+            <h1 className="hero-headline">
+              Secure, intelligent infrastructure for modern development teams.
+            </h1>
+            <p className="hero-subheadline">
+              Enterprise-grade identity validation, structured logging, and smart notifications — all in reusable SDK modules.
+            </p>
 
-          <p className="footnote">Powered by PrimusSaaS.Identity.Validator</p>
-        </motion.div>
-      </div>
+            {/* Key Features */}
+            <ul className="hero-features">
+              <li>
+                <div className="feature-icon">
+                  <Shield size={18} />
+                </div>
+                <div className="feature-text">
+                  <strong>Multi-Issuer Identity</strong>
+                  <span>Validate JWT tokens from Azure AD, Auth0, or custom issuers with one SDK.</span>
+                </div>
+              </li>
+              <li>
+                <div className="feature-icon">
+                  <Activity size={18} />
+                </div>
+                <div className="feature-text">
+                  <strong>Structured Logging</strong>
+                  <span>PII masking, correlation IDs, and Application Insights out of the box.</span>
+                </div>
+              </li>
+              <li>
+                <div className="feature-icon">
+                  <Mail size={18} />
+                </div>
+                <div className="feature-text">
+                  <strong>Smart Notifications</strong>
+                  <span>Email &amp; SMS with Liquid templates, SMTP/Twilio ready.</span>
+                </div>
+              </li>
+            </ul>
+
+            {/* Trust Indicators */}
+            <div className="hero-trust">
+              <div className="trust-item">
+                <CheckCircle size={16} />
+                <span>SOC 2 Ready</span>
+              </div>
+              <div className="trust-item">
+                <Lock size={16} />
+                <span>Zero PII Storage</span>
+              </div>
+              <div className="trust-item">
+                <Server size={16} />
+                <span>Client-Side SDK</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Background decoration */}
+          <div className="hero-decoration"></div>
+        </section>
+
+        {/* ----------------------------------------------------------------
+         * RIGHT PANEL: Authentication Form
+         * Clean, accessible login options with clear hierarchy
+         * ---------------------------------------------------------------- */}
+        <section className="login-form-section">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="login-form-container"
+          >
+            {/* Form Header */}
+            <header className="form-header">
+              <h2 className="form-title">Welcome back</h2>
+              <p className="form-subtitle">Sign in to access the demo dashboard</p>
+            </header>
+
+            {/* SSO Options */}
+            <div className="sso-section">
+              <button 
+                className="sso-btn auth0" 
+                onClick={() => handleLogin('Auth0')} 
+                disabled={isLoading}
+                aria-label="Sign in with Auth0"
+              >
+                {isLoading && provider === 'Auth0' ? (
+                  <div className="loader"></div>
+                ) : (
+                  <>
+                    <div className="sso-icon auth0-icon">
+                      <Shield size={20} />
+                    </div>
+                    <span>Continue with Auth0</span>
+                  </>
+                )}
+              </button>
+
+              <button 
+                className="sso-btn azure" 
+                onClick={() => handleLogin('Azure')} 
+                disabled={isLoading}
+                aria-label="Sign in with Azure AD"
+              >
+                {isLoading && provider === 'Azure' ? (
+                  <div className="loader"></div>
+                ) : (
+                  <>
+                    <div className="sso-icon azure-icon">
+                      <Cloud size={20} />
+                    </div>
+                    <span>Continue with Azure AD</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="auth-divider">
+              <span>or sign in with credentials</span>
+            </div>
+
+            {/* Local JWT Form */}
+            <form className="credentials-form" onSubmit={(e) => { e.preventDefault(); handleLogin('LocalJwt'); }}>
+              <div className="form-field">
+                <label htmlFor="email" className="field-label">Email address</label>
+                <input 
+                  id="email"
+                  type="email" 
+                  className="field-input" 
+                  placeholder="you@company.com" 
+                  value={localEmail} 
+                  onChange={(e) => setLocalEmail(e.target.value)}
+                  autoComplete="email"
+                />
+              </div>
+
+              <div className="form-field">
+                <div className="field-label-row">
+                  <label htmlFor="password" className="field-label">Password</label>
+                  <a href="#" className="field-link" onClick={(e) => e.preventDefault()}>Forgot password?</a>
+                </div>
+                <input 
+                  id="password"
+                  type="password" 
+                  className="field-input" 
+                  placeholder="••••••••••" 
+                  value={localPassword} 
+                  onChange={(e) => setLocalPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="submit-btn" 
+                disabled={isLoading}
+              >
+                {isLoading && provider === 'LocalJwt' ? (
+                  <div className="loader"></div>
+                ) : (
+                  <>
+                    <LogIn size={18} />
+                    <span>Sign in</span>
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Error Display */}
+            {error && (
+              <div className="auth-error" role="alert">
+                <AlertTriangle size={16} />
+                <span>{error.response?.data?.error || error.message}</span>
+              </div>
+            )}
+
+            {/* Demo Credentials Hint */}
+            <div className="demo-hint">
+              <div className="hint-badge">Demo Mode</div>
+              <p>Use <code>demo@primus.local</code> / <code>PrimusDemo123!</code></p>
+            </div>
+
+            {/* Footer */}
+            <footer className="form-footer">
+              <p>Powered by <strong>PrimusSaaS.Identity.Validator</strong></p>
+              <div className="footer-links">
+                <a href="#">Documentation</a>
+                <span className="dot">·</span>
+                <a href="#">Support</a>
+              </div>
+            </footer>
+          </motion.div>
+        </section>
+      </main>
     );
   }
 
@@ -649,16 +884,19 @@ Thank you for using Primus SaaS!`);
         <header className="top-header">
           <div className="brand-block">
             <div className="brand-icon">
-              <LayoutDashboard size={26} />
+              <LayoutDashboard size={24} />
             </div>
             <div>
-              <p className="eyebrow">Primus SaaS</p>
-              <h1 className="page-title">Customer Experience Cockpit</h1>
+              <h1 className="page-title">Primus SDK Dashboard</h1>
             </div>
           </div>
           <div className="header-actions">
-            <span className="chip">Logged in via <strong>{provider}</strong></span>
-            <button className="btn ghost" onClick={() => { setIsLoggedIn(false); setApiData(null); setError(null); setToken(''); setProvider(''); }}>
+            <span className="chip success">
+              <CheckCircle2 size={14} />
+              {provider}
+            </span>
+            <button className="btn ghost sm" onClick={() => { setIsLoggedIn(false); setApiData(null); setError(null); setToken(''); setProvider(''); }}>
+              <LogOut size={16} />
               Sign Out
             </button>
           </div>
@@ -666,56 +904,78 @@ Thank you for using Primus SaaS!`);
 
         {tabs}
 
-        <div className="hero card span-2" id="overview">
-          <div className="hero-copy">
-            <p className="eyebrow">Live demo cockpit</p>
-            <h2 className="hero-title">Hey, need help? <span className="wave">👋</span></h2>
-            <p className="subtitle">Use the tiles to communicate with customers, preview messages, and watch system health in real time.</p>
+        {/* Elite Welcome Hero */}
+        <section className="welcome-hero">
+          <div className="hero-content">
+            <div className="hero-badge">
+              <Zap size={14} />
+              Live Integration Cockpit
+            </div>
+            <h2 className="hero-title">
+              Welcome back to <span>Primus</span>
+            </h2>
+            <p className="hero-description">
+              Your SDK modules are connected and operational. Test identity flows, monitor logs, send notifications, and track system health in real time.
+            </p>
             <div className="hero-actions">
               <button className="btn primary" onClick={fetchData} disabled={isLoading}>
-                {isLoading ? <div className="loader"></div> : <><Lock size={18} /> Fetch secure data</>}
+                {isLoading ? <div className="loader"></div> : <><Lock size={18} /> Fetch Secure Data</>}
               </button>
-              <button className="btn outline" onClick={() => fetchTelemetry(false)} disabled={isLoadingTelemetry}>
-                {isLoadingTelemetry ? <div className="loader"></div> : <><RefreshCw size={18} /> Refresh telemetry</>}
+              <button className="btn ghost" onClick={() => fetchTelemetry(false)} disabled={isLoadingTelemetry}>
+                {isLoadingTelemetry ? <div className="loader"></div> : <><RefreshCw size={18} /> Refresh Telemetry</>}
               </button>
             </div>
           </div>
-          <div className="hero-stats">
-            <div className="stat-tile">
-              <span className="label">Access token</span>
-              <strong>{provider || 'Not set'}</strong>
-              <small>Session ready</small>
+          <div className="hero-metrics">
+            <div className="metric-card">
+              <div className="metric-icon green">
+                <CheckCircle2 size={22} />
+              </div>
+              <div className="metric-info">
+                <div className="metric-label">Authentication</div>
+                <div className="metric-value success">{provider || 'Connected'}</div>
+              </div>
             </div>
-            <div className="stat-tile">
-              <span className="label">Telemetry</span>
-              <strong>{telemetry ? 'Live' : 'Ready'}</strong>
-              <small>{telemetry?.server?.name || 'Awaiting refresh'}</small>
+            <div className="metric-card">
+              <div className="metric-icon blue">
+                <Activity size={22} />
+              </div>
+              <div className="metric-info">
+                <div className="metric-label">Server Status</div>
+                <div className="metric-value">{telemetry?.server?.name || 'Ready'}</div>
+              </div>
             </div>
-            <div className="stat-tile">
-              <span className="label">Logs</span>
-              <strong>{autoLogs ? 'Auto' : 'Manual'}</strong>
-              <small>{logsMeta?.file || 'No file loaded'}</small>
+            <div className="metric-card">
+              <div className="metric-icon amber">
+                <FileText size={22} />
+              </div>
+              <div className="metric-info">
+                <div className="metric-label">Log Stream</div>
+                <div className="metric-value">{autoLogs ? 'Live Auto' : logsMeta?.file ? 'Manual' : 'Idle'}</div>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
 
         <div className="tab-content">
           {activeTab === 'goldenpath' && (
-            <div className="dashboard-grid">
+            <div className="modules-grid">
               {/* Identity: /whoami */}
-              <div className="card span-2">
-                <div className="section-title">
-                  <Shield size={20} />
-                  <div>
-                    <h2>🔐 Identity Validator — /whoami</h2>
-                    <p className="subtitle">Protected endpoint returning JWT claims. Demonstrates multi-issuer validation.</p>
+              <div className="card featured">
+                <div className="card-header">
+                  <div className="card-icon identity">
+                    <Shield size={24} />
+                  </div>
+                  <div className="card-title-group">
+                    <h3 className="card-title">Identity Validator</h3>
+                    <p className="card-subtitle">Protected /whoami endpoint returning JWT claims. Demonstrates multi-issuer validation.</p>
                   </div>
                 </div>
                 <div className="form-row">
                   <button className="btn primary" onClick={fetchWhoami} disabled={isLoadingWhoami || !token}>
                     {isLoadingWhoami ? <div className="loader"></div> : 'Call /whoami'}
                   </button>
-                  {!token && <span className="inline-status warning">⚠️ Login required</span>}
+                  {!token && <span className="chip danger">Login required</span>}
                 </div>
                 {whoamiError && (
                   <div className="result-block danger">
@@ -750,11 +1010,13 @@ Thank you for using Primus SaaS!`);
 
               {/* Logging: /log/test */}
               <div className="card">
-                <div className="section-title">
-                  <Activity size={20} />
-                  <div>
-                    <h2>📝 Logging Module — /log/test</h2>
-                    <p className="subtitle">Demonstrates structured logging with custom fields and PII redaction.</p>
+                <div className="card-header">
+                  <div className="card-icon logging">
+                    <Activity size={24} />
+                  </div>
+                  <div className="card-title-group">
+                    <h3 className="card-title">Logging Module</h3>
+                    <p className="card-subtitle">Structured logging with custom fields and automatic PII redaction.</p>
                   </div>
                 </div>
                 <div className="form-column">
@@ -776,7 +1038,7 @@ Thank you for using Primus SaaS!`);
                     </select>
                   </div>
                   <button className="btn primary" onClick={testLogging} disabled={isLoadingLogTest}>
-                    {isLoadingLogTest ? <div className="loader"></div> : 'Send test log'}
+                    {isLoadingLogTest ? <div className="loader"></div> : 'Send Test Log'}
                   </button>
                 </div>
                 {logTestError && (
@@ -798,11 +1060,13 @@ Thank you for using Primus SaaS!`);
 
               {/* Notifications: /notifications/test */}
               <div className="card">
-                <div className="section-title">
-                  <Mail size={20} />
-                  <div>
-                    <h2>📧 Notifications — /notifications/test</h2>
-                    <p className="subtitle">Renders PasswordReset Liquid template (preview only, no send).</p>
+                <div className="card-header">
+                  <div className="card-icon notifications">
+                    <Mail size={24} />
+                  </div>
+                  <div className="card-title-group">
+                    <h3 className="card-title">Notifications</h3>
+                    <p className="card-subtitle">Render Liquid templates for PasswordReset emails (preview only).</p>
                   </div>
                 </div>
                 <div className="form-column">
@@ -827,7 +1091,7 @@ Thank you for using Primus SaaS!`);
                     />
                   </div>
                   <button className="btn primary" onClick={testNotification} disabled={isLoadingNotifTest}>
-                    {isLoadingNotifTest ? <div className="loader"></div> : 'Render template'}
+                    {isLoadingNotifTest ? <div className="loader"></div> : 'Render Template'}
                   </button>
                 </div>
                 {notifTestError && (
@@ -865,11 +1129,13 @@ Thank you for using Primus SaaS!`);
 
               {/* Document Renderer Module Card */}
               <div className="card" id="document-renderer">
-                <div className="section-title">
-                  <FileText size={20} />
-                  <div>
-                    <h2>5. Document Renderer</h2>
-                    <p className="subtitle">Generate professional PDF documents from Markdown, HTML, or plain text.</p>
+                <div className="card-header">
+                  <div className="card-icon documents">
+                    <FileText size={24} />
+                  </div>
+                  <div className="card-title-group">
+                    <h3 className="card-title">Document Renderer</h3>
+                    <p className="card-subtitle">Generate professional PDF documents from Markdown, HTML, or plain text.</p>
                   </div>
                 </div>
                 
@@ -877,27 +1143,29 @@ Thank you for using Primus SaaS!`);
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500, fontSize: '14px' }}>Title</label>
                   <input
-                    className="form-input"
+                    className="input"
                     value={docTitle}
                     onChange={(e) => setDocTitle(e.target.value)}
                     placeholder="Document title..."
+                    style={{ width: '100%' }}
                   />
                 </div>
                 
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500, fontSize: '14px' }}>Subtitle</label>
                   <input
-                    className="form-input"
+                    className="input"
                     value={docSubtitle}
                     onChange={(e) => setDocSubtitle(e.target.value)}
                     placeholder="Document subtitle..."
+                    style={{ width: '100%' }}
                   />
                 </div>
                 
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500, fontSize: '14px' }}>Content Type</label>
                   <select
-                    className="form-input"
+                    className="input"
                     value={docContentType}
                     onChange={(e) => setDocContentType(e.target.value as 'PlainText' | 'Markdown' | 'Html')}
                     style={{ width: 'auto', minWidth: '150px' }}
@@ -911,11 +1179,10 @@ Thank you for using Primus SaaS!`);
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500, fontSize: '14px' }}>Content</label>
                   <textarea
-                    className="form-input"
+                    className="input textarea"
                     value={docContent}
                     onChange={(e) => setDocContent(e.target.value)}
                     rows={10}
-                    style={{ fontFamily: 'monospace', fontSize: '13px' }}
                     placeholder="Enter your document content..."
                   />
                 </div>
@@ -923,13 +1190,13 @@ Thank you for using Primus SaaS!`);
                 <div className="form-row">
                   <button className="btn primary" onClick={renderDocument} disabled={isRenderingDoc}>
                     {isRenderingDoc ? <div className="loader"></div> : <>
-                      <FileText size={16} style={{ marginRight: '8px' }} />
+                      <FileText size={16} />
                       Render PDF
                     </>}
                   </button>
                   {docResult?.downloadToken && (
                     <button className="btn success" onClick={downloadDocument}>
-                      <Download size={16} style={{ marginRight: '8px' }} />
+                      <Download size={16} />
                       Download PDF
                     </button>
                   )}
@@ -970,7 +1237,7 @@ Thank you for using Primus SaaS!`);
                     <div style={{ flex: '0 0 auto' }}>
                       <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500, fontSize: '14px' }}>Test Mode</label>
                       <select
-                        className="form-input"
+                        className="input"
                         value={selfTestMode}
                         onChange={(e) => setSelfTestMode(e.target.value as 'Basic' | 'Validation' | 'Complexity' | 'Full')}
                         style={{ width: 'auto', minWidth: '150px' }}
@@ -1042,24 +1309,26 @@ Thank you for using Primus SaaS!`);
           {activeTab === 'notifications' && (
             <div className="dashboard-grid">
               <div className="card" id="notifications">
-                <div className="section-title">
-                  <Activity size={20} />
-                  <div>
-                    <h2>Notification Health</h2>
-                    <p className="subtitle">Ensure email and SMS paths are ready before sending customers messages.</p>
+                <div className="card-header">
+                  <div className="card-icon green">
+                    <Activity size={24} />
+                  </div>
+                  <div className="card-title-group">
+                    <h3 className="card-title">Notification Health</h3>
+                    <p className="card-subtitle">Ensure email and SMS paths are ready before sending messages.</p>
                   </div>
                 </div>
                 <div className="form-row">
                   <button className="btn primary" onClick={checkNotificationHealth} disabled={isHealthLoading}>
-                    {isHealthLoading ? <div className="loader"></div> : 'Run health check'}
+                    {isHealthLoading ? <div className="loader"></div> : 'Run Health Check'}
                   </button>
                   {health && (
-                    <span className="inline-status success">
+                    <span className="chip success">
                       Email: {health.channels?.email} | SMS: {health.channels?.sms} | Logger: {health.channels?.logger}
                     </span>
                   )}
                   {healthError && (
-                    <span className="inline-status danger">
+                    <span className="chip danger">
                       {healthError.response?.status || ''} {healthError.message}
                     </span>
                   )}
@@ -1067,11 +1336,13 @@ Thank you for using Primus SaaS!`);
               </div>
 
               <div className="card">
-                <div className="section-title">
-                  <Mail size={20} />
-                  <div>
-                    <h2>Send Welcome Email</h2>
-                    <p className="subtitle">Quickly send a sample welcome note using your configured delivery paths.</p>
+                <div className="card-header">
+                  <div className="card-icon notifications">
+                    <Mail size={24} />
+                  </div>
+                  <div className="card-title-group">
+                    <h3 className="card-title">Send Welcome Email</h3>
+                    <p className="card-subtitle">Quickly send a sample welcome note using your configured delivery paths.</p>
                   </div>
                 </div>
                 <div className="form-column">
@@ -1079,18 +1350,18 @@ Thank you for using Primus SaaS!`);
                     <input className="input" placeholder="Recipient email" value={notificationEmail} onChange={(e) => setNotificationEmail(e.target.value)} />
                     <input className="input" placeholder="Recipient name" value={notificationName} onChange={(e) => setNotificationName(e.target.value)} />
                     <button className="btn primary" onClick={sendWelcomeEmail} disabled={isSendingNotification}>
-                      {isSendingNotification ? <div className="loader"></div> : <><Send size={18} /> Send test email</>}
+                      {isSendingNotification ? <div className="loader"></div> : <><Send size={18} /> Send Email</>}
                     </button>
                   </div>
 
                   {notificationResult && (
-                    <div className="status-card success">
+                    <div className="result-block success">
                       <strong>Sent via:</strong> {notificationResult.channel || 'Logger'} | queued: {String(notificationResult.queued)}
                     </div>
                   )}
 
                   {notificationError && (
-                    <div className="status-card error">
+                    <div className="result-block danger">
                       <strong>Error:</strong> {notificationError.response?.data?.detail || notificationError.message}
                     </div>
                   )}
@@ -1098,11 +1369,13 @@ Thank you for using Primus SaaS!`);
               </div>
 
               <div className="card">
-                <div className="section-title">
-                  <Phone size={20} />
-                  <div>
-                    <h2>Send SMS</h2>
-                    <p className="subtitle">Text a demo message to confirm the SMS experience end-to-end.</p>
+                <div className="card-header">
+                  <div className="card-icon amber">
+                    <Phone size={24} />
+                  </div>
+                  <div className="card-title-group">
+                    <h3 className="card-title">Send SMS</h3>
+                    <p className="card-subtitle">Text a demo message to confirm the SMS experience end-to-end.</p>
                   </div>
                 </div>
                 <div className="form-column">
@@ -1115,13 +1388,13 @@ Thank you for using Primus SaaS!`);
                   </div>
 
                   {smsResult && (
-                    <div className="status-card success">
+                    <div className="result-block success">
                       <strong>Sent via:</strong> {smsResult.channel || 'Logger'} | queued: {String(smsResult.queued)}
                     </div>
                   )}
 
                   {smsError && (
-                    <div className="status-card error">
+                    <div className="result-block danger">
                       <strong>Error:</strong> {smsError.response?.data?.detail || smsError.message}
                       <div className="helper">Verify Twilio config and number formatting (E.164) before retrying.</div>
                     </div>
@@ -1134,11 +1407,13 @@ Thank you for using Primus SaaS!`);
           {activeTab === 'templates' && (
             <div className="dashboard-grid">
               <div className="card span-2" id="templates">
-                <div className="section-title">
-                  <Mail size={20} />
-                  <div>
-                    <h2>Template Preview</h2>
-                    <p className="subtitle">Preview message templates (no send) to see exactly what customers receive.</p>
+                <div className="card-header">
+                  <div className="card-icon notifications">
+                    <Mail size={24} />
+                  </div>
+                  <div className="card-title-group">
+                    <h3 className="card-title">Template Preview</h3>
+                    <p className="card-subtitle">Preview message templates (no send) to see exactly what customers receive.</p>
                   </div>
                 </div>
 
@@ -1253,12 +1528,15 @@ Thank you for using Primus SaaS!`);
                         {telemetry.applicationInsights?.instrumentationKey && (
                           <div className="metric-sub">Key: {telemetry.applicationInsights.instrumentationKey.substring(0, 8)}...</div>
                         )}
+                        {!telemetry.applicationInsights?.enabled && (
+                          <div className="metric-sub">Configure connection string to enable</div>
+                        )}
                       </div>
 
                       <div className="metric-tile info">
                         <div className="metric-heading">
                           <Server size={18} />
-                          <strong>{telemetry.server?.name}</strong>
+                          <strong>{telemetry.server?.name || 'Server'}</strong>
                         </div>
                         <div className="metric-sub">PID: {telemetry.runtime?.processId}</div>
                       </div>
@@ -1268,7 +1546,7 @@ Thank you for using Primus SaaS!`);
                           <Clock size={18} />
                           <strong>Uptime</strong>
                         </div>
-                        <div className="metric-sub prominent">{telemetry.server?.uptime?.formatted}</div>
+                        <div className="metric-sub prominent">{telemetry.server?.uptime?.formatted || '—'}</div>
                       </div>
 
                       <div className="metric-tile pink">
@@ -1276,8 +1554,8 @@ Thank you for using Primus SaaS!`);
                           <HardDrive size={18} />
                           <strong>Memory</strong>
                         </div>
-                        <div className="metric-sub prominent">{telemetry.memory?.workingSetMB} MB working set</div>
-                        <div className="metric-sub">GC: {telemetry.memory?.gcTotalMemoryMB} MB</div>
+                        <div className="metric-sub prominent">{telemetry.memory?.workingSetMB || 0} MB working set</div>
+                        <div className="metric-sub">GC: {telemetry.memory?.gcTotalMemoryMB || 0} MB</div>
                       </div>
 
                       <div className="metric-tile amber">
@@ -1285,7 +1563,7 @@ Thank you for using Primus SaaS!`);
                           <Cpu size={18} />
                           <strong>Threads</strong>
                         </div>
-                        <div className="metric-sub prominent">{telemetry.runtime?.threadCount} active</div>
+                        <div className="metric-sub prominent">{telemetry.runtime?.threadCount || 0} active</div>
                       </div>
 
                       <div className="metric-tile teal">
@@ -1293,9 +1571,11 @@ Thank you for using Primus SaaS!`);
                           <Activity size={18} />
                           <strong>Runtime</strong>
                         </div>
-                        <div className="metric-sub wrap">{telemetry.runtime?.framework}</div>
+                        <div className="metric-sub wrap">{telemetry.runtime?.framework || '—'}</div>
                       </div>
                     </div>
+
+                    {renderInsightsChart()}
                   </div>
                 )}
 
@@ -1319,9 +1599,9 @@ Thank you for using Primus SaaS!`);
                   </div>
                 </div>
 
-                <div className="form-row wrap">
-                  <button className="btn primary" onClick={fetchLogs} disabled={isLoadingLogs}>
-                    {isLoadingLogs ? <div className="loader"></div> : 'Fetch latest logs'}
+                <div className="log-controls">
+                  <button className="btn primary" onClick={() => fetchLogs(false)} disabled={isLoadingLogs}>
+                    Fetch latest logs
                   </button>
                   <label className="checkbox">
                     <input
@@ -1337,7 +1617,7 @@ Thank you for using Primus SaaS!`);
                     </span>
                   )}
                   <select
-                    className="input log-filter"
+                    className="input log-filter-select"
                     value={logFilterLevel}
                     onChange={(e) => setLogFilterLevel(e.target.value as any)}
                   >
@@ -1347,7 +1627,7 @@ Thank you for using Primus SaaS!`);
                     <option value="Info">Info</option>
                   </select>
                   <input
-                    className="input log-filter"
+                    className="input log-search"
                     placeholder="Search text"
                     value={logSearch}
                     onChange={(e) => setLogSearch(e.target.value)}
@@ -1359,41 +1639,90 @@ Thank you for using Primus SaaS!`);
                   )}
                 </div>
 
-                {logs && (() => {
-                  const lines = logs.split('\n').filter(Boolean);
-                  const filtered = lines.filter((line) => {
-                    const levelMatch =
-                      logFilterLevel === 'All' ||
-                      (logFilterLevel === 'Error' && /error/i.test(line)) ||
-                      (logFilterLevel === 'Warn' && /warn/i.test(line)) ||
-                      (logFilterLevel === 'Info' && /info/i.test(line));
-                    const searchMatch = logSearch.trim()
-                      ? line.toLowerCase().includes(logSearch.trim().toLowerCase())
-                      : true;
-                    return levelMatch && searchMatch;
-                  });
-                  return (
-                    <div className="log-table">
-                      <div className="log-head">
-                        <span>Line</span>
-                        <span>Content</span>
-                      </div>
-                      <div className="log-body">
-                        {filtered.map((line, idx) => (
-                          <div className="log-row" key={`${idx}-${line}`}>
-                            <span className="log-idx">{idx + 1}</span>
-                            <span className="log-text">{line}</span>
-                          </div>
-                        ))}
-                        {filtered.length === 0 && (
-                          <div className="log-row empty">
-                            <span className="log-text">No log lines match your filters.</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
+                <div className="log-table-container">
+                  <table className="log-table-modern">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '50px' }}>#</th>
+                        <th style={{ width: '180px' }}>Timestamp</th>
+                        <th style={{ width: '80px' }}>Level</th>
+                        <th>Message</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        const lines = (logs || '').split('\n').filter(Boolean);
+                        const parsed = lines.map((line, idx) => {
+                          // Try to parse as JSON log format first
+                          try {
+                            const json = JSON.parse(line);
+                            const timestamp = json.timestamp 
+                              ? new Date(json.timestamp).toISOString().replace('T', ' ').replace('Z', '') 
+                              : '';
+                            const level = (json.level || json.Level || 'INFO').toUpperCase();
+                            const message = json.message || json.Message || JSON.stringify(json);
+                            
+                            // Map log levels
+                            let displayLevel = 'Info';
+                            if (/error/i.test(level)) displayLevel = 'Error';
+                            else if (/warn/i.test(level)) displayLevel = 'Warn';
+                            else if (/debug|trace/i.test(level)) displayLevel = 'Debug';
+                            
+                            return { idx: idx + 1, timestamp, level: displayLevel, message, raw: line };
+                          } catch {
+                            // Fallback: Parse old log format [2025-11-30 04:41:11Z] Message...
+                            const timestampMatch = line.match(/^\[([^\]]+)\]/);
+                            const timestamp = timestampMatch ? timestampMatch[1] : '';
+                            const rest = timestampMatch ? line.slice(timestampMatch[0].length).trim() : line;
+                            
+                            // Detect level from content
+                            let level = 'Info';
+                            if (/error|exception|fail/i.test(rest)) level = 'Error';
+                            else if (/warn/i.test(rest)) level = 'Warn';
+                            else if (/debug/i.test(rest)) level = 'Debug';
+                            
+                            return { idx: idx + 1, timestamp, level, message: rest, raw: line };
+                          }
+                        });
+
+                        const filtered = parsed.filter((entry) => {
+                          const levelMatch =
+                            logFilterLevel === 'All' ||
+                            (logFilterLevel === 'Error' && entry.level === 'Error') ||
+                            (logFilterLevel === 'Warn' && entry.level === 'Warn') ||
+                            (logFilterLevel === 'Info' && entry.level === 'Info');
+                          const searchMatch = logSearch.trim()
+                            ? entry.raw.toLowerCase().includes(logSearch.trim().toLowerCase())
+                            : true;
+                          return levelMatch && searchMatch;
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <tr className="log-empty-row">
+                              <td colSpan={4}>
+                                {logs ? 'No log lines match your filters.' : 'Log file not found yet. Generate activity to create it.'}
+                              </td>
+                            </tr>
+                          );
+                        }
+
+                        return filtered.map((entry) => (
+                          <tr key={entry.idx} className={`log-level-${entry.level.toLowerCase()}`}>
+                            <td className="log-idx">{entry.idx}</td>
+                            <td className="log-timestamp">{entry.timestamp}</td>
+                            <td>
+                              <span className={`log-level-badge ${entry.level.toLowerCase()}`}>
+                                {entry.level}
+                              </span>
+                            </td>
+                            <td className="log-message">{entry.message}</td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}

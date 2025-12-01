@@ -152,6 +152,29 @@ public class PrimusIdentityOptions
     public PrimusIdentityLoggingOptions Logging { get; set; } = new();
 
     /// <summary>
+    /// Development diagnostics options for debugging authentication issues.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Controls detailed error information, debug headers, and failure tracking.
+    /// These features are intended for development environments.
+    /// </para>
+    /// <para>
+    /// Use <see cref="Diagnostics.PrimusDiagnosticsOptions.ForDevelopment()"/> for development
+    /// or <see cref="Diagnostics.PrimusDiagnosticsOptions.ForProduction()"/> for production.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// builder.Services.AddPrimusIdentity(options =>
+    /// {
+    ///     options.Diagnostics = PrimusDiagnosticsOptions.ForDevelopment();
+    /// });
+    /// </code>
+    /// </example>
+    public Diagnostics.PrimusDiagnosticsOptions Diagnostics { get; set; } = new();
+
+    /// <summary>
     /// Whether to validate the token lifetime. Default is true.
     /// </summary>
     public bool ValidateLifetime { get; set; } = true;

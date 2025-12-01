@@ -1,0 +1,105 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "primus-identity-validator"
+version = "1.0.0"
+description = "Multi-issuer JWT validation for Python applications - Azure AD, Auth0, Google, Cognito, and local JWT support"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Primus SaaS Team", email = "support@primus-saas.com"}
+]
+maintainers = [
+    {name = "Primus SaaS Team", email = "support@primus-saas.com"}
+]
+keywords = [
+    "jwt",
+    "authentication",
+    "identity",
+    "azure-ad",
+    "auth0",
+    "oauth",
+    "oidc",
+    "fastapi",
+    "flask",
+    "security"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Internet :: WWW/HTTP :: Session",
+    "Framework :: FastAPI",
+    "Framework :: Flask",
+    "Typing :: Typed"
+]
+requires-python = ">=3.9"
+dependencies = [
+    "PyJWT>=2.8.0",
+    "cryptography>=41.0.0",
+    "httpx>=0.25.0",
+    "pydantic>=2.0.0",
+    "cachetools>=5.3.0"
+]
+
+[project.optional-dependencies]
+fastapi = [
+    "fastapi>=0.100.0",
+    "starlette>=0.27.0"
+]
+flask = [
+    "Flask>=2.0.0"
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "types-cachetools>=5.0.0"
+]
+all = [
+    "primus-identity-validator[fastapi,flask,dev]"
+]
+
+[project.urls]
+Homepage = "https://github.com/akkikhan/Primus-SaaS"
+Documentation = "https://akkikhan.github.io/Primus-SaaS/docs/modules/identity-validator"
+Repository = "https://github.com/akkikhan/Primus-SaaS"
+Changelog = "https://github.com/akkikhan/Primus-SaaS/blob/main/sdk/python/primus-identity-validator/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311', 'py312']
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-v --cov=primus_identity --cov-report=term-missing"

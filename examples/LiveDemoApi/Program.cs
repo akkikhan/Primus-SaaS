@@ -1,8 +1,6 @@
 // using Microsoft.AspNetCore.Authentication.JwtBearer; // Traditional auth example
 // using Microsoft.IdentityModel.Tokens;                // Traditional auth example
-using LiveDemoApi;
-using LiveDemoApi.Authentication;
-using Microsoft.AspNetCore.Authentication;
+// Step 1 -- Install
 using PrimusSaaS.Identity.Validator;
 using PrimusSaaS.Logging.Extensions;
 using PrimusSaaS.Notifications;
@@ -14,41 +12,23 @@ using PrimusSaaS.FeatureFlags;
 using Primus.Documents;
 using Primus.Documents.SelfTest;
 using Primus.Documents.LinkStore;
+using LiveDemoApi;
 
 var builder = WebApplication.CreateBuilder(args);
 var templatesRoot = Path.Combine(builder.Environment.ContentRootPath, "NotificationTemplates");
 
-bool HasValue(string? value, params string[] invalidTokens)
-{
-    if (string.IsNullOrWhiteSpace(value)) return false;
-    return !invalidTokens.Any(token => value.Equals(token, StringComparison.OrdinalIgnoreCase));
-}
-
-bool HasSmtpConfig(string? host, string? from, string? username, string? password) =>
-    HasValue(host) && HasValue(from, "your-email@gmail.com") && HasValue(username, "your-email@gmail.com") && HasValue(password, "your-app-password");
-
-bool HasTwilioConfig(TwilioOptions? options)
-{
-    if (options == null) return false;
-
-    var hasSid = HasValue(options.AccountSid, "your-twilio-account-sid") &&
-                 options.AccountSid.StartsWith("AC", StringComparison.OrdinalIgnoreCase);
-    var hasToken = HasValue(options.AuthToken, "your-twilio-auth-token");
-    var hasSender = HasValue(options.FromNumber, "+1234567890") || HasValue(options.MessagingServiceSid);
-
-    return hasSid && hasToken && hasSender;
-}
-
 // =============================================================
 // 1) Logging (structured, PII redaction, optional AI/file sinks)
 // =============================================================
-builder.Logging.ClearProviders();
-builder.Logging.AddPrimus(opts => builder.Configuration.GetSection("PrimusLogging").Bind(opts));
-// Traditional logging sample (uncomment if not using Primus Logging):
+// Question: Traditional Method (Complete Implementation)
 // builder.Logging.ClearProviders();
 // builder.Logging.AddConsole();
 // builder.Logging.AddDebug();
 // builder.Logging.SetMinimumLevel(LogLevel.Information);
+
+// Answer: Primus Module
+builder.Logging.ClearProviders();
+builder.Logging.AddPrimus(opts => builder.Configuration.GetSection("PrimusLogging").Bind(opts));
 
 var aiConnectionString = builder.Configuration["PrimusLogging:ApplicationInsights:ConnectionString"];
 if (!string.IsNullOrWhiteSpace(aiConnectionString) && aiConnectionString != "your-application-insights-connection-string")
@@ -60,25 +40,11 @@ if (!string.IsNullOrWhiteSpace(aiConnectionString) && aiConnectionString != "you
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
-builder.Services.AddAuthorization();
 
 // =============================================================
 // 2) Identity (multi-issuer validation + diagnostics)
 // =============================================================
-builder.Services.AddPrimusIdentity(opts => builder.Configuration.GetSection("PrimusIdentity").Bind(opts));
-
-var primusIdentityRegistered = IsPrimusIdentityRegistered(builder.Services);
-if (!primusIdentityRegistered)
-{
-    builder.Services
-        .AddAuthentication(IdentityDisabledAuthenticationHandler.SchemeName)
-        .AddScheme<AuthenticationSchemeOptions, IdentityDisabledAuthenticationHandler>(
-            IdentityDisabledAuthenticationHandler.SchemeName,
-            _ => { });
-}
-
-builder.Services.AddSingleton(new LiveDemoRuntimeState(primusIdentityRegistered));
-// Traditional JWT bearer sample (single issuer):
+// Question: Traditional Method (Complete Implementation)
 // builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 //     .AddJwtBearer(options =>
 //     {
@@ -95,9 +61,34 @@ builder.Services.AddSingleton(new LiveDemoRuntimeState(primusIdentityRegistered)
 //     });
 // builder.Services.AddAuthorization();
 
+// Answer: Primus Module
+// Step 2 -- Register 
+// builder.Services.AddPrimusIdentity(opts => builder.Configuration.GetSection("PrimusIdentity").Bind(opts));
+builder.Services.AddAuthorization();
+
+// Detect if Primus Identity was registered (for telemetry dashboard)
+// Check for IdentityDiagnosticsService which is uniquely registered by AddPrimusIdentity
+var primusIdentityRegistered = builder.Services.Any(s => 
+    s.ServiceType.FullName == "PrimusSaaS.Identity.Validator.IdentityDiagnosticsService" ||
+    s.ImplementationType?.FullName == "PrimusSaaS.Identity.Validator.IdentityDiagnosticsService");
+Console.WriteLine($"=== IDENTITY DETECTION: primusIdentityRegistered = {primusIdentityRegistered} ===");
+builder.Services.AddSingleton(new LiveDemoRuntimeState(primusIdentityRegistered));
+
 // =============================================================
 // 3) Notifications (templates + logger; SMTP/Twilio if configured)
 // =============================================================
+// Question: Traditional Method (Complete Implementation)
+// builder.Services.AddTransient<System.Net.Mail.SmtpClient>(sp =>
+// {
+//     var client = new System.Net.Mail.SmtpClient("smtp.example.com", 587);
+//     client.Credentials = new System.Net.NetworkCredential("user", "pass");
+//     client.EnableSsl = true;
+//     return client;
+// });
+// builder.Services.AddTransient<INotificationService, CustomEmailService>(); // Requires manual implementation
+// Plus More Code
+
+// Answer: Primus Module
 builder.Services.AddPrimusNotifications(notifications =>
 {
     notifications.UseFileTemplates(
@@ -116,10 +107,7 @@ builder.Services.AddPrimusNotifications(notifications =>
     var smtpSection = builder.Configuration.GetSection("Notifications:Smtp");
     var smtpHost = smtpSection["Host"];
     var smtpFrom = smtpSection["FromAddress"];
-    var smtpUser = smtpSection["Username"];
-    var smtpPassword = smtpSection["Password"];
-    var smtpConfigured = HasSmtpConfig(smtpHost, smtpFrom, smtpUser, smtpPassword);
-    if (smtpConfigured)
+    if (!string.IsNullOrWhiteSpace(smtpHost) && !string.IsNullOrWhiteSpace(smtpFrom))
     {
         notifications.UseSmtp(opts =>
         {
@@ -136,7 +124,7 @@ builder.Services.AddPrimusNotifications(notifications =>
     }
 
     var twilioOptions = builder.Configuration.GetSection("Notifications:Twilio").Get<TwilioOptions>() ?? new TwilioOptions();
-    if (HasTwilioConfig(twilioOptions))
+    if (twilioOptions.IsConfigured())
     {
         notifications.UseTwilio(builder.Configuration, "Notifications:Twilio", validateOnStartup: false);
     }
@@ -147,8 +135,8 @@ builder.Services.AddPrimusNotifications(notifications =>
 
     notifications.ConfigureDispatch(o =>
     {
-        o.ThrowOnFailure = false;
-        o.FallbackToLogger = true;
+        o.ThrowOnFailure = true;
+        o.FallbackToLogger = false;
         o.QueueOnFailure = false;
     });
 });
@@ -193,34 +181,13 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
 app.UsePrimusLogging();
-app.UseAuthentication();
-app.UseAuthorization();
+// Step 3 -- Middleware 
+app.UseAuthentication(); // 
+app.UseAuthorization(); //
 
-if (primusIdentityRegistered)
-{
-    app.MapPrimusIdentityDiagnostics(); // /primus/diagnostics
-}
+app.MapPrimusIdentityDiagnostics(); // /primus/diagnostics
 
 app.MapControllers();
-
-
-static bool IsPrimusIdentityRegistered(IServiceCollection services)
-{
-    static bool IsPrimusAssembly(string? name) =>
-        !string.IsNullOrWhiteSpace(name) &&
-        name.StartsWith("PrimusSaaS.Identity", StringComparison.OrdinalIgnoreCase);
-
-    return services.Any(sd =>
-    {
-        var serviceAssembly = sd.ServiceType?.Assembly?.GetName().Name;
-        var implementationAssembly = sd.ImplementationType?.Assembly?.GetName().Name;
-        var instanceAssembly = sd.ImplementationInstance?.GetType().Assembly?.GetName().Name;
-
-        return IsPrimusAssembly(serviceAssembly)
-               || IsPrimusAssembly(implementationAssembly)
-               || IsPrimusAssembly(instanceAssembly);
-    });
-}
 
 app.Run();
 

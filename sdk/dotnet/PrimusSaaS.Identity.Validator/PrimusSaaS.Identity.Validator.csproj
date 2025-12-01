@@ -1,18 +1,39 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
-    <TargetFrameworks Condition="'$(Net8SdkAvailable)' == 'true'">net6.0;net7.0;net8.0</TargetFrameworks>
+    <!-- 
+      Multi-targeting: net6.0, net7.0, net8.0, net9.0
+      
+      Building notes:
+      - Full build (all TFMs) requires .NET 6, 7, 8, AND 9 SDKs installed
+      - To build only supported TFMs locally: dotnet build /p:TargetFrameworks="net6.0;net7.0;net8.0"
+      - CI/CD pipelines should have all required SDKs for full package builds
+      - NuGet package ships all four target frameworks
+    -->
+    <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    
+    <!-- Deterministic builds for reproducibility -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    
+    <!-- SourceLink for debugging -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    
+    <!-- XML documentation for IntelliSense -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn> <!-- Allow missing XML docs on some members -->
     
     <!-- NuGet Package Metadata -->
     <PackageId>PrimusSaaS.Identity.Validator</PackageId>
-    <Version>1.3.6</Version>
+    <Version>1.5.0</Version>
     <Authors>Primus SaaS</Authors>
     <Company>Primus SaaS</Company>
     <Product>Primus SaaS Identity Validator</Product>
-    <Description>Multi-issuer JWT/OIDC token validator for .NET 6.0, 7.0, and 8.0. Supports Azure AD, Auth0, AWS Cognito, Google, and custom JWT issuers. Features one-liner Auth0 setup with UseAuth0(), organization validation, M2M token support, and comprehensive claim mapping. Includes ASP.NET Core middleware and authorization extensions.</Description>
+    <Description>Multi-issuer JWT/OIDC token validator for .NET 6.0, 7.0, 8.0, and 9.0. Supports Azure AD, Auth0, AWS Cognito, Google, and custom JWT issuers. Features one-liner Auth0 setup with UseAuth0(), organization validation, M2M token support, and comprehensive claim mapping. Includes ASP.NET Core middleware and authorization extensions.</Description>
     <PackageTags>jwt;oidc;authentication;identity;validator;asp-net-core;azure-ad;auth0;cognito;multi-tenant</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/primus-saas/identity-validator</RepositoryUrl>
@@ -22,7 +43,24 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
-    <PackageReleaseNotes>v1.3.6:
+    <PackageReleaseNotes>v1.5.0:
+- NEW: [PrimusAuthorize] attribute family for better discoverability - includes PrimusAuthorizeRoles, PrimusAuthorizePermissions, and PrimusAuthenticated.
+- NEW: AddPrimusIdentityForAzureAD() one-liner for Azure AD / Microsoft Entra ID setup (handles v1.0 and v2.0 issuers).
+- NEW: Swagger/OpenAPI integration via AddPrimusSwagger() - auto-configures security definitions.
+- NEW: Enhanced dev-mode diagnostics with AddPrimusDevDiagnostics() and MapPrimusDevDiagnostics() endpoints.
+- NEW: PrimusDiagnosticsOptions for configuring detailed error messages, debug headers, and failure tracking.
+- NEW: AuthFailureTracker for tracking recent authentication failures with categorized reasons.
+- IMPROVED: SourceLink enabled for step-through debugging in consuming applications.
+- IMPROVED: Deterministic builds for reproducible packages.
+- IMPROVED: Comprehensive XML documentation on all new public types.
+
+v1.4.0:
+- NEW: .NET 9.0 / ASP.NET Core 9.0 support with Microsoft.AspNetCore.Authentication.JwtBearer 9.0.11.
+- UPDATED: .NET 8.0 JwtBearer bumped to 8.0.22 (latest patch).
+- DOCS: Framework compatibility table and JWT bearer version pins clearly documented.
+- DOCS: Added modern minimal API integration guidance and samples.
+
+v1.3.6:
 - E2E tested: All 11 endpoint tests passing in real-world scenarios.
 - Verified API accuracy: PrimusIdentityLoggingOptions, claim mapping, multi-issuer validation.
 - Production-ready with comprehensive copy-paste code samples.
@@ -47,12 +85,21 @@ v1.3.4:
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.22" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.11" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.0" />
+    <!-- SourceLink for debugging - allows stepping into source during debug -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <!-- Swashbuckle for Swagger integration (optional - only used if consumer has Swagger) -->
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="6.5.0" PrivateAssets="Compile" />
   </ItemGroup>
 
   <ItemGroup>
