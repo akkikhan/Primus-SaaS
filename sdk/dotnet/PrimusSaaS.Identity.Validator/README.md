@@ -317,23 +317,15 @@ app.UseAuthorization();     // 2. Checks policies, roles, claims
 
 ---
 
-## 🎯 Primus Authorization Attributes (v1.5.0+)
+## 🎯 Authorization
 
-Custom authorization attributes that clearly indicate auth is handled by Primus, improving discoverability.
-
-### Available Attributes
-
-| Attribute | Purpose |
-|-----------|---------|
-| `[PrimusAuthorize]` | Requires authentication with optional policy/roles |
-| `[PrimusAuthorizeRoles("Admin", "Manager")]` | Requires specific roles |
-| `[PrimusAuthorizePermissions("read:users")]` | Requires specific scope/permission claims |
-| `[PrimusAuthenticated]` | Simply requires authentication (no policy) |
+Primus Identity Validator handles **authentication** (validating JWT tokens). For **authorization** (roles, policies, claims), use ASP.NET Core's standard `[Authorize]` attribute.
 
 ### Usage Examples
 
 ```csharp
-using PrimusSaaS.Identity.Validator;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -341,17 +333,17 @@ public class UsersController : ControllerBase
 {
     // Requires authentication only
     [HttpGet]
-    [PrimusAuthenticated]
+    [Authorize]
     public IActionResult GetUsers() => Ok();
 
     // Requires Admin OR Manager role
     [HttpPost]
-    [PrimusAuthorizeRoles("Admin", "Manager")]
+    [Authorize(Roles = "Admin,Manager")]
     public IActionResult CreateUser() => Ok();
 
-    // Requires specific permission/scope
+    // Requires custom policy
     [HttpDelete("{id}")]
-    [PrimusAuthorizePermissions("delete:users")]
+    [Authorize(Policy = "CanDeleteUsers")]
     public IActionResult DeleteUser(int id) => Ok();
 
     // Class-level with method override

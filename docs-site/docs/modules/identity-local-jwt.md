@@ -520,4 +520,4 @@ foreach (var claim in jwt.Claims)
 | Use Auth0 in production | [Auth0 Guide →](/docs/modules/identity-auth0) |
 | Use Azure AD in production | [Azure AD Guide →](/docs/modules/identity-azure-ad) |
 | Combine with external providers | [Multi-Issuer Setup →](/docs/modules/identity-multi-issuer) |
-| Add PrimusAuthorize attributes | [Advanced Features →](/docs/modules/identity-advanced) |
+| Swagger integration & diagnostics | [Advanced Features →](/docs/modules/identity-advanced) |

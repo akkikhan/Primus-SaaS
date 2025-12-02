@@ -22,10 +22,12 @@ dotnet add package Primus.Documents
 ```json
 {
   "PrimusLogging": {
-    "ApplicationId": "PSP-CLI-XXXXXX",
+    "MinimumLevel": "Information",
+    "Targets": ["Console", "ApplicationInsights"],
     "ApplicationInsights": {
       "ConnectionString": "your-application-insights-connection-string"
-    }
+    },
+    "EnablePiiMasking": true
   },
   "PrimusIdentity": {
     "Issuers": [

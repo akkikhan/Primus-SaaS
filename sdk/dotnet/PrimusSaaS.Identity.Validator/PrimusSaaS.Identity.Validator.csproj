@@ -44,7 +44,6 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
     <PackageReleaseNotes>v1.5.0:
-- NEW: [PrimusAuthorize] attribute family for better discoverability - includes PrimusAuthorizeRoles, PrimusAuthorizePermissions, and PrimusAuthenticated.
 - NEW: AddPrimusIdentityForAzureAD() one-liner for Azure AD / Microsoft Entra ID setup (handles v1.0 and v2.0 issuers).
 - NEW: Swagger/OpenAPI integration via AddPrimusSwagger() - auto-configures security definitions.
 - NEW: Enhanced dev-mode diagnostics with AddPrimusDevDiagnostics() and MapPrimusDevDiagnostics() endpoints.

@@ -590,6 +590,6 @@ Console.WriteLine($"Token issuer: {jwt.Issuer}");
 
 | Want to... | See Guide |
 |------------|-----------|
-| Add PrimusAuthorize attributes | [Advanced Features →](/docs/modules/identity-advanced) |
+| Swagger integration & diagnostics | [Advanced Features →](/docs/modules/identity-advanced) |
 | Provider-specific setup | [Auth0 →](/docs/modules/identity-auth0) • [Azure AD →](/docs/modules/identity-azure-ad) • [Local →](/docs/modules/identity-local-jwt) |
 | Full API reference | [Identity Validator Reference →](/docs/modules/identity-validator) |

@@ -2,111 +2,16 @@
 id: identity-advanced
 title: Identity Validator - Advanced Features
 sidebar_position: 6
-description: Advanced features including PrimusAuthorize, Swagger integration, diagnostics, and telemetry.
+description: Advanced features including Swagger integration, diagnostics, and telemetry.
 ---
 
 # Advanced Features
 
-Unlock the full power of Primus Identity Validator with advanced authorization attributes, Swagger UI integration, diagnostics endpoints, and observability features.
+Unlock the full power of Primus Identity Validator with Swagger UI integration, diagnostics endpoints, and observability features.
 
----
-
-## PrimusAuthorize Attributes
-
-Beyond standard `[Authorize]`, Primus provides specialized authorization attributes.
-
-### Basic Usage
-
-```csharp
-using PrimusSaaS.Identity.Validator;
-
-[ApiController]
-[Route("api/[controller]")]
-public class SecureController : ControllerBase
-{
-    // Standard authentication required
-    [PrimusAuthorize]
-    [HttpGet("basic")]
-    public IActionResult Basic() => Ok("Authenticated");
-
-    // Require specific role
-    [PrimusAuthorize(Roles = "admin")]
-    [HttpGet("admin")]
-    public IActionResult AdminOnly() => Ok("Admin access");
-
-    // Require specific policy
-    [PrimusAuthorize(Policy = "CanEdit")]
-    [HttpPost("edit")]
-    public IActionResult Edit() => Ok("Can edit");
-}
-```
-
-### Require Specific Issuer
-
-```csharp
-// Only accept Azure AD tokens
-[PrimusAuthorize(Issuer = "AzureAd")]
-[HttpGet("azure-only")]
-public IActionResult AzureOnly()
-{
-    return Ok(new { message = "Azure AD authenticated" });
-}
-
-// Only accept Auth0 tokens
-[PrimusAuthorize(Issuer = "Auth0")]
-[HttpGet("auth0-only")]
-public IActionResult Auth0Only()
-{
-    return Ok(new { message = "Auth0 authenticated" });
-}
-```
-
-### Require Specific Scopes
-
-```csharp
-// Require read scope
-[PrimusAuthorize(Scopes = "read")]
-[HttpGet("data")]
-public IActionResult GetData() => Ok(data);
-
-// Require multiple scopes
-[PrimusAuthorize(Scopes = "read,write")]
-[HttpPost("data")]
-public IActionResult PostData([FromBody] Data data) => Ok();
-
-// Require admin scope
-[PrimusAuthorize(Scopes = "admin")]
-[HttpDelete("data/{id}")]
-public IActionResult DeleteData(int id) => Ok();
-```
-
-### Require Specific Claims
-
-```csharp
-// Require email verified
-[PrimusAuthorize(RequireClaim = "email_verified", ClaimValue = "true")]
-[HttpGet("verified-users")]
-public IActionResult VerifiedOnly() => Ok();
-
-// Require specific tenant
-[PrimusAuthorize(RequireClaim = "tid", ClaimValue = "your-tenant-id")]
-[HttpGet("tenant-specific")]
-public IActionResult TenantSpecific() => Ok();
-```
-
-### Combined Requirements
-
-```csharp
-[PrimusAuthorize(
-    Issuer = "AzureAd",
-    Roles = "admin",
-    Scopes = "write",
-    RequireClaim = "department",
-    ClaimValue = "IT"
-)]
-[HttpPost("it-admin-action")]
-public IActionResult ItAdminAction() => Ok();
-```
+:::tip Authorization
+Primus Identity Validator handles **authentication** (validating JWT tokens). For **authorization** (roles, policies, claims), use ASP.NET Core's standard `[Authorize]` attribute and policy system.
+:::
 
 ---
 

@@ -8,7 +8,7 @@ Scope: latest verified package versions (.NET and Node.js), required dependencie
 ## 1) Overview
 - **Identity Validator**: multi-issuer JWT/OIDC validation with RBAC and typed user context. Solves token validation across Azure AD + local issuers without routing traffic to Primus.
 - **Logging**: structured logging with context enrichment, correlation IDs, timers, and console/file/App Insights targets. Solves consistent observability with PII masking.
-- **No hosted runtime**: all logic runs inside your app; Primus never stores your user data or tokens.
+- **Complete Data Isolation**: All Primus SDK modules run entirely within your application. **No user data, tokens, or credentials are ever transmitted to or stored by Primus servers.** This ensures complete data sovereignty and privacy compliance.
 
 ## 2) Supported Stacks & Versions
 | Module | Runtime | Package | Version | Notes |
@@ -22,10 +22,11 @@ Scope: latest verified package versions (.NET and Node.js), required dependencie
 
 ## 3) Getting Started / Setup
 ### Prerequisites
-- Azure subscription with permission to register applications.
-- (Optional) Access to Primus Portal to pick an `ApplicationId` label for logging; Identity Validator does **not** call Primus services.
+- Azure subscription with permission to register applications (if using Azure AD).
 - HTTPS-enabled API environments (required for production).
 - Ability to set environment variables or secret store (Key Vault, app service settings, dotenv).
+
+> **No Registration Required**: Primus SDK packages are standalone - no portal registration or API keys needed. Simply install the package and configure your identity providers directly.
 
 ### Quick Install
 ```bash
@@ -46,11 +47,9 @@ AZURE_API_AUDIENCE=api://<azure-client-id>
 LOCAL_ISSUER=https://auth.local
 LOCAL_JWT_SECRET=<32+char-secret>
 LOCAL_AUDIENCE=api://local-app
-PRIMUS_APP_ID=PSP-CLI-XXXXXX
 NODE_ENV=development
 PORT=3000
 ```
-`PRIMUS_APP_ID` is a logging label only; it is not an authentication secret.
 
 #### .NET (appsettings.Development.json or User Secrets)
 ```json
@@ -65,7 +64,8 @@ PORT=3000
     "Audience": "api://local-app"
   },
   "PrimusLogging": {
-    "ApplicationId": "PSP-CLI-XXXXXX"
+    "MinimumLevel": "Information",
+    "Targets": ["Console"]
   }
 }
 ```
@@ -176,7 +176,6 @@ import { createLogger, LogLevel, primusLoggingMiddleware } from '@primus-saas/lo
 
 const app = express();
 const logger = createLogger({
-  applicationId: process.env.PRIMUS_APP_ID || 'APP-UNKNOWN',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   minLevel: LogLevel.INFO
 });
@@ -201,7 +200,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddPrimus(options =>
 {
-    options.ApplicationId = builder.Configuration["PrimusLogging:ApplicationId"] ?? "APP-UNKNOWN";
     options.Environment = builder.Environment.IsProduction() ? "production" : "development";
     options.MinLevel = PrimusLogLevel.Info;
     options.Targets = new()

@@ -9,6 +9,10 @@ description: 5-minute setup for sending emails and SMS with Liquid templates.
 
 Send templated emails and SMS in under 5 minutes using Liquid templates.
 
+:::info Complete Data Isolation
+Primus Notifications runs **entirely within your application**. Emails are sent directly from your configured SMTP server, and SMS through your Twilio account. Primus never receives, stores, or processes your notification content or recipient data.
+:::
+
 ---
 
 ## Install

@@ -9,6 +9,10 @@ description: 5-minute setup for structured logging with PII masking.
 
 Get structured logging with automatic PII masking running in under 5 minutes.
 
+:::info Complete Data Isolation
+Primus Logging runs **entirely within your application**. All logs are written to targets you configure (Console, File, Application Insights). Primus never receives, stores, or processes your log data.
+:::
+
 ---
 
 ## Install

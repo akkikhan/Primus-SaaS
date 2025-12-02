@@ -14,7 +14,7 @@ The **Primus Identity Validator** is an enterprise-grade JWT/OIDC validation lib
 **Key benefits:**
 - **Multi-issuer support**: Validate tokens from Azure AD, Auth0, Google, Cognito, or local development JWT servers in the same application
 - **Zero external calls**: All validation happens locally—Primus never stores or transmits your users' data
-- **Built-in authorization**: `[PrimusAuthorize]` attributes for roles, permissions, and authenticated-only endpoints
+- **Standard authorization**: Works seamlessly with ASP.NET Core's standard `[Authorize]` attribute
 - **Swagger integration**: One-liner methods to configure OAuth2/Bearer security in your OpenAPI docs
 - **Developer diagnostics**: Dev-mode endpoints to debug token validation failures
 
@@ -42,14 +42,14 @@ Add these using statements to your `Program.cs` or relevant files:
 // Core identity validation
 using PrimusSaaS.Identity.Validator;
 
-// For custom authorization attributes
-using PrimusSaaS.Identity.Validator.Authorization;
-
 // For Swagger/OpenAPI integration
 using PrimusSaaS.Identity.Validator.Swagger;
 
 // For dev-mode diagnostics (optional)
 using PrimusSaaS.Identity.Validator.Diagnostics;
+
+// Standard ASP.NET Core authorization
+using Microsoft.AspNetCore.Authorization;
 ```
 
 ---
@@ -360,12 +360,8 @@ app.MapGet("/whoami", [Authorize] (ClaimsPrincipal user) =>
 });
 
 // Admin-only endpoint - requires "Admin" role
-app.MapGet("/admin", [PrimusAuthorizeRoles("Admin")] () => 
+app.MapGet("/admin", [Authorize(Roles = "Admin")] () => 
     new { Message = "Welcome, Admin!" });
-
-// Permission-based endpoint
-app.MapGet("/reports", [PrimusAuthorizePermissions("reports:read")] () =>
-    new { Message = "Here are your reports" });
 
 app.Run();
 ```
@@ -419,7 +415,6 @@ curl -H "Authorization: Bearer YOUR_JWT_TOKEN" https://localhost:5001/whoami
 ```csharp
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PrimusSaaS.Identity.Validator.Authorization;
 using System.Security.Claims;
 
 [ApiController]
@@ -428,7 +423,7 @@ public class UsersController : ControllerBase
 {
     // GET /api/users/me - Requires any authenticated user
     [HttpGet("me")]
-    [PrimusAuthenticated]
+    [Authorize]
     public IActionResult GetCurrentUser()
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -440,7 +435,7 @@ public class UsersController : ControllerBase
 
     // GET /api/users - Admin only
     [HttpGet]
-    [PrimusAuthorizeRoles("Admin")]
+    [Authorize(Roles = "Admin")]
     public IActionResult GetAllUsers()
     {
         return Ok(new[] { 
@@ -449,9 +444,9 @@ public class UsersController : ControllerBase
         });
     }
 
-    // DELETE /api/users/{id} - Requires 'users:delete' permission
+    // DELETE /api/users/{id} - Requires custom policy
     [HttpDelete("{id}")]
-    [PrimusAuthorizePermissions("users:delete")]
+    [Authorize(Policy = "CanDeleteUsers")]
     public IActionResult DeleteUser(string id)
     {
         return Ok(new { Message = $"User {id} deleted" });
@@ -459,7 +454,7 @@ public class UsersController : ControllerBase
 
     // POST /api/users/bulk - Requires Admin OR Manager role
     [HttpPost("bulk")]
-    [PrimusAuthorizeRoles("Admin", "Manager")]
+    [Authorize(Roles = "Admin,Manager")]
     public IActionResult BulkOperation()
     {
         return Ok(new { Message = "Bulk operation completed" });
@@ -545,8 +540,15 @@ Use [jwt.io](https://jwt.io) to decode tokens and verify:
 }
 ```
 
-### Q: What's the difference between `[Authorize]` and `[PrimusAuthenticated]`?
-**A:** `[PrimusAuthenticated]` is an alias for `[Authorize]` that improves discoverability. Use `[PrimusAuthorizeRoles]` or `[PrimusAuthorizePermissions]` for more granular control.
+### Q: How do I implement role-based authorization?
+**A:** Use ASP.NET Core's standard `[Authorize]` attribute with roles:
+```csharp
+[Authorize(Roles = "Admin")]
+public IActionResult AdminOnly() => Ok();
+
+[Authorize(Roles = "Admin,Manager")]  // OR logic
+public IActionResult AdminOrManager() => Ok();
+```
 
 ### Q: How do I support machine-to-machine (M2M) tokens?
 **A:** Set `AllowMachineToMachine: true` on the issuer configuration. For Azure AD, this enables validation of tokens obtained via client_credentials flow.

@@ -9,6 +9,10 @@ description: 5-minute setup for generating PDFs from HTML/Markdown.
 
 Generate PDFs from HTML and Markdown in under 5 minutes.
 
+:::info Complete Data Isolation
+Primus Document Renderer runs **entirely within your application**. All document generation happens locally. No document content or generated files are ever transmitted to Primus servers.
+:::
+
 ---
 
 ## Install

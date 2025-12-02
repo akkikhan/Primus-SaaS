@@ -9,6 +9,10 @@ description: Get JWT authentication working in 5 minutes with minimal code.
 
 Get JWT authentication working in your .NET API in **under 5 minutes** with minimal code.
 
+:::info Complete Data Isolation
+Primus Identity Validator runs **entirely within your application**. No tokens, user data, or credentials are ever transmitted to Primus servers. All JWT validation happens locally using your configured identity providers' public keys.
+:::
+
 ---
 
 ## 1. Install Package
@@ -132,7 +136,18 @@ curl http://localhost:5000/secure -H "Authorization: Bearer YOUR-JWT-TOKEN"
 You now have JWT authentication working. Your API:
 - ✅ Validates JWT tokens from your configured issuer
 - ✅ Returns 401 for invalid/missing tokens
-- ✅ Works with `[Authorize]` attribute on controllers
+- ✅ Works with standard `[Authorize]` attribute on controllers
+
+### Authorization Options
+
+| Attribute | Description |
+|-----------|-------------|
+| `[Authorize]` | Standard ASP.NET Core - works out of the box |
+| `[Authorize(Roles = "Admin")]` | Require specific roles |
+| `[Authorize(Policy = "MyPolicy")]` | Use custom authorization policies |
+| `.RequireAuthorization()` | Minimal API protection |
+
+Primus handles **authentication** (validating tokens). Use ASP.NET Core's standard authorization system for **authorization** (roles, policies, claims).
 
 ---
 

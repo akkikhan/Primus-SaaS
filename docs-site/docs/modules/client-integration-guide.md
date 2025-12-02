@@ -9,7 +9,13 @@ Audience: first-time developers integrating Primus SaaS modules into their own A
 ## 1) Overview
 - **Identity Validator**: multi-issuer JWT/OIDC validation with RBAC and typed user context. Tokens are validated locally; no Primus service calls.
 - **Logging**: structured logging with context enrichment, correlation IDs, timers, and console/file/Application Insights targets.
-- **No hosted runtime**: all logic runs inside your app; Primus never stores user data or tokens.
+- **Notifications**: Email/SMS delivery with Liquid templates, queuing, and retry logic.
+- **Feature Flags**: In-memory feature flag evaluation with percentage rollouts and user targeting.
+- **Document Renderer**: Generate PDF documents from Markdown, HTML, or plain text.
+
+:::info Complete Data Isolation
+**Primus SDK packages run entirely within your application.** No user data, tokens, or credentials are ever transmitted to or stored by Primus servers. All processing happens locally in your environment, ensuring complete data sovereignty and privacy compliance.
+:::
 
 ## 2) Supported Stacks & Versions
 See the shared source of truth: [Modules Version Matrix](/docs/modules/version-matrix).
@@ -24,10 +30,13 @@ See the shared source of truth: [Modules Version Matrix](/docs/modules/version-m
 
 ## 3) Getting Started / Setup
 ### Prerequisites
-- Azure subscription with permission to register applications.
-- (Optional) Primus Portal application label for logging (`ApplicationId`). Identity Validator does **not** call Primus services.
+- Azure subscription with permission to register applications (if using Azure AD).
 - HTTPS-enabled environments for production.
 - Ability to set environment variables or secrets (Key Vault, App Service settings, dotenv, User Secrets).
+
+:::tip No Registration Required
+Primus SDK packages are **standalone** - no portal registration or API keys required. Simply install the NuGet/npm package and configure your identity providers directly.
+:::
 
 ### Quick Install
 ```bash
@@ -48,7 +57,6 @@ AZURE_API_AUDIENCE=api://<azure-client-id>
 LOCAL_ISSUER=http://localhost:4000
 LOCAL_SECRET=<32+char-secret>
 LOCAL_AUDIENCE=api://local-app
-PRIMUS_APP_ID=PSP-CLI-XXXXXX  # label for logging only
 NODE_ENV=development
 PORT=3000
 ```
@@ -66,7 +74,8 @@ PORT=3000
     "Audience": "api://local-app"
   },
   "PrimusLogging": {
-    "ApplicationId": "PSP-CLI-XXXXXX"
+    "MinimumLevel": "Information",
+    "Targets": ["Console"]
   }
 }
 ```
@@ -244,7 +253,6 @@ import { createLogger, primusLoggingMiddleware } from '@primus-saas/logging';
 
 const app = express();
 const logger = createLogger({
-  applicationId: process.env.PRIMUS_APP_ID || 'APP-UNKNOWN',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   targets: [
     { type: 'console', pretty: true },

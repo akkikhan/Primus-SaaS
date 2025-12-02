@@ -9,6 +9,10 @@ description: 5-minute setup for feature toggles with percentage rollouts.
 
 Add feature toggles with percentage rollouts in under 5 minutes.
 
+:::info Complete Data Isolation
+Primus Feature Flags runs **entirely within your application**. All flag evaluation happens locally using your configuration. No feature flag data or user context is ever transmitted to Primus servers.
+:::
+
 ---
 
 ## Install
