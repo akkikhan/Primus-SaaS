@@ -15,10 +15,7 @@ Accept tokens from multiple identity providers (Auth0, Azure AD, Local JWT) in a
 
 | Scenario | Configuration |
 |----------|---------------|
-| Enterprise with Azure AD + partner Auth0 | Azure AD + Auth0 |
-| Migration from Auth0 to Azure AD | Both during transition |
-| Production + Dev testing | External provider + Local JWT |
-| Multi-tenant SaaS | Multiple Azure AD tenants |
+| Enterprise with Azure AD + partner Auth0 | Azure AD + Auth0 |`r`n| Migration from Auth0 to Azure AD | Azure AD + Auth0 |`r`n| Production + Dev testing | External provider + Local JWT |`r`n| Multi-tenant SaaS | Multiple Azure AD tenants |`r`n| Full demo (all) | Azure AD + Auth0 + Local JWT |
 
 ---
 
@@ -613,3 +610,4 @@ Console.WriteLine($"Token issuer: {jwt.Issuer}");
 | Swagger integration & diagnostics | [Advanced Features →](/docs/modules/identity-advanced) |
 | Provider-specific setup | [Auth0 →](/docs/modules/identity-auth0) • [Azure AD →](/docs/modules/identity-azure-ad) • [Local →](/docs/modules/identity-local-jwt) |
 | Full API reference | [Identity Validator Reference →](/docs/modules/identity-validator) |
+

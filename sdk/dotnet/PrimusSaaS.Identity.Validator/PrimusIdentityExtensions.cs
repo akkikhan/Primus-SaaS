@@ -349,6 +349,11 @@ public static class PrimusIdentityExtensions
                             context.Response.Headers["X-Primus-Auth-Error"] = context.Exception.Message;
                         }
 
+                        // Always surface auth failures as 401, even for signature errors, instead of bubbling as 500
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        context.Fail(context.Exception?.Message);
+                        context.NoResult();
+
                         var limiter = context.HttpContext.RequestServices.GetService<FailedValidationRateLimiter>();
                         if (limiter != null && limiter.RegisterFailure(context.HttpContext))
                         {

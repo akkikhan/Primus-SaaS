@@ -11,6 +11,30 @@ Unlock custom PII patterns, correlation tracking, log enrichment, and full obser
 
 ---
 
+## Baseline wiring
+
+```csharp
+using PrimusSaaS.Logging.Extensions;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Use Primus logging everywhere
+builder.Logging.AddPrimus(opts =>
+    builder.Configuration.GetSection("PrimusLogging").Bind(opts));
+
+// Trim default providers if you only want Primus targets (avoids duplicate console output)
+// builder.Logging.ClearProviders();
+
+var app = builder.Build();
+
+// Request logging + correlation IDs
+app.UsePrimusLogging();
+```
+
+`ApplicationId` in `PrimusLogging` helps tag logs per service; set it in config so it appears on every log event.
+
+---
+
 ## Custom PII Masking Patterns
 Protect sensitive data in logs with built-in and custom regex masks.
 
@@ -57,9 +81,9 @@ Protect sensitive data in logs with built-in and custom regex masks.
 ### Programmatic Masking
 
 ```csharp
-using PrimusSaaS.Logging;
+using PrimusSaaS.Logging.Extensions;
 
-builder.Logging.AddPrimusLogging(opts =>
+builder.Logging.AddPrimus(opts =>
 {
     builder.Configuration.GetSection("PrimusLogging").Bind(opts);
     
@@ -106,7 +130,7 @@ Track requests across services with automatic correlation ID propagation.
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Logging.AddPrimusLogging(opts => 
+builder.Logging.AddPrimus(opts =>
     builder.Configuration.GetSection("PrimusLogging").Bind(opts));
 
 var app = builder.Build();
@@ -168,7 +192,7 @@ Add contextual information to every log entry.
 Add fixed properties to all logs (e.g., app name, environment, version).
 
 ```csharp
-builder.Logging.AddPrimusLogging(opts =>
+builder.Logging.AddPrimus(opts =>
 {
     builder.Configuration.GetSection("PrimusLogging").Bind(opts);
     
@@ -183,7 +207,7 @@ builder.Logging.AddPrimusLogging(opts =>
 Add machine/process/thread info and custom enrichers that read per-request/user context.
 
 ```csharp
-builder.Logging.AddPrimusLogging(opts =>
+builder.Logging.AddPrimus(opts =>
 {
     builder.Configuration.GetSection("PrimusLogging").Bind(opts);
     
@@ -350,7 +374,7 @@ catch (PaymentException ex)
 ### Exclude Sensitive Endpoints
 
 ```csharp
-builder.Logging.AddPrimusLogging(opts =>
+builder.Logging.AddPrimus(opts =>
 {
     builder.Configuration.GetSection("PrimusLogging").Bind(opts);
     
@@ -364,7 +388,7 @@ builder.Logging.AddPrimusLogging(opts =>
 ### Filter Request/Response Bodies
 
 ```csharp
-builder.Logging.AddPrimusLogging(opts =>
+builder.Logging.AddPrimus(opts =>
 {
     builder.Configuration.GetSection("PrimusLogging").Bind(opts);
     
@@ -384,7 +408,7 @@ builder.Logging.AddPrimusLogging(opts =>
 ```csharp
 using OpenTelemetry.Logs;
 
-builder.Logging.AddPrimusLogging(opts => 
+builder.Logging.AddPrimus(opts => 
     builder.Configuration.GetSection("PrimusLogging").Bind(opts));
 
 builder.Logging.AddOpenTelemetry(options =>
@@ -509,7 +533,7 @@ using Serilog.Context;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Primus Logging with all features
-builder.Logging.AddPrimusLogging(opts =>
+builder.Logging.AddPrimus(opts =>
 {
     builder.Configuration.GetSection("PrimusLogging").Bind(opts);
     

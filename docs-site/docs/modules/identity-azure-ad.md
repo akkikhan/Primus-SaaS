@@ -75,8 +75,7 @@ After registration, note down:
         "Type": "AzureAD",
         "Authority": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
         "Issuer": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
-        "Audiences": [ "api://<CLIENT_ID>" ],
-        "AllowMachineToMachine": true
+        "Audiences": [ "api://<CLIENT_ID>" ]
       }
     ],
     "Diagnostics": {
@@ -101,8 +100,7 @@ After registration, note down:
         "Type": "AzureAD",
         "Authority": "https://login.microsoftonline.com/common/v2.0",
         "Issuer": "https://login.microsoftonline.com/common/v2.0",
-        "Audiences": [ "api://<CLIENT_ID>" ],
-        "AllowMachineToMachine": true
+        "Audiences": [ "api://<CLIENT_ID>" ]
       }
     ],
     "Diagnostics": {
@@ -121,7 +119,6 @@ After registration, note down:
 | `Authority` | Yes | `https://login.microsoftonline.com/<TENANT_ID>/v2.0` (or `common`/`organizations`) |
 | `Issuer` | Yes | Same as authority for v2 endpoints |
 | `Audiences` | Yes | Array of allowed audiences (e.g., `["api://<CLIENT_ID>"]`) |
-| `AllowMachineToMachine` | No | Allow client credentials tokens |
 | `RequireHttpsMetadata` | No | Defaults to true |
 | `Diagnostics` | No | Dev-only diagnostics settings |
 
@@ -140,11 +137,6 @@ var builder = WebApplication.CreateBuilder(args);
 // ========================================
 builder.Services.AddPrimusIdentity(opts => 
     builder.Configuration.GetSection("PrimusIdentity").Bind(opts));
-
-// Alternative: Use convenience method
-// builder.Services.AddPrimusIdentityForAzureAD(
-//     tenantId: "YOUR-TENANT-ID",
-//     clientId: "YOUR-CLIENT-ID");
 
 builder.Services.AddControllers();
 
@@ -173,50 +165,19 @@ using Microsoft.AspNetCore.Mvc;
 [Route("api/[controller]")]
 public class UserController : ControllerBase
 {
-    // Public endpoint
     [HttpGet("public")]
-    public IActionResult GetPublic()
-    {
-        return Ok(new { message = "Public access" });
-    }
+    public IActionResult GetPublic() => Ok(new { message = "Public access" });
 
-    // Protected - requires valid Azure AD token
     [Authorize]
-    [HttpGet("profile")]
-    public IActionResult GetProfile()
+    [HttpGet("me")]
+    public IActionResult GetProfile() => Ok(new
     {
-        // Azure AD standard claims
-        var objectId = User.FindFirst("oid")?.Value;
-        var upn = User.FindFirst("upn")?.Value;
-        var name = User.FindFirst("name")?.Value;
-        var email = User.FindFirst("preferred_username")?.Value;
-        var tenantId = User.FindFirst("tid")?.Value;
-        
-        return Ok(new { 
-            objectId,
-            upn,
-            name,
-            email,
-            tenantId
-        });
-    }
-
-    // Check for specific Azure AD groups
-    [Authorize]
-    [HttpGet("admin")]
-    public IActionResult GetAdmin()
-    {
-        var groups = User.FindAll("groups").Select(c => c.Value).ToList();
-        
-        // Check if user is in admin group
-        var adminGroupId = "YOUR-ADMIN-GROUP-ID";
-        if (!groups.Contains(adminGroupId))
-        {
-            return Forbid();
-        }
-        
-        return Ok(new { message = "Admin access granted", groups });
-    }
+        objectId = User.FindFirst("oid")?.Value,
+        upn = User.FindFirst("upn")?.Value,
+        name = User.FindFirst("name")?.Value,
+        email = User.FindFirst("preferred_username")?.Value,
+        tenantId = User.FindFirst("tid")?.Value
+    });
 }
 ```
 
@@ -224,55 +185,11 @@ public class UserController : ControllerBase
 
 ## Step 6: Get a Test Token
 
-### Option A: Using Azure CLI
+- Azure CLI (service-to-service):  
+  `az account get-access-token --resource api://YOUR-CLIENT-ID --query accessToken -o tsv`
 
-```bash
-# Login to Azure
-az login
-
-# Get token for your API
-az account get-access-token \
-  --resource api://YOUR-CLIENT-ID \
-  --query accessToken -o tsv
-```
-
-### Option B: Using Browser Interactive Flow
-
-Create a test client app registration that can request tokens:
-
-1. Register a new app in Azure AD (for testing)
-2. Add **API permissions** for your API
-3. Use the Authorization Code flow or Implicit flow
-
-### Option C: Using Client Credentials (Service-to-Service)
-
-```bash
-curl -X POST \
-  https://login.microsoftonline.com/YOUR-TENANT-ID/oauth2/v2.0/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "client_id=YOUR-CLIENT-APP-ID" \
-  -d "client_secret=YOUR-CLIENT-SECRET" \
-  -d "scope=api://YOUR-API-CLIENT-ID/.default" \
-  -d "grant_type=client_credentials"
-```
-
-### Option D: Using MSAL.NET
-
-```csharp
-using Microsoft.Identity.Client;
-
-var app = ConfidentialClientApplicationBuilder
-    .Create("YOUR-CLIENT-APP-ID")
-    .WithClientSecret("YOUR-CLIENT-SECRET")
-    .WithAuthority(AzureCloudInstance.AzurePublic, "YOUR-TENANT-ID")
-    .Build();
-
-var result = await app.AcquireTokenForClient(
-    new[] { "api://YOUR-API-CLIENT-ID/.default" })
-    .ExecuteAsync();
-
-Console.WriteLine(result.AccessToken);
-```
+- Client credentials (curl):  
+  `curl -X POST https://login.microsoftonline.com/YOUR-TENANT-ID/oauth2/v2.0/token -H "Content-Type: application/x-www-form-urlencoded" -d "client_id=YOUR-CLIENT-APP-ID" -d "client_secret=YOUR-CLIENT-SECRET" -d "scope=api://YOUR-API-CLIENT-ID/.default" -d "grant_type=client_credentials"`
 
 ---
 

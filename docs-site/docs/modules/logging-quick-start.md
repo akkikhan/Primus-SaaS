@@ -52,20 +52,29 @@ dotnet add package PrimusSaaS.Logging
 
 ---
 
-## Setup (3 Lines)
+## Setup (3 lines)
 
 ```csharp
-using PrimusSaaS.Logging;
+using PrimusSaaS.Logging.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add this ONE line
-builder.Logging.AddPrimusLogging(opts => 
+builder.Logging.AddPrimus(opts => 
     builder.Configuration.GetSection("PrimusLogging").Bind(opts));
 
+// Optional: remove default providers if you only want Primus targets
+// builder.Logging.ClearProviders();
+
 var app = builder.Build();
+
+// Optional middleware for request logging + correlation IDs
+// app.UsePrimusLogging();
+
 app.Run();
 ```
+
+> Tip: use `ClearProviders()` if you want to disable the default console/debug loggers and emit only what Primus is configured to write.
 
 ---
 
@@ -76,6 +85,7 @@ app.Run();
 ```json
 {
   "PrimusLogging": {
+    "ApplicationId": "MyService",
     "MinimumLevel": "Information",
     "Targets": ["Console"],
     "EnablePiiMasking": true
@@ -88,6 +98,7 @@ app.Run();
 ```json
 {
   "PrimusLogging": {
+    "ApplicationId": "MyService",
     "MinimumLevel": "Information",
     "Targets": ["Console", "ApplicationInsights"],
     "ApplicationInsights": {
@@ -103,6 +114,7 @@ app.Run();
 ```json
 {
   "PrimusLogging": {
+    "ApplicationId": "MyService",
     "MinimumLevel": "Information",
     "Targets": ["Console", "File"],
     "File": {

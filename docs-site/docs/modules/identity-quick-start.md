@@ -18,25 +18,25 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 <div style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', maxWidth: '560px', margin: '1rem auto', alignItems: 'stretch' }}>
   <a
     className="button button--primary button--sm"
-    style={{ fontWeight: 700, textAlign: 'center', background: '#a20000', color: '#ffffff', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    style={{ fontWeight: 700, textAlign: 'center', background: '#a20000', color: '#ffffff', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 0, padding: '10px 7px' }}
     href={useBaseUrl('/downloads/identity-minimal.zip')}>
     Minimal starter (.zip)
   </a>
   <a
     className="button button--secondary button--sm"
-    style={{ fontWeight: 700, textAlign: 'center', background: '#ffffff', color: '#a20000', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    style={{ fontWeight: 700, textAlign: 'center', background: '#ffffff', color: '#a20000', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 0, padding: '10px 7px' }}
     href={useBaseUrl('/downloads/identity-minimal-swagger.json')} download>
     Swagger (minimal)
   </a>
   <a
     className="button button--primary button--sm"
-    style={{ fontWeight: 700, textAlign: 'center', background: '#a20000', color: '#ffffff', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    style={{ fontWeight: 700, textAlign: 'center', background: '#a20000', color: '#ffffff', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 0, padding: '10px 7px' }}
     href={useBaseUrl('/downloads/identity-advanced.zip')}>
     Advanced starter (.zip)
   </a>
   <a
     className="button button--secondary button--sm"
-    style={{ fontWeight: 700, textAlign: 'center', background: '#ffffff', color: '#a20000', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    style={{ fontWeight: 700, textAlign: 'center', background: '#ffffff', color: '#a20000', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 0, padding: '10px 7px' }}
     href={useBaseUrl('/downloads/identity-advanced-swagger.json')} download>
     Swagger (advanced)
   </a>
@@ -114,7 +114,7 @@ Keep secrets in User Secrets/Key Vault-not in source control.
         "Name": "LocalDev",
         "Type": "Jwt",
         "Issuer": "https://localhost:5001",
-        "Secret": "your-32-character-minimum-secret-key-here",
+        "Secret": "your-32-character-minimum-secret-key-here-1234",
         "Audiences": [ "api://local-dev" ]
       }
     ],
@@ -137,13 +137,13 @@ Keep secrets in User Secrets/Key Vault-not in source control.
 dotnet run
 
 # Test unprotected endpoint
-curl http://localhost:5000/
+curl http://localhost:xxxx/public
 
 # Test protected endpoint (will return 401 without token)
-curl http://localhost:5000/secure
+curl http://localhost:xxxx/secure
 
 # Test with token
-curl http://localhost:5000/secure -H "Authorization: Bearer YOUR-JWT-TOKEN"
+curl http://localhost:xxxx/secure -H "Authorization: Bearer YOUR-JWT-TOKEN"
 ```
 
 ---
@@ -179,5 +179,6 @@ Primus handles **authentication** (validating tokens). Use ASP.NET Core's standa
 | Combine multiple issuers | [Multi-Issuer Setup →](/docs/modules/identity-multi-issuer) |
 | Add advanced features | [Advanced Features →](/docs/modules/identity-advanced) |
 | Troubleshoot issues | [Identity Validator Reference →](/docs/modules/identity-validator) |
+
 
 

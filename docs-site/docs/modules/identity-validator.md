@@ -206,7 +206,7 @@ Bind issuers, audiences, and diagnostics so the validator knows how to check tok
         "Name": "LocalDev",
         "Type": "Jwt",
         "Issuer": "https://localhost:5001",
-        "Secret": "your-32-character-minimum-secret-key-here",
+        "Secret": "your-32-character-minimum-secret-key-here-1234",
         "Audiences": ["api://local-dev"]
       }
     ],
@@ -634,3 +634,4 @@ After integrating Identity Validator, consider these complementary modules:
 ### Full Integration Example
 
 See the [Live Demo API](/docs/modules/live-demo-api) for a complete working example with all modules integrated.
+
