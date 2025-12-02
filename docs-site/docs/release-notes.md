@@ -6,7 +6,7 @@
 
 ### Major Improvements
 
-Multi-issuer validation hardening, JWKS caching/normalization, diagnostics endpoint helper, and updated docs aligned to the unified client integration guide.
+Multi-issuer validation hardening, JWKS caching/normalization, diagnostics endpoint helper, and updated docs.
 
 ### Fixed
 
@@ -32,7 +32,7 @@ Added structured logging for validation failures and rate-limit events to aid SO
 Early helpers for policy-based authorization alignment with common RBAC patterns.
 
 #### Documentation
-- Unified client integration guide: Node + .NET + Logging (single source of truth)
+- Module docs updated for multi-issuer setup and diagnostics
 - JWKS caching and diagnostics notes added
 
 ### Improved
@@ -60,7 +60,7 @@ dotnet add package PrimusSaaS.Identity.Validator --version 1.3.0
 
 ### Documentation
 
-- [Client Integration Guide](https://akkikhan.github.io/Primus-SaaS/docs/modules/client-integration-guide)
+- [Identity Validator Module](/docs/modules/identity-validator)
 - [README.md](https://www.nuget.org/packages/PrimusSaaS.Identity.Validator)
 
 ### Acknowledgments
@@ -75,7 +75,7 @@ Special thanks to our clients for providing detailed feedback on the TenantResol
 
 ### Major Improvements
 
-Async buffering and health/metrics guidance, file rotation/compression, and Application Insights target updates. Docs aligned to unified guide.
+Async buffering and health/metrics guidance, file rotation/compression, and Application Insights target updates.
 
 ### Fixed
 
@@ -131,8 +131,7 @@ builder.Logging.AddPrimusLogging(options => { ... });  // Alias
 
 #### Comprehensive Documentation
 
-- Unified client integration guide (Node + .NET + Identity + Logging)
-- CONFIGURATION_GUIDE.md, TROUBLESHOOTING.md, VERIFICATION_GUIDE.md included in package
+- Module docs refreshed (Identity + Logging)
 
 ### Improved
 
@@ -171,7 +170,7 @@ dotnet add package PrimusSaaS.Logging --version 1.2.4
 
 ### Documentation
 
-- [Client Integration Guide](https://akkikhan.github.io/docs/modules/client-integration-guide)
+- [Logging Module](/docs/modules/logging-module)
 - [README.md](https://www.nuget.org/packages/PrimusSaaS.Logging)
 
 ### Acknowledgments

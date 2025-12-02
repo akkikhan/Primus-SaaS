@@ -37,27 +37,27 @@ const config = {
     [
       '@docusaurus/plugin-client-redirects',
       {
-        redirects: [
-          // Legacy identity pages
-          { from: '/docs/modules/identity-validator-nodejs', to: '/docs/modules/client-integration-guide' },
-          { from: '/docs/modules/identity-validator-dotnet', to: '/docs/modules/client-integration-guide' },
-          { from: '/docs/modules/identity-configuration', to: '/docs/modules/client-integration-guide' },
-          { from: '/docs/modules/identity-token-generation', to: '/docs/modules/client-integration-guide' },
-          { from: '/docs/modules/identity-tenant-resolver', to: '/docs/modules/client-integration-guide' },
-          { from: '/docs/modules/identity-error-reference', to: '/docs/modules/client-integration-guide' },
-          // Legacy logging pages
-          { from: '/docs/modules/logging-nodejs', to: '/docs/modules/client-integration-guide' },
-          { from: '/docs/modules/logging-dotnet', to: '/docs/modules/client-integration-guide' },
-          { from: '/docs/modules/logging-configuration', to: '/docs/modules/client-integration-guide' },
-          { from: '/docs/modules/logging-middleware', to: '/docs/modules/client-integration-guide' },
-          { from: '/docs/modules/logging-enterprise-features', to: '/docs/modules/client-integration-guide' },
-          { from: '/docs/modules/logging-targets', to: '/docs/modules/client-integration-guide' },
-          // Non-docs-prefixed paths
-          { from: '/modules/client-integration-guide', to: '/docs/modules/client-integration-guide' },
-          { from: '/modules/identity-validator', to: '/docs/modules/identity-validator' },
-          { from: '/modules/logging-module', to: '/docs/modules/logging-module' },
-          // Redirect /docs root to intro
-          { from: '/docs', to: '/docs/intro' }
+      redirects: [
+            // Legacy identity pages
+            { from: '/docs/modules/identity-validator-nodejs', to: '/docs/intro' },
+            { from: '/docs/modules/identity-validator-dotnet', to: '/docs/intro' },
+            { from: '/docs/modules/identity-configuration', to: '/docs/intro' },
+            { from: '/docs/modules/identity-token-generation', to: '/docs/intro' },
+            { from: '/docs/modules/identity-tenant-resolver', to: '/docs/intro' },
+            { from: '/docs/modules/identity-error-reference', to: '/docs/intro' },
+            // Legacy logging pages
+            { from: '/docs/modules/logging-nodejs', to: '/docs/intro' },
+            { from: '/docs/modules/logging-dotnet', to: '/docs/intro' },
+            { from: '/docs/modules/logging-configuration', to: '/docs/intro' },
+            { from: '/docs/modules/logging-middleware', to: '/docs/intro' },
+            { from: '/docs/modules/logging-enterprise-features', to: '/docs/intro' },
+            { from: '/docs/modules/logging-targets', to: '/docs/intro' },
+            // Non-docs-prefixed paths
+            { from: '/modules/client-integration-guide', to: '/docs/modules/documents-coming-soon' },
+            { from: '/modules/identity-validator', to: '/docs/modules/identity-validator' },
+            { from: '/modules/logging-module', to: '/docs/modules/logging-module' },
+            // Redirect /docs root to intro
+            { from: '/docs', to: '/docs/intro' }
         ]
       }
     ]

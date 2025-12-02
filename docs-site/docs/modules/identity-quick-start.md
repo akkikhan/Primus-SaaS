@@ -13,6 +13,35 @@ Get JWT authentication working in your .NET API in **under 5 minutes** with mini
 Primus Identity Validator runs **entirely within your application**. No tokens, user data, or credentials are ever transmitted to Primus servers. All JWT validation happens locally using your configured identity providers' public keys.
 :::
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+<div style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', maxWidth: '560px', margin: '1rem auto', alignItems: 'stretch' }}>
+  <a
+    className="button button--primary button--sm"
+    style={{ fontWeight: 700, textAlign: 'center', background: '#a20000', color: '#ffffff', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    href={useBaseUrl('/downloads/identity-minimal.zip')}>
+    Minimal starter (.zip)
+  </a>
+  <a
+    className="button button--secondary button--sm"
+    style={{ fontWeight: 700, textAlign: 'center', background: '#ffffff', color: '#a20000', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    href={useBaseUrl('/downloads/identity-minimal-swagger.json')} download>
+    Swagger (minimal)
+  </a>
+  <a
+    className="button button--primary button--sm"
+    style={{ fontWeight: 700, textAlign: 'center', background: '#a20000', color: '#ffffff', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    href={useBaseUrl('/downloads/identity-advanced.zip')}>
+    Advanced starter (.zip)
+  </a>
+  <a
+    className="button button--secondary button--sm"
+    style={{ fontWeight: 700, textAlign: 'center', background: '#ffffff', color: '#a20000', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    href={useBaseUrl('/downloads/identity-advanced-swagger.json')} download>
+    Swagger (advanced)
+  </a>
+</div>
+
 ---
 
 ## 1. Install Package

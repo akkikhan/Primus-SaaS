@@ -1,0 +1,22 @@
+{
+  "info": {
+    "name": "Primus Logging Advanced",
+    "_postman_id": "logging-advanced-sample",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Ping (advanced)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:5000/ping",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["ping"]
+        }
+      }
+    }
+  ]
+}

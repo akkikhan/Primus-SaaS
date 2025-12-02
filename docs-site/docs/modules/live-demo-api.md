@@ -5,7 +5,7 @@ sidebar_position: 6
 description: Generalized setup for a Primus SaaS Minimal API using the LiveDemo app as the reference template.
 ---
 
-Use this as a starting point for any .NET Minimal API that needs Primus Identity, Logging, Notifications, Feature Flags, and Document Renderer. It’s distilled from `examples/LiveDemoApi/Program.cs` but written so you can drop it into new services.
+Use this as a starting point for any .NET Minimal API that needs Primus Identity, Logging, Notifications, and Document Renderer. It's distilled from `examples/LiveDemoApi/Program.cs` but written so you can drop it into new services.
 
 ## Packages to install
 
@@ -13,7 +13,6 @@ Use this as a starting point for any .NET Minimal API that needs Primus Identity
 dotnet add package PrimusSaaS.Identity.Validator
 dotnet add package PrimusSaaS.Logging
 dotnet add package PrimusSaaS.Notifications
-dotnet add package PrimusSaaS.FeatureFlags
 dotnet add package Primus.Documents
 ```
 
@@ -63,9 +62,6 @@ dotnet add package Primus.Documents
       "FromNumber": "<TWILIO_FROM>"
     }
   },
-  "PrimusFeatureFlags": {
-    "Enabled": true
-  },
   "PrimusDocuments": {
     "Renderer": "Default"
   },
@@ -86,7 +82,6 @@ Store secrets in User Secrets/Key Vault/App Service settings; don’t commit the
 using PrimusSaaS.Identity.Validator;
 using PrimusSaaS.Notifications;
 using PrimusSaaS.Logging.Extensions;
-using PrimusSaaS.FeatureFlags;
 using Primus.Documents;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -120,7 +115,6 @@ builder.Services.AddPrimusNotifications(notifications =>
         o.QueueOnFailure = false;
     });
 });
-builder.Services.AddPrimusFeatureFlags(o => builder.Configuration.GetSection("PrimusFeatureFlags").Bind(o));
 builder.Services.AddPrimusDocumentRenderer(o => builder.Configuration.GetSection("PrimusDocuments").Bind(o));
 
 builder.Services.AddAuthorization();
@@ -149,7 +143,7 @@ These come from the Live Demo; remove them for production or put them behind str
 | Endpoint | Purpose |
 | --- | --- |
 | `GET /primus/diagnostics` | Issuer/config diagnostics (optional) |
-| `GET /whoami` | Authenticated claims echo |
+| `GET /whoami` | Authenticated user context echo |
 | `POST /log/test` | Logging demo with PII redaction |
 | `POST /notifications/test` | Render `PasswordReset` template without sending |
 | `GET /notifications/health` | Channel health snapshot |
@@ -158,8 +152,6 @@ These come from the Live Demo; remove them for production or put them behind str
 | `POST /notifications/templates/preview` | Render template content safely |
 | `GET/PUT /notifications/templates/{type}/{channel}` | Retrieve/update Liquid templates |
 | `GET /notifications/templates` | List available templates |
-| `GET /feature-flags/test` | Evaluate all flags for the current user |
-| `GET /feature-flags/{flag}` | Evaluate a single flag (see Feature Flags module) |
 | `POST /documents/render` | Render text/HTML/Markdown to PDF (direct bytes) |
 | `POST /documents/render/link` | Render to PDF and return a one-time download token |
 | `GET /documents/download/{token}` | Consume a token and download PDF |
@@ -181,7 +173,7 @@ These come from the Live Demo; remove them for production or put them behind str
 
 ## Quick verification steps
 
-- `GET /whoami` returns claims when authenticated; 401 when unauthenticated.
+- `GET /whoami` returns authenticated user context; 401 when unauthenticated.
 - `POST /notifications/test` renders templates without error.
 - `GET /feature-flags/test` returns definitions with user context.
 - `POST /documents/self-test` returns `success: true`.

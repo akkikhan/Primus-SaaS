@@ -1,0 +1,26 @@
+{
+  "info": {
+    "name": "Primus Notifications Minimal",
+    "_postman_id": "notifications-minimal-sample",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Welcome Email",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/notify/welcome?email=test@example.com",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["notify", "welcome"],
+          "query": [
+            { "key": "email", "value": "test@example.com" }
+          ]
+        }
+      }
+    }
+  ]
+}

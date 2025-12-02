@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 namespace PrimusSaaS.Identity.Validator;
@@ -18,6 +19,51 @@ public class TestTokenBuilder
 
     public static TestTokenBuilder Create() => new();
 
+    /// <summary>
+    /// Creates a token builder pre-populated from a configuration section (e.g., "PrimusIdentity:Issuers:LocalJwt").
+    /// Expected keys: Issuer, Audiences (array or single Audience), Secret.
+    /// </summary>
+    public static TestTokenBuilder CreateFromConfig(IConfiguration configuration)
+    {
+        if (configuration is null) throw new ArgumentNullException(nameof(configuration));
+
+        var issuer = configuration["Issuer"] ?? configuration["Authority"] ?? "https://localhost";
+        var audience = configuration
+            .GetSection("Audiences")
+            .GetChildren()
+            .Select(c => c.Value)
+            .FirstOrDefault()
+            ?? configuration["Audience"];
+        var secret = configuration["Secret"];
+        var lifetimeMinutesRaw = configuration["TestTokenLifetimeMinutes"];
+        double? lifetimeMinutes = null;
+        if (double.TryParse(lifetimeMinutesRaw, out var parsed))
+        {
+            lifetimeMinutes = parsed;
+        }
+
+        if (string.IsNullOrWhiteSpace(secret))
+        {
+            throw new InvalidOperationException("Secret is required to build a local JWT. Ensure PrimusIdentity:Issuers:<Name>:Secret is set.");
+        }
+
+        var builder = Create()
+            .WithIssuer(issuer)
+            .WithSecret(secret);
+
+        if (!string.IsNullOrWhiteSpace(audience))
+        {
+            builder.WithAudience(audience);
+        }
+
+        if (lifetimeMinutes is > 0)
+        {
+            builder.WithExpiry(TimeSpan.FromMinutes(lifetimeMinutes.Value));
+        }
+
+        return builder;
+    }
+
     public TestTokenBuilder WithIssuer(string issuer)
     {
         _issuer = issuer;
@@ -30,6 +76,15 @@ public class TestTokenBuilder
         {
             _audiences.Add(audience);
         }
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the expiry using a relative lifetime window.
+    /// </summary>
+    public TestTokenBuilder WithExpiry(TimeSpan lifetime)
+    {
+        _expiresAt = DateTimeOffset.UtcNow.Add(lifetime);
         return this;
     }
 

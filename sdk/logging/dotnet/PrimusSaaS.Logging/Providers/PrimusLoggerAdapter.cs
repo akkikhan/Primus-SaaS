@@ -67,11 +67,23 @@ public class PrimusLoggerAdapter : ILogger
         if (!_primusLogger.IsEnabled(primusLevel)) return;
 
         var message = formatter(state, exception);
+        var category = _categoryName;
+        var options = _primusLogger.Options;
+
+        if (options.TruncateCategoryNames && options.MaxCategoryLength > 0 && category.Length > options.MaxCategoryLength)
+        {
+            category = $"{category.Substring(0, options.MaxCategoryLength)}...";
+        }
 
         var context = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
-            ["category"] = _categoryName,
+            ["category"] = category,
         };
+
+        if (!ReferenceEquals(category, _categoryName) && !string.Equals(category, _categoryName, StringComparison.Ordinal))
+        {
+            context["categoryFull"] = _categoryName;
+        }
 
         if (eventId.Id != 0) context["eventId"] = eventId.Id;
         if (!string.IsNullOrWhiteSpace(eventId.Name)) context["eventName"] = eventId.Name;

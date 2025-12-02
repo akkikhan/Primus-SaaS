@@ -65,6 +65,55 @@ public class LoggerOptions
     public SamplingOptions Sampling { get; set; } = new();
 
     /// <summary>
+    /// Convenience toggle to disable category truncation; when true, categories longer than MaxCategoryLength will be trimmed.
+    /// </summary>
+    public bool TruncateCategoryNames { get; set; }
+
+    /// <summary>
+    /// Maximum category length when TruncateCategoryNames is enabled.
+    /// </summary>
+    public int MaxCategoryLength { get; set; } = 120;
+
+    /// <summary>
+    /// Convenience setter to enable sampling with a single property (0.0 - 1.0). Values &lt; 1 enable sampling automatically.
+    /// </summary>
+    public double SamplingRate
+    {
+        get => Sampling.SampleRate;
+        set
+        {
+            Sampling.Enabled = value < 1.0;
+            Sampling.SampleRate = value;
+        }
+    }
+
+    /// <summary>
+    /// Ensure error/critical events bypass sampling when true.
+    /// </summary>
+    public bool AlwaysLogOnError
+    {
+        get => Sampling.AlwaysLogOnError;
+        set => Sampling.AlwaysLogOnError = value;
+    }
+
+    /// <summary>
+    /// Explicit sensitive field names to mask in log context (forwarded to PiiOptions.CustomSensitiveKeys).
+    /// </summary>
+    public List<string> MaskFields
+    {
+        get
+        {
+            Pii ??= new PiiOptions();
+            return Pii.CustomSensitiveKeys;
+        }
+        set
+        {
+            Pii ??= new PiiOptions();
+            Pii.CustomSensitiveKeys = value ?? new List<string>();
+        }
+    }
+
+    /// <summary>
     /// Convenience Application Insights preset for config-first enablement.
     /// </summary>
     public ApplicationInsightsOptions ApplicationInsights { get; set; } = new();
@@ -163,6 +212,11 @@ public class SamplingOptions
     /// Probability between 0.0 and 1.0 (e.g., 0.1 = 10% of logs kept).
     /// </summary>
     public double SampleRate { get; set; } = 1.0;
+
+    /// <summary>
+    /// When true, skip sampling for Error and Critical logs.
+    /// </summary>
+    public bool AlwaysLogOnError { get; set; } = true;
 }
 
 /// <summary>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using PrimusSaaS.Logging.Core;
+using PrimusSaaS.Logging.Targets;
 using Xunit;
 
 namespace PrimusSaaS.Logging.Tests;
@@ -26,5 +27,45 @@ public class LoggerTests
     {
         var logger = CreateLogger();
         logger.Error(new InvalidOperationException("boom"), "Payment failed", new { orderId = 1, reason = "declined" });
+    }
+
+    [Fact]
+    public void Sampling_DoesNotDropErrors_WhenAlwaysLogOnErrorTrue()
+    {
+        var target = new TestTarget();
+        var logger = new Logger(new LoggerOptions
+        {
+            ApplicationId = "test",
+            Environment = "test",
+            Sampling = new SamplingOptions { Enabled = true, SampleRate = 0.0, AlwaysLogOnError = true },
+            CustomTargets = new List<ITarget> { target }
+        });
+
+        logger.Info("should be sampled out");
+        logger.Error("should always log");
+
+        Assert.Single(target.Logs);
+        Assert.Equal(LogLevel.Error, target.Logs[0].Level);
+    }
+
+    [Fact]
+    public void Category_Truncation_IsConfigurable()
+    {
+        var target = new TestTarget();
+        var logger = new Logger(new LoggerOptions
+        {
+            ApplicationId = "test",
+            Environment = "test",
+            TruncateCategoryNames = true,
+            MaxCategoryLength = 10,
+            CustomTargets = new List<ITarget> { target }
+        });
+
+        var adapter = new Providers.PrimusLoggerAdapter("Very.Long.Category.Name.For.Component", logger);
+        adapter.LogInformation("hello");
+
+        var context = target.Logs[0].Context;
+        Assert.Equal("Very.Long.", context["category"]);
+        Assert.Equal("Very.Long.Category.Name.For.Component", context["categoryFull"]);
     }
 }

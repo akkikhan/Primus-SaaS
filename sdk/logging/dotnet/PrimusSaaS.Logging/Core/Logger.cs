@@ -42,6 +42,7 @@ public class Logger
     }
 
     internal LoggingMetrics Metrics => _metrics;
+    internal LoggerOptions Options => _options;
 
     internal bool IsEnabled(LogLevel level) => level >= _options.MinLevel;
 
@@ -284,7 +285,8 @@ public class Logger
         }
 
         // Probabilistic sampling to reduce volume
-        if (_sampling.Enabled)
+        var isErrorOrHigher = level >= LogLevel.Error;
+        if (_sampling.Enabled && !(_sampling.AlwaysLogOnError && isErrorOrHigher))
         {
             var rate = Math.Clamp(_sampling.SampleRate, 0.0, 1.0);
             if (rate <= 0)

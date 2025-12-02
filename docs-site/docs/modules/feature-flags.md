@@ -7,6 +7,10 @@ description: Percentage rollouts, user/group targeting, and time windows for .NE
 
 # Feature Flags Module
 
+:::warning Publish status
+The `PrimusSaaS.FeatureFlags` package is not yet available on public NuGet. Samples below assume internal/local builds; update once the package is published.
+:::
+
 ## 1. Module Overview
 
 **PrimusSaaS.FeatureFlags** is a lightweight feature flag management system for .NET applications. It enables controlled feature rollouts through percentage-based targeting, user/group allowlists, and time-windowed activation.

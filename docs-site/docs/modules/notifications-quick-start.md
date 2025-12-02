@@ -13,6 +13,35 @@ Send templated emails and SMS in under 5 minutes using Liquid templates.
 Primus Notifications runs **entirely within your application**. Emails are sent directly from your configured SMTP server, and SMS through your Twilio account. Primus never receives, stores, or processes your notification content or recipient data.
 :::
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+<div style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', maxWidth: '560px', margin: '1rem auto', alignItems: 'stretch' }}>
+  <a
+    className="button button--primary button--sm"
+    style={{ fontWeight: 700, textAlign: 'center', background: '#a20000', color: '#ffffff', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    href={useBaseUrl('/downloads/notifications-minimal.zip')}>
+    Minimal starter (.zip)
+  </a>
+  <a
+    className="button button--secondary button--sm"
+    style={{ fontWeight: 700, textAlign: 'center', background: '#ffffff', color: '#a20000', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    href={useBaseUrl('/downloads/notifications-minimal-swagger.json')} download>
+    Swagger (minimal)
+  </a>
+  <a
+    className="button button--primary button--sm"
+    style={{ fontWeight: 700, textAlign: 'center', background: '#a20000', color: '#ffffff', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    href={useBaseUrl('/downloads/notifications-advanced.zip')}>
+    Advanced starter (.zip)
+  </a>
+  <a
+    className="button button--secondary button--sm"
+    style={{ fontWeight: 700, textAlign: 'center', background: '#ffffff', color: '#a20000', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    href={useBaseUrl('/downloads/notifications-advanced-swagger.json')} download>
+    Swagger (advanced)
+  </a>
+</div>
+
 ---
 
 ## Install
@@ -26,13 +55,13 @@ dotnet add package PrimusSaaS.Notifications
 ## Setup (Email)
 
 ```csharp
-using Primus.Notifications;
+using PrimusSaaS.Notifications;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add Primus Notifications with SMTP
 builder.Services.AddPrimusNotifications(n => n
-    .UseSmtp(opts => builder.Configuration.GetSection("Notifications:Smtp").Bind(opts))
+    .UseSmtp(builder.Configuration.GetSection("Notifications:Smtp"))
     .UseFileTemplates("NotificationTemplates")
     .UseLogger());
 

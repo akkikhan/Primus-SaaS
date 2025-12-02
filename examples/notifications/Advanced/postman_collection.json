@@ -1,0 +1,41 @@
+{
+  "info": {
+    "name": "Primus Notifications Advanced",
+    "_postman_id": "notifications-advanced-sample",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Welcome Email",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "http://localhost:5000/notify/welcome?email=test@example.com",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["notify", "welcome"],
+          "query": [
+            { "key": "email", "value": "test@example.com" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "SMS Ping",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "http://localhost:5000/notify/sms?number=+15551234567",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["notify", "sms"],
+          "query": [
+            { "key": "number", "value": "+15551234567" }
+          ]
+        }
+      }
+    }
+  ]
+}

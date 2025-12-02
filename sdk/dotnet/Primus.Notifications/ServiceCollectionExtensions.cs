@@ -110,6 +110,21 @@ public class PrimusNotificationBuilder
     }
 
     /// <summary>
+    /// Configures SMTP as the email delivery channel using configuration binding (e.g., builder.Configuration.GetSection("Notifications:Smtp")).
+    /// </summary>
+    /// <param name="configuration">Configuration root or section containing SMTP settings.</param>
+    /// <returns>The builder for chaining.</returns>
+    public PrimusNotificationBuilder UseSmtp(IConfiguration configuration)
+    {
+        _services.AddOptions<SmtpOptions>()
+            .Bind(configuration)
+            .PostConfigure(opts => opts.Validate());
+
+        _services.AddScoped<IChannel, SmtpEmailChannel>();
+        return this;
+    }
+
+    /// <summary>
     /// Enables SMS notifications using the default logging sender (for development/testing).
     /// To send real SMS messages, use <see cref="UseTwilio(Action{TwilioOptions})"/> or provide a custom <see cref="ISmsSender"/>.
     /// </summary>

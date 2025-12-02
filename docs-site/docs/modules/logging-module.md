@@ -32,6 +32,12 @@ dotnet add package PrimusSaaS.Logging
 
 See [Modules Version Matrix](/docs/modules/version-matrix) for the authoritative version list.
 
+### Starting from scratch
+- New project: `dotnet new webapi -n MyPrimusLogging --no-https`
+- Add package: `cd MyPrimusLogging && dotnet add package PrimusSaaS.Logging`
+- Swagger (if missing): `dotnet add package Swashbuckle.AspNetCore`
+- Run: `dotnet run --urls=http://localhost:5002`
+
 ---
 
 ## 3. Required Using Statements
@@ -52,8 +58,9 @@ using PrimusLogLevel = PrimusSaaS.Logging.Core.LogLevel;
 ---
 
 ## 4. Program.cs Service Registration
+Register Primus Logging and middleware so structured logs/correlation/PII masking are active.
 
-### Option A: Configuration Binding (Recommended)
+### Quick Start (Recommended; single pattern)
 
 Use this approach for production applications with appsettings.json:
 
@@ -132,9 +139,13 @@ app.MapControllers();
 app.Run();
 ```
 
+### Get your keys (telemetry)
+- **Application Insights Connection String**: In Azure Portal, open your Application Insights resource → “Overview” → copy “Connection string”.
+
 ---
 
 ## 5. Configuration (appsettings.json)
+Set your log levels, targets (console/file/App Insights), PII masking, and overrides.
 
 ### Full Configuration Example
 
@@ -207,8 +218,8 @@ app.Run();
 | `console` | `Pretty` (bool) | Colored console output for development |
 | `file` | `Path`, `Async`, `MaxFileSize`, `MaxRetainedFiles`, `CompressRotatedFiles` | File output with rotation |
 | `applicationInsights` | `ConnectionString` | Azure Application Insights |
-| `serilog` | — | Bridge to existing Serilog pipeline |
-| `nlog` | — | Bridge to existing NLog configuration |
+| `serilog` | - | Bridge to existing Serilog pipeline |
+| `nlog` | - | Bridge to existing NLog configuration |
 
 ### PII Options Reference
 
@@ -258,6 +269,20 @@ app.MapControllers();
 
 app.Run();
 ```
+
+---
+
+## Examples and downloads
+
+- **Minimal**: `examples/logging/Minimal` — [Download zip](/downloads/logging-minimal.zip) — Postman included in the zip.
+- **Advanced**: `examples/logging/Advanced` — [Download zip](/downloads/logging-advanced.zip) — Postman included in the zip.
+- Swagger (static): [Minimal](/downloads/logging-minimal-swagger.json), [Advanced](/downloads/logging-advanced-swagger.json)
+- Full-stack reference: `examples/LiveDemoApi` (Logging + other modules).
+- Verified with:
+  - Minimal: `cd examples/logging/Minimal && dotnet restore && dotnet run --urls=http://localhost:5002`
+  - Advanced: `cd examples/logging/Advanced && dotnet restore && dotnet run --urls=http://localhost:5003`
+- Quick curl:
+  - `curl http://localhost:5002/ping`
 
 The middleware automatically enriches logs with:
 - **Request ID** — From `X-Request-ID` header or auto-generated

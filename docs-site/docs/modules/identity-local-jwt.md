@@ -125,9 +125,23 @@ app.Run();
 
 ## Step 5: Generate Test Tokens
 
-### Option A: Built-in Token Generator (Recommended)
+### Option A: `TestTokenBuilder` (keeps secrets aligned with config)
 
-Create a helper class to generate test tokens:
+```csharp
+using PrimusSaaS.Identity.Validator;
+
+// Pull issuer/audience/secret straight from PrimusIdentity:Issuers:LocalJwt
+var token = TestTokenBuilder
+    .CreateFromConfig(builder.Configuration.GetSection("PrimusIdentity:Issuers:LocalJwt"))
+    .WithExpiry(TimeSpan.FromHours(8)) // optional override (default is 1 hour)
+    .Build();
+```
+
+> If the secret used here does not match `PrimusIdentity:Issuers:<Name>:Secret`, validation will fail with a 401. Keep them in sync to avoid confusing 500s during local testing.
+
+### Option B: Manual Token Generator
+
+Create a helper class to generate test tokens manually:
 
 ```csharp
 using System.IdentityModel.Tokens.Jwt;

@@ -17,7 +17,7 @@ Add SMS support, custom providers, template partials, localization, and delivery
 
 ```csharp
 builder.Services.AddPrimusNotifications(n => n
-    .UseSmtp(opts => builder.Configuration.GetSection("Notifications:Smtp").Bind(opts))
+    .UseSmtp(builder.Configuration.GetSection("Notifications:Smtp"))
     .UseTwilio(opts => builder.Configuration.GetSection("Notifications:Twilio").Bind(opts))
     .UseFileTemplates("NotificationTemplates")
     .UseLogger());
@@ -202,7 +202,7 @@ public async Task SendWelcomeEmail(string email, string name, string locale)
 
 ```csharp
 builder.Services.AddPrimusNotifications(n => n
-    .UseSmtp(opts => builder.Configuration.GetSection("Notifications:Smtp").Bind(opts))
+    .UseSmtp(builder.Configuration.GetSection("Notifications:Smtp"))
     .UseFileTemplates("NotificationTemplates", opts =>
     {
         opts.DefaultLocale = "en";
@@ -258,7 +258,7 @@ public class SlackNotificationProvider : INotificationProvider
 
 ```csharp
 builder.Services.AddPrimusNotifications(n => n
-    .UseSmtp(opts => builder.Configuration.GetSection("Notifications:Smtp").Bind(opts))
+    .UseSmtp(builder.Configuration.GetSection("Notifications:Smtp"))
     .UseFileTemplates("NotificationTemplates")
     .AddProvider<SlackNotificationProvider>()
     .UseLogger());
@@ -285,7 +285,7 @@ builder.Services.AddPrimusNotifications(n => n
 
 ```csharp
 builder.Services.AddPrimusNotifications(n => n
-    .UseSmtp(opts => builder.Configuration.GetSection("Notifications:Smtp").Bind(opts))
+    .UseSmtp(builder.Configuration.GetSection("Notifications:Smtp"))
     .UseFileTemplates("NotificationTemplates")
     .UseDeliveryTracking(opts =>
     {
@@ -336,7 +336,7 @@ public class NotificationController : ControllerBase
 
 ```csharp
 builder.Services.AddPrimusNotifications(n => n
-    .UseSmtp(opts => builder.Configuration.GetSection("Notifications:Smtp").Bind(opts))
+    .UseSmtp(builder.Configuration.GetSection("Notifications:Smtp"))
     .UseFileTemplates("NotificationTemplates")
     .OnDeliverySuccess(async (context, result) =>
     {
@@ -358,7 +358,7 @@ builder.Services.AddPrimusNotifications(n => n
 
 ```csharp
 builder.Services.AddPrimusNotifications(n => n
-    .UseSmtp(opts => builder.Configuration.GetSection("Notifications:Smtp").Bind(opts))
+    .UseSmtp(builder.Configuration.GetSection("Notifications:Smtp"))
     .UseFileTemplates("NotificationTemplates")
     .UseScheduler(opts =>
     {
@@ -462,7 +462,7 @@ if (args.Contains("--preview-notification"))
 
 ```csharp
 builder.Services.AddPrimusNotifications(n => n
-    .UseSmtp(opts => builder.Configuration.GetSection("Notifications:Smtp").Bind(opts))
+    .UseSmtp(builder.Configuration.GetSection("Notifications:Smtp"))
     .UseFileTemplates("NotificationTemplates")
     .UseRateLimiting(opts =>
     {
@@ -484,7 +484,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddPrimusNotifications(n => n
     // Email provider
-    .UseSmtp(opts => builder.Configuration.GetSection("Notifications:Smtp").Bind(opts))
+    .UseSmtp(builder.Configuration.GetSection("Notifications:Smtp"))
     // SMS provider
     .UseTwilio(opts => builder.Configuration.GetSection("Notifications:Twilio").Bind(opts))
     // Templates

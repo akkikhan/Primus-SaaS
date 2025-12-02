@@ -58,10 +58,9 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: 'Integration Guides',
+      label: 'Reference',
       collapsible: true,
       items: [
-        'modules/client-integration-guide',
         'modules/live-demo-api',
         'modules/version-matrix',
       ]

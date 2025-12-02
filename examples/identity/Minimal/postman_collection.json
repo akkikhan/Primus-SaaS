@@ -1,0 +1,43 @@
+{
+  "info": {
+    "name": "Primus Identity Minimal",
+    "_postman_id": "identity-minimal-sample",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Public",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/public",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["public"]
+        }
+      }
+    },
+    {
+      "name": "Secure",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer <token>",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/secure",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["secure"]
+        }
+      }
+    }
+  ]
+}

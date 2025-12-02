@@ -32,6 +32,14 @@ dotnet add package PrimusSaaS.Notifications
 
 See [Modules Version Matrix](/docs/modules/version-matrix) for the authoritative version list.
 
+> Heads-up: the package currently includes all email/SMS providers (SMTP, SendGrid, Twilio, AWS SES/SNS, Azure Communication Services) and their dependencies. Provider-specific package split is planned; for now, keep only the providers you configure at runtime.
+
+### Starting from scratch
+- New project: `dotnet new webapi -n MyPrimusNotifications --no-https`
+- Add package: `cd MyPrimusNotifications && dotnet add package PrimusSaaS.Notifications`
+- Swagger (if missing): `dotnet add package Swashbuckle.AspNetCore`
+- Run: `dotnet run --urls=http://localhost:5004`
+
 ---
 
 ## 3. Required Using Statements
@@ -58,8 +66,9 @@ using PrimusSaaS.Notifications.Services;
 ---
 
 ## 4. Program.cs Service Registration
+Register notifications services/providers so you can send email/SMS with templates, queues, and logger fallback.
 
-### Option A: SMTP Email Only (Simplest)
+### Quick Start (Simplest)
 
 ```csharp
 using PrimusSaaS.Notifications;
@@ -69,16 +78,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddPrimusNotifications(notifications =>
 {
-    notifications.UseSmtp(opts =>
-    {
-        opts.Host = "smtp.example.com";
-        opts.Port = 587;
-        opts.Username = builder.Configuration["Smtp:Username"];
-        opts.Password = builder.Configuration["Smtp:Password"];
-        opts.FromAddress = "no-reply@example.com";
-        opts.FromName = "My App";
-        opts.EnableSsl = true;
-    });
+    notifications.UseLogger(); // dev-safe: logs instead of sending
+    notifications.UseSmtp(builder.Configuration.GetSection("Notifications:Smtp"));
+    notifications.UseFileTemplates(Path.Combine(builder.Environment.ContentRootPath, "NotificationTemplates"));
 });
 
 var app = builder.Build();
@@ -95,7 +97,7 @@ app.MapPost("/send-email", async (INotificationService notifications) =>
 app.Run();
 ```
 
-### Option B: Full Configuration with Templates and Queue
+### Option B: Advanced (templates + queue + SMTP + Twilio)
 
 ```csharp
 using PrimusSaaS.Notifications;
@@ -106,51 +108,25 @@ var templatesRoot = Path.Combine(builder.Environment.ContentRootPath, "Notificat
 
 builder.Services.AddPrimusNotifications(notifications =>
 {
-    // 1. File-based Liquid templates
     notifications.UseFileTemplates(
         templatesRoot,
-        validateOnStartup: true,  // Fail fast on template syntax errors
+        validateOnStartup: true,
         watchForChanges: builder.Environment.IsDevelopment());
 
-    // 2. SMTP email channel
-    notifications.UseSmtp(opts =>
-    {
-        opts.Host = builder.Configuration["Smtp:Host"]!;
-        opts.Port = builder.Configuration.GetValue("Smtp:Port", 587);
-        opts.Username = builder.Configuration["Smtp:Username"] ?? "";
-        opts.Password = builder.Configuration["Smtp:Password"] ?? "";
-        opts.FromAddress = builder.Configuration["Smtp:FromAddress"]!;
-        opts.FromName = builder.Configuration["Smtp:FromName"] ?? "My App";
-        opts.EnableSsl = true;
-        opts.MaxRetryCount = 2;
-        opts.RetryBaseDelayMs = 200;
-    });
-
-    // 3. SMS via Twilio (or use UseAwsSns / UseAzureCommunicationServices)
-    notifications.UseTwilio(opts =>
-    {
-        opts.AccountSid = builder.Configuration["Twilio:AccountSid"]!;
-        opts.AuthToken = builder.Configuration["Twilio:AuthToken"]!;
-        opts.FromNumber = builder.Configuration["Twilio:FromNumber"]!;
-    });
-
-    // 4. In-memory queue with background worker
-    notifications.UseInMemoryQueue(opts =>
-    {
-        opts.BoundedCapacity = 500;
-        opts.MaxParallelHandlers = 2;
-        opts.BaseRetryDelayMs = 250;
-    });
-
-    // 5. Logger channel (useful for development)
     notifications.UseLogger();
-
-    // 6. Dispatch behavior
-    notifications.ConfigureDispatch(opts =>
+    notifications.UseInMemoryQueue(o =>
     {
-        opts.ThrowOnFailure = true;     // Throw if no channel succeeds
-        opts.FallbackToLogger = false;  // Don't fall back to logger on failure
-        opts.QueueOnFailure = false;    // Don't re-queue failed notifications
+        o.BoundedCapacity = 500;
+        o.MaxParallelHandlers = 2;
+        o.BaseRetryDelayMs = 250;
+    });
+    notifications.UseSmtp(opts => builder.Configuration.GetSection("Notifications:Smtp").Bind(opts));
+    notifications.UseTwilio(opts => builder.Configuration.GetSection("Notifications:Twilio").Bind(opts));
+    notifications.ConfigureDispatch(o =>
+    {
+        o.ThrowOnFailure = true;
+        o.FallbackToLogger = false;
+        o.QueueOnFailure = false;
     });
 });
 
@@ -170,51 +146,116 @@ builder.Services.AddPrimusNotifications(notifications =>
 });
 ```
 
+### Get your keys (notifications)
+- **SMTP**: From your provider (e.g., SendGrid/Exchange/SES/Office365), collect host, port, username, password, From address/name, SSL. Store secrets in User Secrets/Key Vault.
+- **Twilio SMS**: Twilio Console → Account Info → Account SID/Auth Token; Messaging → number → FromNumber (E.164).
+- **Templates**: Create `NotificationTemplates/<TemplateName>/EmailSubject.liquid` and `EmailBody.liquid` (or SMS equivalents).
+
 ---
 
 ## 5. Configuration (appsettings.json)
+Provide SMTP/Twilio settings and queue options so channels can send and retry correctly.
 
 ### Full Configuration Example
 
 ```json
 {
-  "Smtp": {
-    "Host": "smtp.example.com",
-    "Port": 587,
-    "Username": "your-username",
-    "Password": "use-user-secrets-not-here",
-    "FromAddress": "no-reply@example.com",
-    "FromName": "My App",
-    "EnableSsl": true,
-    "MaxRetryCount": 2,
-    "RetryBaseDelayMs": 200,
-    "TimeoutSeconds": 30
-  },
-  "Twilio": {
-    "AccountSid": "ACxxxxxxxxxxxxxxxxxxxxx",
-    "AuthToken": "use-user-secrets-not-here",
-    "FromNumber": "+15551234567"
-  },
-  "AwsSns": {
-    "AccessKeyId": "AKIAXXXXXXXXXXXXXXXX",
-    "SecretAccessKey": "use-user-secrets-not-here",
-    "Region": "us-east-1",
-    "SmsType": "Transactional",
-    "SenderId": "MyApp"
-  },
-  "AzureCommunicationServices": {
-    "ConnectionString": "endpoint=https://your-resource.communication.azure.com/;accesskey=...",
-    "FromNumber": "+18001234567",
-    "EnableDeliveryReport": true,
-    "Tag": "my-app"
-  },
-  "NotificationQueue": {
-    "BoundedCapacity": 500,
-    "MaxParallelHandlers": 2,
-    "BaseRetryDelayMs": 250
+  "Notifications": {
+    "Smtp": {
+      "Host": "smtp.example.com",
+      "Port": 587,
+      "Username": "your-username",
+      "Password": "use-user-secrets-not-here",
+      "FromAddress": "no-reply@example.com",
+      "FromName": "My App",
+      "EnableSsl": true,
+      "MaxRetryCount": 2,
+      "RetryBaseDelayMs": 200,
+      "TimeoutSeconds": 30
+    },
+    "Twilio": {
+      "AccountSid": "ACxxxxxxxxxxxxxxxxxxxxx",
+      "AuthToken": "use-user-secrets-not-here",
+      "FromNumber": "+15551234567"
+    },
+    "NotificationQueue": {
+      "BoundedCapacity": 500,
+      "MaxParallelHandlers": 2,
+      "BaseRetryDelayMs": 250
+    }
   }
 }
 ```
+
+> For AWS SNS or Azure Communication Services SMS, see the advanced providers section (optional; not required for SMTP/Twilio flows).
+
+### Other SMS Providers (optional)
+If you prefer AWS SNS or Azure Communication Services instead of Twilio:
+- Pick one provider (only one SMS channel is active at a time).
+- Add the provider package/credentials in `Notifications:*` config.
+- Swap `UseTwilio(...)` for the provider call below.
+
+<details>
+<summary>Use AWS SNS (SMS)</summary>
+
+```csharp
+notifications.UseAwsSns(opts =>
+    builder.Configuration.GetSection("Notifications:AwsSns").Bind(opts));
+```
+
+```json
+"Notifications": {
+  "AwsSns": {
+    "AccessKeyId": "AKIA...",
+    "SecretAccessKey": "use-user-secrets",
+    "Region": "us-east-1",
+    "SmsType": "Transactional",
+    "SenderId": "MyApp"
+  }
+}
+```
+
+Docs: https://docs.aws.amazon.com/sns/latest/dg/sms_publish-to-phone.html
+</details>
+
+<details>
+<summary>Use Azure Communication Services (SMS)</summary>
+
+```csharp
+notifications.UseAzureCommunicationServices(opts =>
+    builder.Configuration.GetSection("Notifications:AzureCommunicationServices").Bind(opts));
+```
+
+```json
+"Notifications": {
+  "AzureCommunicationServices": {
+    "ConnectionString": "endpoint=https://<resource>.communication.azure.com/;accesskey=...",
+    "FromNumber": "+18001234567",
+    "EnableDeliveryReport": true,
+    "Tag": "my-app"
+  }
+}
+```
+
+Docs: https://learn.microsoft.com/azure/communication-services/quickstarts/sms/send
+</details>
+
+---
+
+## Examples and downloads
+
+- **Minimal**: `examples/notifications/Minimal` — [Download zip](/downloads/notifications-minimal.zip) — Postman included in the zip.
+- **Advanced**: `examples/notifications/Advanced` — [Download zip](/downloads/notifications-advanced.zip) — Postman included in the zip.
+- Swagger (static): [Minimal](/downloads/notifications-minimal-swagger.json), [Advanced](/downloads/notifications-advanced-swagger.json)
+- Full-stack reference: `examples/LiveDemoApi` (notifications + other modules).
+- Verified with:
+  - Minimal: `cd examples/notifications/Minimal && dotnet restore && dotnet run --urls=http://localhost:5004`
+  - Advanced: `cd examples/notifications/Advanced && dotnet restore && dotnet run --urls=http://localhost:5005`
+- Quick curl:
+  - Welcome email: `curl -X POST "http://localhost:5004/notify/welcome?email=test@example.com"`
+  - SMS ping (advanced): `curl -X POST "http://localhost:5005/notify/sms?number=+15551234567"`
+
+> Provider-specific sections (e.g., AWS SNS, Azure Communication Services) are optional and can be skimmed; core flow is SMTP + Twilio + logger + queue/dispatch.
 
 ### SMTP Options Reference
 
@@ -570,7 +611,7 @@ Add logging to see notification flow:
 builder.Services.AddPrimusNotifications(notifications =>
 {
     notifications.UseLogger();  // Always logs notifications
-    notifications.UseSmtp(opts => { /* ... */ });
+    notifications.UseSmtp(builder.Configuration.GetSection("Smtp"));
 });
 ```
 

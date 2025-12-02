@@ -7,6 +7,10 @@ description: 5-minute setup for feature toggles with percentage rollouts.
 
 # Feature Flags Quick Start
 
+:::warning Publish status
+The `PrimusSaaS.FeatureFlags` package is not yet available on public NuGet. Samples below assume internal/local builds; update once the package is published.
+:::
+
 Add feature toggles with percentage rollouts in under 5 minutes.
 
 :::info Complete Data Isolation

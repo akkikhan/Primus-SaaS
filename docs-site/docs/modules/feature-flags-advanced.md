@@ -7,6 +7,10 @@ description: User targeting, A/B testing, external providers, and gradual rollou
 
 # Feature Flags Advanced Features
 
+:::warning Publish status
+The `PrimusSaaS.FeatureFlags` package is not yet available on public NuGet. Samples below assume internal/local builds; update once the package is published.
+:::
+
 Unlock user targeting, A/B testing, external provider integration, and gradual rollout strategies.
 
 ---

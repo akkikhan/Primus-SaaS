@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 
-namespace PrimusSaaS.Identity.Validator.Diagnostics;
+namespace PrimusSaaS.Identity.Validator;
 
 /// <summary>
 /// Exposes a minimal diagnostics endpoint for authentication errors.

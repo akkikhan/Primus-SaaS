@@ -65,6 +65,11 @@ public static class LoggerOptionsValidator
             }
         }
 
+        if (options.TruncateCategoryNames && options.MaxCategoryLength < 8)
+        {
+            errors.Add("MaxCategoryLength must be at least 8 characters when TruncateCategoryNames is enabled.");
+        }
+
         if (errors.Count > 0)
         {
             var builder = new StringBuilder("Invalid Primus logger configuration:");

@@ -39,8 +39,8 @@ export default function Home() {
                 Primus ships two production-ready modules—Identity Validator and Logging—for Node.js and .NET. Keep tokens and logs fully within your stack: zero hosted dependencies, zero PII at Primus.
               </p>
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.75rem' }}>
-                <Link className="button button--primary button--lg" to="/docs/modules/client-integration-guide">
-                  View Client Integration Guide
+                <Link className="button button--primary button--lg" to="/docs/intro">
+                  View Docs
                 </Link>
                 <Link className="button button--secondary button--lg" to="/docs/intro">
                   Platform Overview
@@ -198,8 +198,8 @@ export default function Home() {
                     </pre>
                   </div>
                 </div>
-                <Link to="/docs/modules/client-integration-guide" style={{ color: '#14b8a6', textDecoration: 'none', fontSize: '1rem', fontWeight: 500, display: 'inline-block', marginTop: '1rem' }}>
-                  View Integration Guide →
+                <Link to="/docs/intro" style={{ color: '#14b8a6', textDecoration: 'none', fontSize: '1rem', fontWeight: 500, display: 'inline-block', marginTop: '1rem' }}>
+                  View Docs →
                 </Link>
               </div>
             </div>
@@ -228,8 +228,8 @@ export default function Home() {
                     </pre>
                   </div>
                 </div>
-                <Link to="/docs/modules/client-integration-guide" style={{ color: '#14b8a6', textDecoration: 'none', fontSize: '1rem', fontWeight: 500, display: 'inline-block', marginTop: '1rem' }}>
-                  View Integration Guide →
+                <Link to="/docs/intro" style={{ color: '#14b8a6', textDecoration: 'none', fontSize: '1rem', fontWeight: 500, display: 'inline-block', marginTop: '1rem' }}>
+                  View Docs →
                 </Link>
               </div>
             </div>

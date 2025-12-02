@@ -640,10 +640,14 @@ var token = TestTokenBuilder.Create()
     .WithIssuer("https://localhost")
     .WithAudience("api://your-api-id")
     .WithSecret("local-secret")  // match your IssuerConfig secret when validating
+    .WithExpiry(TimeSpan.FromHours(8)) // optional lifetime override (defaults to 1 hour)
     .WithClaim("sub", "user-123")
     .WithClaim("email", "test@example.com")
     .Build();
 ```
+
+- Prefer `CreateFromConfig(builder.Configuration.GetSection("PrimusIdentity:Issuers:LocalJwt"))` to auto-align issuer/audience/secret with `appsettings.json`; mismatched secrets will surface as 401/500 during validation.
+- `WithExpiry(TimeSpan lifetime)` sets a relative expiry (old `WithExpiry(DateTimeOffset)` still works for absolute timestamps).
 
 ### Using the built-in fake handler (for integration tests)
 

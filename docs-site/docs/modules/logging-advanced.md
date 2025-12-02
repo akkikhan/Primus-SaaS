@@ -12,6 +12,7 @@ Unlock custom PII patterns, correlation tracking, log enrichment, and full obser
 ---
 
 ## Custom PII Masking Patterns
+Protect sensitive data in logs with built-in and custom regex masks.
 
 ### Configure Custom Patterns
 
@@ -81,6 +82,7 @@ builder.Logging.AddPrimusLogging(opts =>
 ---
 
 ## Correlation IDs
+Trace a request end-to-end by stamping a correlation ID on every log and propagating it downstream.
 
 Track requests across services with automatic correlation ID propagation.
 
@@ -158,10 +160,12 @@ public class OrderService
 ---
 
 ## Log Enrichment
+Attach extra context (app/env/version, user, machine, request info) to every log event.
 
 Add contextual information to every log entry.
 
 ### Static Enrichers
+Add fixed properties to all logs (e.g., app name, environment, version).
 
 ```csharp
 builder.Logging.AddPrimusLogging(opts =>
@@ -176,6 +180,7 @@ builder.Logging.AddPrimusLogging(opts =>
 ```
 
 ### Dynamic Enrichers
+Add machine/process/thread info and custom enrichers that read per-request/user context.
 
 ```csharp
 builder.Logging.AddPrimusLogging(opts =>
@@ -215,6 +220,7 @@ public class UserContextEnricher : ILogEventEnricher
 ```
 
 ### Request-Scoped Enrichment
+Push request-specific properties (path, method, user agent) into all logs for that request.
 
 ```csharp
 app.Use(async (context, next) =>
@@ -228,6 +234,14 @@ app.Use(async (context, next) =>
     }
 });
 ```
+
+---
+
+## Noise and safety controls
+
+- `TruncateCategoryNames` / `MaxCategoryLength`: disable category redaction or cap namespace length while preserving the full value in `categoryFull`.
+- `SamplingRate` + `AlwaysLogOnError`: sample down noisy info/debug logs; errors/criticals bypass sampling when `AlwaysLogOnError=true`.
+- `MaskFields`: forward explicit sensitive keys to the PII masker (e.g., `["password","token","apiKey","ssn"]`).
 
 ---
 

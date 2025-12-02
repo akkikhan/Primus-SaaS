@@ -13,9 +13,9 @@ The **Primus Identity Validator** is an enterprise-grade JWT/OIDC validation lib
 
 **Key benefits:**
 - **Multi-issuer support**: Validate tokens from Azure AD, Auth0, Google, Cognito, or local development JWT servers in the same application
-- **Zero external calls**: All validation happens locally—Primus never stores or transmits your users' data
+- **Zero external calls**: All validation happens locally-Primus never stores or transmits your users' data
 - **Standard authorization**: Works seamlessly with ASP.NET Core's standard `[Authorize]` attribute
-- **Swagger integration**: One-liner methods to configure OAuth2/Bearer security in your OpenAPI docs
+- **Swagger integration**: `AddPrimusSwagger(...)` adds Bearer/OAuth2 security definitions for your configured issuers
 - **Developer diagnostics**: Dev-mode endpoints to debug token validation failures
 
 ---
@@ -28,9 +28,15 @@ The **Primus Identity Validator** is an enterprise-grade JWT/OIDC validation lib
 dotnet add package PrimusSaaS.Identity.Validator
 ```
 
-**Current Version**: `1.5.0` (supports .NET 6, 7, 8, and 9)
+**Current Version**: `1.3.6` (supports .NET 6, 7, and 8)
 
 See [Modules Version Matrix](/docs/modules/version-matrix) for the authoritative version list.
+
+### Starting from scratch
+- New project: `dotnet new webapi -n MyPrimusIdentity --no-https`
+- Add package: `cd MyPrimusIdentity && dotnet add package PrimusSaaS.Identity.Validator`
+- Swagger (if missing): `dotnet add package Swashbuckle.AspNetCore`
+- Run: `dotnet run --urls=http://localhost:5000`
 
 ---
 
@@ -55,6 +61,7 @@ using Microsoft.AspNetCore.Authorization;
 ---
 
 ## 4. Program.cs Service Registration
+Wire up identity/authorization middleware so tokens are validated and `[Authorize]` works.
 
 ### Option A: Full Configuration (Multi-Issuer)
 
@@ -130,10 +137,11 @@ builder.Services.AddPrimusIdentity(options =>
 
 builder.Services.AddAuthorization();
 
-// Add Swagger with Primus security schemes
+// Add Swagger with Primus security schemes (Bearer + OAuth flows from configured issuers)
 builder.Services.AddSwaggerGen(c =>
 {
-    c.AddPrimusSwagger(builder.Services);  // Auto-configures OAuth2/Bearer from your issuers
+    var primusOptions = builder.Configuration.GetSection("PrimusIdentity").Get<PrimusIdentityOptions>() ?? new();
+    c.AddPrimusSwagger(primusOptions);
 });
 
 var app = builder.Build();
@@ -151,9 +159,30 @@ app.MapControllers();
 app.Run();
 ```
 
+### Get your keys (identity)
+- **Azure AD**: Azure Portal → App registrations → New registration → note `TenantId` and `ClientId`; expose API and add a scope/audience if needed.
+- **Auth0**: Auth0 Dashboard → Applications → note Domain/ClientId; create an API and audience.
+- **Local JWT**: Use a 32+ char secret (User Secrets/Key Vault) and set `Issuer`/`Audiences` to your local host.
+
+---
+
+## Examples and downloads
+
+- **Minimal**: `examples/identity/Minimal` — [Download zip](/downloads/identity-minimal.zip) — Postman included in the zip.
+- **Advanced**: `examples/identity/Advanced` — [Download zip](/downloads/identity-advanced.zip) — Postman included in the zip.
+- Swagger (static): [Minimal](/downloads/identity-minimal-swagger.json), [Advanced](/downloads/identity-advanced-swagger.json)
+- Full-stack reference: `examples/LiveDemoApi` (Identity + others).
+- Verified with:
+  - Minimal: `cd examples/identity/Minimal && dotnet restore && dotnet run --urls=http://localhost:5000`
+  - Advanced: `cd examples/identity/Advanced && dotnet restore && dotnet run --urls=http://localhost:5001`
+- Quick curl:
+  - Public: `curl http://localhost:5000/public`
+  - Secure (replace token): `curl -H "Authorization: Bearer <token>" http://localhost:5000/secure`
+
 ---
 
 ## 5. Configuration (appsettings.json)
+Bind issuers, audiences, and diagnostics so the validator knows how to check tokens.
 
 ### Multi-Issuer Configuration (Azure AD + Local JWT)
 
