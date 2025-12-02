@@ -7,7 +7,7 @@ description: Get JWT authentication working in 5 minutes with minimal code.
 
 # Identity Validator - Quick Start
 
-Get JWT authentication working in your .NET API in **under 5 minutes** with minimal code.
+Get JWT authentication working in your .NET API in **under 5 minutes** with the simplest local JWT setup.
 
 :::info Complete Data Isolation
 Primus Identity Validator runs **entirely within your application**. No tokens, user data, or credentials are ever transmitted to Primus servers. All JWT validation happens locally using your configured identity providers' public keys.
@@ -47,7 +47,7 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 ## 1. Install Package
 
 ```bash
-dotnet add package PrimusSaaS.Identity.Validator
+dotnet add package PrimusSaaS.Identity.Validator   # NuGet
 ```
 
 ---
@@ -55,87 +55,75 @@ dotnet add package PrimusSaaS.Identity.Validator
 ## 2. Add Using Statement
 
 ```csharp
+using Microsoft.AspNetCore.Authorization;
 using PrimusSaaS.Identity.Validator;
+using PrimusSaaS.Identity.Validator.Diagnostics;
 ```
 
 ---
 
 ## 3. Register in Program.cs
 
-**Minimal setup (3 lines):**
+**Minimal setup (local JWT only):**
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 
-// Add Primus Identity
-builder.Services.AddPrimusIdentity(opts => 
+builder.Services.AddPrimusIdentity(opts =>
     builder.Configuration.GetSection("PrimusIdentity").Bind(opts));
+builder.Services.AddAuthorization();
+builder.Services.AddHttpClient();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/", () => "Hello World!");
-app.MapGet("/secure", () => "Authenticated!").RequireAuthorization();
+// Diagnostics endpoint (dev only)
+app.MapPrimusIdentityDiagnostics();
+
+app.MapGet("/public", () => "public ok");
+app.MapGet("/secure", [Authorize] () => "secure ok")
+   .RequireAuthorization();
 
 app.Run();
 ```
 
 ---
 
-## 4. Configure appsettings.json
+## 4. Configure appsettings.json (local dev)
 
-Pick ONE issuer type below based on your identity provider:
-
-### Option A: Auth0
+Keep secrets in User Secrets/Key Vault-not in source control.
 
 ```json
 {
   "PrimusIdentity": {
+    "RequireHttpsMetadata": true,
+    "ValidateLifetime": true,
+    "ClockSkew": "00:05:00",
     "Issuers": [
       {
-        "Name": "Auth0",
-        "Type": "Auth0",
-        "Authority": "https://YOUR-TENANT.auth0.com/",
-        "Audience": "https://your-api-identifier"
+        "Name": "LocalDev",
+        "Type": "Jwt",
+        "Issuer": "https://localhost:5001",
+        "Secret": "your-32-character-minimum-secret-key-here",
+        "Audiences": [ "api://local-dev" ]
       }
-    ]
-  }
-}
-```
-
-### Option B: Azure AD
-
-```json
-{
-  "PrimusIdentity": {
-    "Issuers": [
-      {
-        "Name": "AzureAD",
-        "Type": "AzureAd",
-        "TenantId": "YOUR-TENANT-ID",
-        "ClientId": "YOUR-CLIENT-ID"
-      }
-    ]
-  }
-}
-```
-
-### Option C: Local JWT (Development)
-
-```json
-{
-  "PrimusIdentity": {
-    "Issuers": [
-      {
-        "Name": "Local",
-        "Type": "Local",
-        "Issuer": "https://localhost",
-        "Audience": "my-api",
-        "SigningKey": "your-256-bit-secret-key-min-32-chars!"
-      }
-    ]
+    ],
+    "Diagnostics": {
+      "EnableInDevelopment": true,
+      "IncludeTokenHints": true,
+      "TrackFailures": true,
+      "MaxTrackedFailures": 50
+    }
   }
 }
 ```
@@ -160,12 +148,13 @@ curl http://localhost:5000/secure -H "Authorization: Bearer YOUR-JWT-TOKEN"
 
 ---
 
-## That's It! 🎉
+## That's It!
 
-You now have JWT authentication working. Your API:
-- ✅ Validates JWT tokens from your configured issuer
-- ✅ Returns 401 for invalid/missing tokens
-- ✅ Works with standard `[Authorize]` attribute on controllers
+You now have JWT authentication working locally. Your API:
+- Validates JWT tokens signed with your local dev secret
+- Returns 401 for invalid/missing tokens
+- Works with standard [Authorize] attribute on controllers
+- Ships with a dev-only diagnostics endpoint (/primus/diagnostics) that never returns secrets
 
 ### Authorization Options
 
@@ -190,3 +179,5 @@ Primus handles **authentication** (validating tokens). Use ASP.NET Core's standa
 | Combine multiple issuers | [Multi-Issuer Setup →](/docs/modules/identity-multi-issuer) |
 | Add advanced features | [Advanced Features →](/docs/modules/identity-advanced) |
 | Troubleshoot issues | [Identity Validator Reference →](/docs/modules/identity-validator) |
+
+

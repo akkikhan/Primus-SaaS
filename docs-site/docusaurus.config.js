@@ -53,7 +53,7 @@ const config = {
             { from: '/docs/modules/logging-enterprise-features', to: '/docs/intro' },
             { from: '/docs/modules/logging-targets', to: '/docs/intro' },
             // Non-docs-prefixed paths
-            { from: '/modules/client-integration-guide', to: '/docs/modules/documents-coming-soon' },
+            { from: '/modules/client-integration-guide', to: '/docs/intro' },
             { from: '/modules/identity-validator', to: '/docs/modules/identity-validator' },
             { from: '/modules/logging-module', to: '/docs/modules/logging-module' },
             // Redirect /docs root to intro

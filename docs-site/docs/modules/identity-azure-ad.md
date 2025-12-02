@@ -67,38 +67,47 @@ After registration, note down:
 ```json
 {
   "PrimusIdentity": {
+    "RequireHttpsMetadata": true,
+    "ValidateLifetime": true,
     "Issuers": [
       {
-        "Name": "AzureAD-Production",
-        "Type": "AzureAd",
-        "TenantId": "YOUR-TENANT-ID",
-        "ClientId": "YOUR-CLIENT-ID",
-        "ValidateAudience": true,
-        "ValidateIssuer": true,
-        "RequireHttpsMetadata": true
+        "Name": "AzureAD",
+        "Type": "AzureAD",
+        "Authority": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+        "Issuer": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+        "Audiences": [ "api://<CLIENT_ID>" ],
+        "AllowMachineToMachine": true
       }
     ],
-    "DefaultScheme": "Bearer",
-    "EnableDetailedErrors": false
+    "Diagnostics": {
+      "EnableInDevelopment": true,
+      "IncludeTokenHints": true,
+      "TrackFailures": true,
+      "MaxTrackedFailures": 50
+    }
   }
 }
 ```
 
-### Alternative: Using Authority URL
+### Alternative: Multi-tenant (Azure AD common)
 
 ```json
 {
   "PrimusIdentity": {
+    "RequireHttpsMetadata": true,
     "Issuers": [
       {
-        "Name": "AzureAD",
-        "Type": "AzureAd",
-        "Authority": "https://login.microsoftonline.com/YOUR-TENANT-ID/v2.0",
-        "Audience": "api://YOUR-CLIENT-ID",
-        "ValidateAudience": true,
-        "ValidateIssuer": true
+        "Name": "AzureAD-Common",
+        "Type": "AzureAD",
+        "Authority": "https://login.microsoftonline.com/common/v2.0",
+        "Issuer": "https://login.microsoftonline.com/common/v2.0",
+        "Audiences": [ "api://<CLIENT_ID>" ],
+        "AllowMachineToMachine": true
       }
-    ]
+    ],
+    "Diagnostics": {
+      "EnableInDevelopment": true
+    }
   }
 }
 ```
@@ -108,15 +117,13 @@ After registration, note down:
 | Property | Required | Description |
 |----------|----------|-------------|
 | `Name` | Yes | Friendly name for logging |
-| `Type` | Yes | Must be `"AzureAd"` |
-| `TenantId` | Yes* | Your Azure AD tenant ID |
-| `ClientId` | Yes* | Application (client) ID |
-| `Authority` | Alt | Full authority URL (alternative to TenantId) |
-| `Audience` | Alt | API audience (defaults to `api://{ClientId}`) |
-| `ValidateAudience` | No | Validate audience claim (default: true) |
-| `ValidateIssuer` | No | Validate issuer claim (default: true) |
-
-*Either `TenantId + ClientId` or `Authority + Audience` required.
+| `Type` | Yes | `"AzureAD"` |
+| `Authority` | Yes | `https://login.microsoftonline.com/<TENANT_ID>/v2.0` (or `common`/`organizations`) |
+| `Issuer` | Yes | Same as authority for v2 endpoints |
+| `Audiences` | Yes | Array of allowed audiences (e.g., `["api://<CLIENT_ID>"]`) |
+| `AllowMachineToMachine` | No | Allow client credentials tokens |
+| `RequireHttpsMetadata` | No | Defaults to true |
+| `Diagnostics` | No | Dev-only diagnostics settings |
 
 ---
 
@@ -357,14 +364,21 @@ app.Run();
 ```json
 {
   "PrimusIdentity": {
+    "RequireHttpsMetadata": true,
+    "ValidateLifetime": true,
     "Issuers": [
       {
         "Name": "AzureAD",
-        "Type": "AzureAd",
-        "TenantId": "YOUR-TENANT-ID",
-        "ClientId": "YOUR-CLIENT-ID"
+        "Type": "AzureAD",
+        "Authority": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+        "Issuer": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+        "Audiences": [ "api://<CLIENT_ID>" ],
+        "AllowMachineToMachine": true
       }
-    ]
+    ],
+    "Diagnostics": {
+      "EnableInDevelopment": true
+    }
   },
   "Logging": {
     "LogLevel": {
@@ -458,9 +472,10 @@ For apps accepting tokens from any Azure AD tenant:
     "Issuers": [
       {
         "Name": "AzureAD-MultiTenant",
-        "Type": "AzureAd",
+        "Type": "AzureAD",
         "Authority": "https://login.microsoftonline.com/common/v2.0",
-        "Audience": "api://YOUR-CLIENT-ID",
+        "Issuer": "https://login.microsoftonline.com/common/v2.0",
+        "Audiences": [ "api://YOUR-CLIENT-ID" ],
         "ValidateIssuer": false
       }
     ]

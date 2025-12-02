@@ -69,10 +69,10 @@ openssl rand -base64 32
     "Issuers": [
       {
         "Name": "LocalDev",
-        "Type": "Local",
-        "SigningKey": "your-256-bit-secret-key-at-least-32-chars-long!!",
-        "Issuer": "local-dev-issuer",
-        "Audience": "local-dev-api",
+        "Type": "Jwt",
+        "Secret": "your-256-bit-secret-key-at-least-32-chars-long!!",
+        "Issuer": "https://local-dev-issuer",
+        "Audiences": [ "local-dev-api" ],
         "ValidateLifetime": true,
         "ClockSkewSeconds": 300
       }
@@ -87,10 +87,10 @@ openssl rand -base64 32
 | Property | Required | Description |
 |----------|----------|-------------|
 | `Name` | Yes | Friendly name for logging |
-| `Type` | Yes | Must be `"Local"` |
-| `SigningKey` | Yes | HMAC secret (min 32 chars) |
+| `Type` | Yes | Must be `"Jwt"` |
+| `Secret` | Yes | HMAC secret (min 32 chars) |
 | `Issuer` | Yes | Token issuer claim value |
-| `Audience` | Yes | Token audience claim value |
+| `Audiences` | Yes | Array of token audience values |
 | `ValidateLifetime` | No | Validate expiration (default: true) |
 | `ClockSkewSeconds` | No | Allowed clock skew (default: 300) |
 
@@ -130,9 +130,9 @@ app.Run();
 ```csharp
 using PrimusSaaS.Identity.Validator;
 
-// Pull issuer/audience/secret straight from PrimusIdentity:Issuers:LocalJwt
+// Pull issuer/audience/secret straight from PrimusIdentity:Issuers:LocalDev
 var token = TestTokenBuilder
-    .CreateFromConfig(builder.Configuration.GetSection("PrimusIdentity:Issuers:LocalJwt"))
+    .CreateFromConfig(builder.Configuration.GetSection("PrimusIdentity:Issuers:LocalDev"))
     .WithExpiry(TimeSpan.FromHours(8)) // optional override (default is 1 hour)
     .Build();
 ```
@@ -151,8 +151,8 @@ using Microsoft.IdentityModel.Tokens;
 
 public static class TestTokenGenerator
 {
-    private const string SigningKey = "your-256-bit-secret-key-at-least-32-chars-long!!";
-    private const string Issuer = "local-dev-issuer";
+    private const string SecretKey = "your-256-bit-secret-key-at-least-32-chars-long!!";
+    private const string Issuer = "https://local-dev-issuer";
     private const string Audience = "local-dev-api";
 
     public static string GenerateToken(
@@ -161,7 +161,7 @@ public static class TestTokenGenerator
         string[] roles = null,
         int expiresInMinutes = 60)
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SigningKey));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SecretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new List<Claim>
@@ -192,7 +192,7 @@ public static class TestTokenGenerator
     // Generate expired token for testing
     public static string GenerateExpiredToken()
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SigningKey));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SecretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
@@ -303,9 +303,9 @@ if (app.Environment.IsDevelopment())
     app.MapGet("/dev/token", (string? user, string? email, string? roles) =>
     {
         var config = builder.Configuration.GetSection("PrimusIdentity:Issuers:0");
-        var signingKey = config["SigningKey"]!;
+        var signingKey = config["Secret"]!;
         var issuer = config["Issuer"]!;
-        var audience = config["Audience"]!;
+        var audience = config.GetSection("Audiences").Get<string[]>()?.FirstOrDefault() ?? "";
         
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -368,10 +368,10 @@ app.Run();
     "Issuers": [
       {
         "Name": "LocalDev",
-        "Type": "Local",
-        "SigningKey": "your-256-bit-secret-key-at-least-32-chars-long!!",
-        "Issuer": "local-dev-issuer",
-        "Audience": "local-dev-api"
+        "Type": "Jwt",
+        "Secret": "your-256-bit-secret-key-at-least-32-chars-long!!",
+        "Issuer": "https://local-dev-issuer",
+        "Audiences": [ "local-dev-api" ]
       }
     ],
     "EnableDetailedErrors": true
@@ -480,7 +480,7 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
 
 **Solution:** Use a key with at least 32 characters:
 ```json
-"SigningKey": "at-least-32-characters-long-secret-key-here!!"
+"Secret": "at-least-32-characters-long-secret-key-here!!"
 ```
 
 ### Error: "IDX10223: Lifetime validation failed"
@@ -522,7 +522,7 @@ foreach (var claim in jwt.Claims)
 - Never commit signing keys to source control
 - Use environment variables or user secrets for keys:
   ```bash
-  dotnet user-secrets set "PrimusIdentity:Issuers:0:SigningKey" "your-secret"
+  dotnet user-secrets set "PrimusIdentity:Issuers:0:Secret" "your-secret"
   ```
 
 ---

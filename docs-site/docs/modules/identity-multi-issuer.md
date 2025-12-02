@@ -29,29 +29,37 @@ Accept tokens from multiple identity providers (Auth0, Azure AD, Local JWT) in a
 ```json
 {
   "PrimusIdentity": {
+    "RequireHttpsMetadata": true,
+    "ValidateLifetime": true,
     "Issuers": [
       {
         "Name": "Auth0-Production",
         "Type": "Auth0",
         "Authority": "https://YOUR-TENANT.auth0.com/",
-        "Audience": "https://your-api"
+        "Issuer": "https://YOUR-TENANT.auth0.com/",
+        "Audiences": [ "https://your-api" ],
+        "AllowMachineToMachine": true
       },
       {
         "Name": "AzureAD-Corporate",
-        "Type": "AzureAd",
-        "TenantId": "YOUR-TENANT-ID",
-        "ClientId": "YOUR-CLIENT-ID"
+        "Type": "AzureAD",
+        "Authority": "https://login.microsoftonline.com/YOUR-TENANT-ID/v2.0",
+        "Issuer": "https://login.microsoftonline.com/YOUR-TENANT-ID/v2.0",
+        "Audiences": [ "api://YOUR-CLIENT-ID" ],
+        "AllowMachineToMachine": true
       },
       {
         "Name": "LocalDev",
-        "Type": "Local",
-        "SigningKey": "your-256-bit-secret-key-at-least-32-chars-long!!",
-        "Issuer": "local-dev-issuer",
-        "Audience": "local-dev-api"
+        "Type": "Jwt",
+        "Secret": "your-256-bit-secret-key-at-least-32-chars-long!!",
+        "Issuer": "https://local-dev-issuer",
+        "Audiences": [ "local-dev-api" ]
       }
     ],
-    "DefaultScheme": "Bearer",
-    "EnableDetailedErrors": false
+    "Diagnostics": {
+      "EnableInDevelopment": true,
+      "TrackFailures": true
+    }
   }
 }
 ```
@@ -217,14 +225,16 @@ string? GetName(ClaimsPrincipal user, string provider)
         "Name": "Auth0-Prod",
         "Type": "Auth0",
         "Authority": "https://prod-tenant.auth0.com/",
-        "Audience": "https://api.example.com"
+        "Issuer": "https://prod-tenant.auth0.com/",
+        "Audiences": [ "https://api.example.com" ],
+        "AllowMachineToMachine": true
       },
       {
         "Name": "LocalDev",
-        "Type": "Local",
-        "SigningKey": "dev-secret-key-at-least-32-characters!!",
-        "Issuer": "local-dev",
-        "Audience": "local-api"
+        "Type": "Jwt",
+        "Secret": "dev-secret-key-at-least-32-characters!!",
+        "Issuer": "https://local-dev",
+        "Audiences": [ "local-api" ]
       }
     ]
   }
@@ -245,13 +255,16 @@ string? GetName(ClaimsPrincipal user, string provider)
         "Name": "Auth0-Legacy",
         "Type": "Auth0",
         "Authority": "https://legacy.auth0.com/",
-        "Audience": "https://api.example.com"
+        "Issuer": "https://legacy.auth0.com/",
+        "Audiences": [ "https://api.example.com" ],
+        "AllowMachineToMachine": true
       },
       {
         "Name": "AzureAD-New",
-        "Type": "AzureAd",
-        "TenantId": "new-tenant-id",
-        "ClientId": "new-client-id"
+        "Type": "AzureAD",
+        "Authority": "https://login.microsoftonline.com/new-tenant-id/v2.0",
+        "Issuer": "https://login.microsoftonline.com/new-tenant-id/v2.0",
+        "Audiences": [ "api://new-client-id" ]
       }
     ]
   }
@@ -270,21 +283,24 @@ string? GetName(ClaimsPrincipal user, string provider)
     "Issuers": [
       {
         "Name": "Tenant-Acme",
-        "Type": "AzureAd",
-        "TenantId": "acme-tenant-id",
-        "ClientId": "app-client-id"
+        "Type": "AzureAD",
+        "Authority": "https://login.microsoftonline.com/acme-tenant-id/v2.0",
+        "Issuer": "https://login.microsoftonline.com/acme-tenant-id/v2.0",
+        "Audiences": [ "api://app-client-id" ]
       },
       {
         "Name": "Tenant-Contoso",
-        "Type": "AzureAd",
-        "TenantId": "contoso-tenant-id",
-        "ClientId": "app-client-id"
+        "Type": "AzureAD",
+        "Authority": "https://login.microsoftonline.com/contoso-tenant-id/v2.0",
+        "Issuer": "https://login.microsoftonline.com/contoso-tenant-id/v2.0",
+        "Audiences": [ "api://app-client-id" ]
       },
       {
         "Name": "Tenant-Fabrikam",
         "Type": "Auth0",
         "Authority": "https://fabrikam.auth0.com/",
-        "Audience": "https://api.saas.com"
+        "Issuer": "https://fabrikam.auth0.com/",
+        "Audiences": [ "https://api.saas.com" ]
       }
     ]
   }
@@ -303,15 +319,17 @@ string? GetName(ClaimsPrincipal user, string provider)
     "Issuers": [
       {
         "Name": "Internal-AzureAD",
-        "Type": "AzureAd",
-        "TenantId": "our-tenant-id",
-        "ClientId": "internal-app-id"
+        "Type": "AzureAD",
+        "Authority": "https://login.microsoftonline.com/our-tenant-id/v2.0",
+        "Issuer": "https://login.microsoftonline.com/our-tenant-id/v2.0",
+        "Audiences": [ "api://internal-app-id" ]
       },
       {
         "Name": "Partner-Auth0",
         "Type": "Auth0",
         "Authority": "https://partner.auth0.com/",
-        "Audience": "https://partner-api"
+        "Issuer": "https://partner.auth0.com/",
+        "Audiences": [ "https://partner-api" ]
       }
     ]
   }
@@ -450,10 +468,10 @@ public IActionResult GetNormalizedUser()
     "Issuers": [
       {
         "Name": "LocalDev",
-        "Type": "Local",
-        "SigningKey": "dev-secret-key-at-least-32-characters!!",
-        "Issuer": "local-dev",
-        "Audience": "local-api"
+        "Type": "Jwt",
+        "Secret": "dev-secret-key-at-least-32-characters!!",
+        "Issuer": "https://local-dev",
+        "Audiences": [ "local-api" ]
       }
     ]
   }
@@ -471,13 +489,15 @@ public IActionResult GetNormalizedUser()
         "Name": "Auth0",
         "Type": "Auth0",
         "Authority": "https://prod.auth0.com/",
-        "Audience": "https://api.example.com"
+        "Issuer": "https://prod.auth0.com/",
+        "Audiences": [ "https://api.example.com" ]
       },
       {
         "Name": "AzureAD",
-        "Type": "AzureAd",
-        "TenantId": "prod-tenant-id",
-        "ClientId": "prod-client-id"
+        "Type": "AzureAD",
+        "Authority": "https://login.microsoftonline.com/prod-tenant-id/v2.0",
+        "Issuer": "https://login.microsoftonline.com/prod-tenant-id/v2.0",
+        "Audiences": [ "api://prod-client-id" ]
       }
     ]
   }

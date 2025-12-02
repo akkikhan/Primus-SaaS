@@ -72,7 +72,7 @@ npm install @primus-saas/logging
 dotnet add package PrimusSaaS.Logging --version 1.2.4
 ```
 
-For detailed integration steps, see the unified [Client Integration Guide](docs-site/docs/modules/client-integration-guide.md) and the example apps under `examples/`.
+For detailed integration steps, see the module quick starts under `docs-site/docs/modules/` (Identity, Logging, Notifications) and the example apps under `examples/`.
 
 ---
 
@@ -176,7 +176,7 @@ See individual README files in each component directory:
 
 ## Azure AD Configuration
 
-See the unified client integration guide (`docs-site/docs/modules/client-integration-guide.md`) for Azure AD registration, multi-issuer (Azure AD + Local JWT) setup, and ready-to-run Node.js/.NET samples. Example projects live in `examples/`.
+See the module quick starts (`docs-site/docs/modules/*-quick-start.md`) for Azure AD registration, multi-issuer (Azure AD + Local JWT) setup, and ready-to-run Node.js/.NET samples. Example projects live in `examples/`.
 
 ### Configuring Azure AD Mode
 

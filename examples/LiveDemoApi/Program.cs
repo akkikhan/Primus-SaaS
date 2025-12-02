@@ -63,7 +63,7 @@ builder.Services.AddControllers();
 
 // Answer: Primus Module
 // Step 2 -- Register 
-// builder.Services.AddPrimusIdentity(opts => builder.Configuration.GetSection("PrimusIdentity").Bind(opts));
+builder.Services.AddPrimusIdentity(opts => builder.Configuration.GetSection("PrimusIdentity").Bind(opts));
 builder.Services.AddAuthorization();
 
 // Detect if Primus Identity was registered (for telemetry dashboard)

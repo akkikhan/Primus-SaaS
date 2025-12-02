@@ -612,6 +612,15 @@ dotnet add package PrimusSaaS.Identity.Validator --version 1.5.0
 
 ---
 
+## Troubleshooting (field feedback)
+- **Type naming mismatch (AzureAD vs Oidc in diagnostics)**: Diagnostics normalizes types (e.g., AzureAD → Oidc). Expected behavior; note when debugging.
+- **Authority/Issuer duplication**: For OIDC providers, set `Authority`; `Issuer` typically matches. Avoid divergence to prevent validation errors.
+- **LocalDev JWT + `/secure`**: Ensure `AllowMachineToMachine` is set when using local/M2M tokens if needed; use a 32+ char secret. Watch warnings about disabled M2M.
+- **Placeholders**: Replace `{tenant-id}`, `{client-id}`, and dummy secrets before running; add startup validation to fail fast.
+- **Auth0 M2M**: For machine-to-machine Auth0 flows, set `AllowMachineToMachine: true`; OIDC discovery/JWKS work out of the box.
+- **Swagger security**: Package doesn’t auto-configure Swagger schemes; add them manually to secure `/secure` endpoints.
+- **HTTP with RequireHttpsMetadata**: If running HTTP in dev with `RequireHttpsMetadata: true`, disable it locally or run HTTPS to avoid metadata fetch failures.
+
 ## 13. Next Steps
 
 After integrating Identity Validator, consider these complementary modules:

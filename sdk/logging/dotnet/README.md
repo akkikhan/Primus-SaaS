@@ -4,7 +4,7 @@
 
 Enterprise-grade structured logging library for .NET applications with automatic context enrichment, PII masking, and multiple output targets.
 
-> Full client integration guide (Node + .NET + Identity + Logging): see `docs-site/docs/modules/client-integration-guide.md`.
+> Module quick starts live in `docs-site/docs/modules` (Identity, Logging, Notifications). Use those instead of the removed integration guide.
 
 ## Features
 

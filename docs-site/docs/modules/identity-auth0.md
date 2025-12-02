@@ -44,19 +44,22 @@ From the [Auth0 Dashboard](https://manage.auth0.com/):
 ```json
 {
   "PrimusIdentity": {
+    "RequireHttpsMetadata": true,
+    "ValidateLifetime": true,
     "Issuers": [
       {
         "Name": "Auth0-Production",
         "Type": "Auth0",
         "Authority": "https://YOUR-TENANT.auth0.com/",
-        "Audience": "https://your-api-identifier",
-        "ValidateAudience": true,
-        "ValidateIssuer": true,
-        "RequireHttpsMetadata": true
+        "Issuer": "https://YOUR-TENANT.auth0.com/",
+        "Audiences": [ "https://your-api-identifier" ],
+        "AllowMachineToMachine": true
       }
     ],
-    "DefaultScheme": "Bearer",
-    "EnableDetailedErrors": false
+    "Diagnostics": {
+      "EnableInDevelopment": true,
+      "IncludeTokenHints": true
+    }
   }
 }
 ```
@@ -68,10 +71,11 @@ From the [Auth0 Dashboard](https://manage.auth0.com/):
 | `Name` | Yes | Friendly name for logging |
 | `Type` | Yes | Must be `"Auth0"` |
 | `Authority` | Yes | Your Auth0 domain with trailing slash |
-| `Audience` | Yes | API Identifier from Auth0 dashboard |
-| `ValidateAudience` | No | Validate audience claim (default: true) |
-| `ValidateIssuer` | No | Validate issuer claim (default: true) |
+| `Issuer` | Yes | Usually the same as `Authority` |
+| `Audiences` | Yes | Array of API Identifiers from Auth0 dashboard |
+| `AllowMachineToMachine` | No | Allow client credentials tokens |
 | `RequireHttpsMetadata` | No | Require HTTPS for metadata (default: true) |
+| `Diagnostics` | No | Dev-only diagnostics (no secrets) |
 
 ---
 
@@ -280,9 +284,14 @@ app.Run();
         "Name": "Auth0",
         "Type": "Auth0",
         "Authority": "https://dev-example.auth0.com/",
-        "Audience": "https://my-api"
+        "Issuer": "https://dev-example.auth0.com/",
+        "Audiences": [ "https://my-api" ]
       }
-    ]
+    ],
+    "RequireHttpsMetadata": true,
+    "Diagnostics": {
+      "EnableInDevelopment": true
+    }
   },
   "Logging": {
     "LogLevel": {

@@ -67,3 +67,9 @@ examples/dotnet-api/FakeAuthApi/
 **/acme-credentials.json
 **/*secret*.txt
 **/*token*.txt
+token.json
+token_final.json
+
+# Security scan outputs
+SECURITY_SCAN_RESULTS.md
+temp-security-scan/

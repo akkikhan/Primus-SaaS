@@ -261,14 +261,14 @@ public class JwtDiagnosticsController : ControllerBase
     [HttpGet("issuers")]
     public IActionResult GetIssuers()
     {
-        var issuers = _config.GetSection("PrimusIdentity:Issuers")
-            .GetChildren()
-            .Select(i => new {
-                name = i["Name"],
-                type = i["Type"],
-                authority = i["Authority"],
-                audience = i["Audience"] ?? i["ClientId"]
-            });
+                var issuers = _config.GetSection("PrimusIdentity:Issuers")
+                    .GetChildren()
+                    .Select(i => new {
+                        name = i["Name"],
+                        type = i["Type"],
+                        authority = i["Authority"],
+                        audiences = i.GetSection("Audiences").Get<string[]>() ?? Array.Empty<string>()
+                    });
         
         return Ok(issuers);
     }

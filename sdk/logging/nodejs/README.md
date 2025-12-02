@@ -4,7 +4,7 @@
 
 Enterprise-ready structured logging with PII masking and context enrichment.
 
-> Full client integration guide (Node + .NET + Identity + Logging): see `docs-site/docs/modules/client-integration-guide.md`.
+> Module quick starts live in `docs-site/docs/modules` (Identity, Logging, Notifications). Use those instead of the removed integration guide.
 
 ## Installation
 

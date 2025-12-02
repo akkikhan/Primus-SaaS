@@ -87,7 +87,7 @@ public class EmailService : IEmailService
     {
         var baseUrl = _docsBaseUrl.TrimEnd('/');
         var anchor = moduleName.ToLowerInvariant().Contains("log") ? "#add-logging" : "#5-integration-steps";
-        return $"{baseUrl}/docs/modules/client-integration-guide{anchor}";
+        return $"{baseUrl}/docs/intro{anchor}";
     }
 
     public async Task SendVersionPublishedAsync(Application app, ModuleVersion version)

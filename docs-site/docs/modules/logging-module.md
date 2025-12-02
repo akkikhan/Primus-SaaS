@@ -272,6 +272,15 @@ app.Run();
 
 ---
 
+## Troubleshooting (field feedback)
+
+- **Config binding ignored/silent**: Use `builder.Logging.AddPrimus(builder.Configuration.GetSection("PrimusLogging"))` and ensure at least one valid target (`console`, `file`, `applicationinsights`) is present. If nothing binds, nothing writes—add validation to throw when targets are missing/invalid.
+- **Mixed property names**: JSON uses `MinimumLevel`/`Targets` with `Type: "console"|"file"|"applicationinsights"` and `Pretty` for console. The API uses `MinLevel` and `TargetConfig`. Keep shapes consistent.
+- **Environment shows Production**: For dev-time Swagger in samples, set `ASPNETCORE_ENVIRONMENT=Development` when running (`dotnet run --urls=http://localhost:5002`).
+- **Prefer section overloads**: If available in your package version, use `AddPrimus(IConfigurationSection)` (optionally with an override Action) to avoid manual mapping.
+
+---
+
 ## Examples and downloads
 
 - **Minimal**: `examples/logging/Minimal` — [Download zip](/downloads/logging-minimal.zip) — Postman included in the zip.

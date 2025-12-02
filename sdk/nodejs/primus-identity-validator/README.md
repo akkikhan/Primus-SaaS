@@ -4,7 +4,7 @@
 
 Library-only validator for JWT/OIDC tokens from your configured issuers (Azure AD, local, or any JWT provider). No Primus-hosted login or Primus-issued tokens.
 
-> Full client integration guide (Node + .NET + Logging): see `docs-site/docs/modules/client-integration-guide.md`.
+> Module quick starts live in `docs-site/docs/modules` (Identity, Logging, Notifications). Use those instead of the removed integration guide.
 
 ## Features
 
@@ -477,6 +477,6 @@ MIT
 
 ## Support
 
-- Documentation: https://akkikhan.github.io/Primus-SaaS/docs/modules/client-integration-guide
+- Documentation: https://akkikhan.github.io/Primus-SaaS/docs/modules/identity-validator
 - Issues: https://github.com/akkikhan/Primus-SaaS/issues
 - Email: support@primus-saas.com

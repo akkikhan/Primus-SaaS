@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using PrimusSaaS.Identity.Validator;
+using PrimusSaaS.Identity.Validator.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Identity + auth
 builder.Services.AddPrimusIdentity(opts => builder.Configuration.GetSection("PrimusIdentity").Bind(opts));
 builder.Services.AddAuthorization();
+builder.Services.AddHttpClient();
 
-// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -21,6 +21,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Diagnostics endpoint (dev only; no secrets)
+app.MapPrimusIdentityDiagnostics();
 
 app.MapGet("/public", () => "public ok");
 app.MapGet("/secure", [Authorize] () => "secure ok").RequireAuthorization();

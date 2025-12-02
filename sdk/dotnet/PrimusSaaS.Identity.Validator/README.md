@@ -4,7 +4,7 @@
 
 Official .NET SDK for validating JWT/OIDC tokens from your configured identity providers (Azure AD, Auth0, Cognito, Google, or any JWT issuer). The package is library-only: no Primus-hosted login, no Primus-issued tokens, no outbound calls to Primus.
 
-> Full client integration guide (Node + .NET + Logging): see `docs-site/docs/modules/client-integration-guide.md`.
+> Module quick starts live in `docs-site/docs/modules` (Identity, Logging, Notifications). Use those instead of the removed integration guide.
 
 ---
 

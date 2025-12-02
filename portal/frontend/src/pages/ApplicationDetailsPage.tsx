@@ -23,7 +23,7 @@ export const ApplicationDetailsPage = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'integration'>('overview');
   const [activeModuleTab, setActiveModuleTab] = useState<number | null>(null);
   const docsBaseUrl = (import.meta.env.VITE_DOCS_BASE_URL as string | undefined)?.replace(/\/$/, '') || 'https://akkikhan.github.io/Primus-SaaS';
-  const docsIntegrationUrl = `${docsBaseUrl}/docs/modules/client-integration-guide`;
+  const docsIntegrationUrl = `${docsBaseUrl}/docs/intro`;
   const githubRepoUrl = 'https://github.com/akkikhan/Primus-SaaS';
   const stackInfo: Record<string, { label: string; tone: string }> = {
     DotNet: { label: '.NET', tone: 'tone-dotnet' },

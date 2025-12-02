@@ -7,6 +7,7 @@ on:
       - master
       - AG-nine
       - AG-23-New-odule
+      - AG-24
     paths:
       - 'docs-site/**'
       - '.github/workflows/deploy-docs.yml'
