@@ -1,0 +1,22 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "LoggingMinimal",
+    "version": "1.0"
+  },
+  "paths": {
+    "/ping": {
+      "get": {
+        "tags": [
+          "LoggingMinimal"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    }
+  },
+  "components": { }
+}
