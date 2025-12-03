@@ -126,22 +126,6 @@ app.Run();
 }
 ```
 
-### Optional: cut noise, keep errors, and mask sensitive fields
-
-```csharp
-using PrimusSaaS.Logging.Extensions;
-
-builder.Logging.AddPrimus(opts =>
-{
-    opts.TruncateCategoryNames = false;   // keep full category names (avoid redaction)
-    opts.SamplingRate = 0.10;             // keep 10% of low-importance logs
-    opts.AlwaysLogOnError = true;         // never sample out errors
-    opts.MaskFields = new() { "password", "token", "apiKey", "ssn" };
-});
-```
-
----
-
 ## Use
 
 ```csharp

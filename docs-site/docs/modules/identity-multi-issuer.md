@@ -11,8 +11,15 @@ Accept tokens from multiple identity providers (Auth0, Azure AD, Local JWT) in a
 
 ---
 
-## Use Cases`r`n`r`n| Scenario | Configuration |`r`n|----------|---------------|`r`n| Enterprise with Azure AD + partner Auth0 | Azure AD + Auth0 |`r`n| Migration from Auth0 to Azure AD | Azure AD + Auth0 |`r`n| Production + Dev testing | External provider + Local JWT |`r`n| Multi-tenant SaaS | Multiple Azure AD tenants |`r`n| Full demo (all) | Azure AD + Auth0 + Local JWT |`r`n`r`n----------|---------------|
-| Enterprise with Azure AD + partner Auth0 | Azure AD + Auth0 |`r`n| Migration from Auth0 to Azure AD | Azure AD + Auth0 |`r`n| Production + Dev testing | External provider + Local JWT |`r`n|| Enterprise with Azure AD + partner Auth0 | Azure AD + Auth0 |`r`n| Migration from Auth0 to Azure AD | Azure AD + Auth0 |`r`n| Production + Dev testing | External provider + Local JWT |`r`n| Multi-tenant SaaS | Multiple Azure AD tenants |`r`n| Full demo (all) | Azure AD + Auth0 + Local JWT |`r`n| Full demo (all) | Azure AD + Auth0 + Local JWT |
+## Use Cases
+
+| Scenario | Configuration |
+|----------|---------------|
+| Enterprise with Azure AD + partner Auth0 | Azure AD + Auth0 |
+| Migration from Auth0 to Azure AD | Azure AD + Auth0 |
+| Production + Dev testing | External provider + Local JWT |
+| Multi-tenant SaaS | Multiple Azure AD tenants |
+| Full demo (all) | Azure AD + Auth0 + Local JWT |
 
 ---
 
@@ -31,16 +38,14 @@ Accept tokens from multiple identity providers (Auth0, Azure AD, Local JWT) in a
         "Type": "Auth0",
         "Authority": "https://YOUR-TENANT.auth0.com/",
         "Issuer": "https://YOUR-TENANT.auth0.com/",
-        "Audiences": [ "https://your-api" ],
-        "AllowMachineToMachine": true
+        "Audiences": [ "https://your-api" ]
       },
       {
         "Name": "AzureAD-Corporate",
         "Type": "AzureAD",
         "Authority": "https://login.microsoftonline.com/YOUR-TENANT-ID/v2.0",
         "Issuer": "https://login.microsoftonline.com/YOUR-TENANT-ID/v2.0",
-        "Audiences": [ "api://YOUR-CLIENT-ID" ],
-        "AllowMachineToMachine": true
+        "Audiences": [ "api://YOUR-CLIENT-ID" ]
       },
       {
         "Name": "LocalDev",
