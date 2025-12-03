@@ -52,8 +52,7 @@ From the [Auth0 Dashboard](https://manage.auth0.com/):
         "Type": "Auth0",
         "Authority": "https://YOUR-TENANT.auth0.com/",
         "Issuer": "https://YOUR-TENANT.auth0.com/",
-        "Audiences": [ "https://your-api-identifier" ],
-        "AllowMachineToMachine": true
+        "Audiences": [ "https://your-api-identifier" ]
       }
     ],
     "Diagnostics": {
@@ -87,9 +86,6 @@ using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ========================================
-// Register Primus Identity for Auth0
-// ========================================
 builder.Services.AddPrimusIdentity(opts => 
     builder.Configuration.GetSection("PrimusIdentity").Bind(opts));
 
@@ -120,43 +116,16 @@ using Microsoft.AspNetCore.Mvc;
 [Route("api/[controller]")]
 public class ProfileController : ControllerBase
 {
-    // Public endpoint - no auth required
     [HttpGet("public")]
-    public IActionResult GetPublic()
-    {
-        return Ok(new { message = "This is public" });
-    }
+    public IActionResult GetPublic() => Ok(new { message = "This is public" });
 
-    // Protected endpoint - requires valid Auth0 token
     [Authorize]
-    [HttpGet("private")]
-    public IActionResult GetPrivate()
+    [HttpGet("me")]
+    public IActionResult GetMe() => Ok(new
     {
-        var userId = User.FindFirst("sub")?.Value;
-        var email = User.FindFirst("email")?.Value;
-        
-        return Ok(new { 
-            message = "You are authenticated!",
-            userId,
-            email
-        });
-    }
-
-    // Protected with specific scope
-    [Authorize]
-    [HttpGet("admin")]
-    public IActionResult GetAdmin()
-    {
-        // Check for admin scope
-        var scopes = User.FindFirst("scope")?.Value?.Split(' ') ?? Array.Empty<string>();
-        
-        if (!scopes.Contains("admin"))
-        {
-            return Forbid();
-        }
-        
-        return Ok(new { message = "Admin access granted" });
-    }
+        userId = User.FindFirst("sub")?.Value,
+        email = User.FindFirst("email")?.Value
+    });
 }
 ```
 

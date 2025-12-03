@@ -2,147 +2,38 @@
 id: identity-validator
 title: Identity Validator
 sidebar_position: 1
-description: Enterprise-grade JWT/OIDC validation for .NET APIs with multi-issuer support, RBAC, and typed user context.
+description: Minimal, local-first JWT/OIDC validation for .NET APIs with multi-issuer support.
 ---
 
 # Identity Validator Module
 
-## 1. Module Overview
-
-The **Primus Identity Validator** is an enterprise-grade JWT/OIDC validation library that runs entirely within your application. It provides multi-issuer authentication (Azure AD, Auth0, Google, Cognito, or local JWT), role-based access control (RBAC), permission-based authorization, and typed user context extraction.
-
-**Key benefits:**
-- **Multi-issuer support**: Validate tokens from Azure AD, Auth0, Google, Cognito, or local development JWT servers in the same application
-- **Zero external calls**: All validation happens locally-Primus never stores or transmits your users' data
-- **Standard authorization**: Works seamlessly with ASP.NET Core's standard `[Authorize]` attribute
-- **Swagger integration**: `AddPrimusSwagger(...)` adds Bearer/OAuth2 security definitions for your configured issuers
-- **Developer diagnostics**: Dev-mode endpoints to debug token validation failures
+Validate JWT/OIDC tokens locally in your .NET API. No tokens or user data are sent to Primus—everything runs in-process.
 
 ---
 
-## 2. Installation
-
-### NuGet Package
+## Install
 
 ```bash
 dotnet add package PrimusSaaS.Identity.Validator
 ```
 
-**Current Version**: `1.3.6` (supports .NET 6, 7, and 8)
-
-See [Modules Version Matrix](/docs/modules/version-matrix) for the authoritative version list.
-
-### Starting from scratch
-- New project: `dotnet new webapi -n MyPrimusIdentity --no-https`
-- Add package: `cd MyPrimusIdentity && dotnet add package PrimusSaaS.Identity.Validator`
-- Swagger (if missing): `dotnet add package Swashbuckle.AspNetCore`
-- Run: `dotnet run --urls=http://localhost:5000`
-
 ---
 
-## 3. Required Using Statements
+## Minimal setup (Local JWT)
 
-Add these using statements to your `Program.cs` or relevant files:
-
+**Program.cs**
 ```csharp
-// Core identity validation
+using Microsoft.AspNetCore.Authorization;
 using PrimusSaaS.Identity.Validator;
-
-// For Swagger/OpenAPI integration
-using PrimusSaaS.Identity.Validator.Swagger;
-
-// For dev-mode diagnostics (optional)
 using PrimusSaaS.Identity.Validator.Diagnostics;
 
-// Standard ASP.NET Core authorization
-using Microsoft.AspNetCore.Authorization;
-```
-
----
-
-## 4. Program.cs Service Registration
-Wire up identity/authorization middleware so tokens are validated and `[Authorize]` works.
-
-### Option A: Full Configuration (Multi-Issuer)
-
-Use this when you need Azure AD + Local JWT support or multiple identity providers:
-
-```csharp
-using PrimusSaaS.Identity.Validator;
-
 var builder = WebApplication.CreateBuilder(args);
 
-// Register Primus Identity with configuration binding
-builder.Services.AddPrimusIdentity(options =>
-{
-    builder.Configuration.GetSection("PrimusIdentity").Bind(options);
-});
-
-// Required: Add authorization services
+builder.Services.AddPrimusIdentity(opts =>
+    builder.Configuration.GetSection("PrimusIdentity").Bind(opts));
 builder.Services.AddAuthorization();
-
-var app = builder.Build();
-
-// Required: Add authentication and authorization middleware (see Section 6)
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllers();
-app.Run();
-```
-
-### Option B: One-Liner for Azure AD Only
-
-Use this simplified registration when Azure AD is your only identity provider:
-
-```csharp
-using PrimusSaaS.Identity.Validator;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// One-liner: Azure AD with tenant and client ID
-builder.Services.AddPrimusIdentityForAzureAD(
-    tenantId: builder.Configuration["AzureAd:TenantId"]!,
-    clientId: builder.Configuration["AzureAd:ClientId"]!,
-    allowMachineToMachine: true  // Enable client_credentials flow
-);
-
-builder.Services.AddAuthorization();
-
-var app = builder.Build();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllers();
-app.Run();
-```
-
-### Option C: Controller-Based API with Swagger
-
-```csharp
-using PrimusSaaS.Identity.Validator;
-using PrimusSaaS.Identity.Validator.Swagger;
-
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
-// Add Primus Identity
-builder.Services.AddPrimusIdentity(options =>
-{
-    builder.Configuration.GetSection("PrimusIdentity").Bind(options);
-});
-
-builder.Services.AddAuthorization();
-
-// Add Swagger with Primus security schemes (Bearer + OAuth flows from configured issuers)
-builder.Services.AddSwaggerGen(c =>
-{
-    var primusOptions = builder.Configuration.GetSection("PrimusIdentity").Get<PrimusIdentityOptions>() ?? new();
-    c.AddPrimusSwagger(primusOptions);
-});
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
@@ -154,60 +45,28 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapPrimusIdentityDiagnostics(); // dev only
 
-app.MapControllers();
+app.MapGet("/public", () => "public ok");
+app.MapGet("/secure", [Authorize] () => "secure ok");
+
 app.Run();
 ```
 
-### Get your keys (identity)
-- **Azure AD**: Azure Portal → App registrations → New registration → note `TenantId` and `ClientId`; expose API and add a scope/audience if needed.
-- **Auth0**: Auth0 Dashboard → Applications → note Domain/ClientId; create an API and audience.
-- **Local JWT**: Use a 32+ char secret (User Secrets/Key Vault) and set `Issuer`/`Audiences` to your local host.
-
----
-
-## Examples and downloads
-
-- **Minimal**: `examples/identity/Minimal` — [Download zip](/downloads/identity-minimal.zip) — Postman included in the zip.
-- **Advanced**: `examples/identity/Advanced` — [Download zip](/downloads/identity-advanced.zip) — Postman included in the zip.
-- Swagger (static): [Minimal](/downloads/identity-minimal-swagger.json), [Advanced](/downloads/identity-advanced-swagger.json)
-- Full-stack reference: `examples/LiveDemoApi` (Identity + others).
-- Verified with:
-  - Minimal: `cd examples/identity/Minimal && dotnet restore && dotnet run --urls=http://localhost:5000`
-  - Advanced: `cd examples/identity/Advanced && dotnet restore && dotnet run --urls=http://localhost:5001`
-- Quick curl:
-  - Public: `curl http://localhost:5000/public`
-  - Secure (replace token): `curl -H "Authorization: Bearer <token>" http://localhost:5000/secure`
-
----
-
-## 5. Configuration (appsettings.json)
-Bind issuers, audiences, and diagnostics so the validator knows how to check tokens.
-
-### Multi-Issuer Configuration (Azure AD + Local JWT)
-
+**appsettings.json**
 ```json
 {
   "PrimusIdentity": {
     "RequireHttpsMetadata": true,
     "ValidateLifetime": true,
     "ClockSkew": "00:05:00",
-    "JwksCacheTtl": 24,
     "Issuers": [
-      {
-        "Name": "AzureAD",
-        "Type": "AzureAD",
-        "Authority": "https://login.microsoftonline.com/{tenant-id}/v2.0",
-        "Issuer": "https://login.microsoftonline.com/{tenant-id}/v2.0",
-        "Audiences": ["api://{client-id}"],
-        "AllowMachineToMachine": true
-      },
       {
         "Name": "LocalDev",
         "Type": "Jwt",
         "Issuer": "https://localhost:5001",
         "Secret": "your-32-character-minimum-secret-key-here-1234",
-        "Audiences": ["api://local-dev"]
+        "Audiences": [ "api://local-dev" ]
       }
     ],
     "Diagnostics": {
@@ -220,418 +79,69 @@ Bind issuers, audiences, and diagnostics so the validator knows how to check tok
 }
 ```
 
-### Azure AD Only Configuration
+---
 
-```json
-{
-  "AzureAd": {
-    "TenantId": "your-tenant-id",
-    "ClientId": "your-client-id"
-  }
-}
-```
-
-### Configuration Options Reference
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `RequireHttpsMetadata` | bool | `true` | Require HTTPS for OIDC metadata endpoints |
-| `ValidateLifetime` | bool | `true` | Validate token expiration |
-| `ClockSkew` | TimeSpan | `5 minutes` | Allowed clock drift for token validation |
-| `JwksCacheTtl` | int | `24` | Hours to cache JWKS signing keys |
-| `Issuers` | array | `[]` | List of configured identity providers |
-
-### Issuer Configuration Reference
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `Name` | string | Friendly name (e.g., "AzureAD", "LocalAuth") |
-| `Type` | enum | `AzureAD`, `Oidc`, `Auth0`, `Google`, `Cognito`, `Jwt` |
-| `Authority` | string | OIDC authority URL (for OIDC-based issuers) |
-| `Issuer` | string | Expected `iss` claim value |
-| `JwksUrl` | string | (Optional) Direct JWKS endpoint URL |
-| `Secret` | string | (For Jwt type) Shared secret key (min 32 chars) |
-| `Audiences` | array | Valid `aud` claim values |
-| `AllowMachineToMachine` | bool | Enable client_credentials flow |
-| `RoleClaimName` | string | Custom claim name for roles |
-| `PermissionClaimName` | string | Custom claim name for permissions |
+## Downloads
+- Minimal: [identity-minimal.zip](/downloads/identity-minimal.zip) (Swagger + Postman included)
+- Advanced: [identity-advanced.zip](/downloads/identity-advanced.zip) (Swagger + Postman included)
+- Static Swagger: [Minimal](/downloads/identity-minimal-swagger.json), [Advanced](/downloads/identity-advanced-swagger.json)
 
 ---
 
-## 6. Middleware Pipeline Order
+## Config reference (plain language)
 
-**Critical**: The middleware order matters. Use this exact sequence:
+**PrimusIdentity**
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `RequireHttpsMetadata` | bool | No (default true) | Require HTTPS for OIDC metadata fetches. |
+| `ValidateLifetime` | bool | No (default true) | Validate token expiration. |
+| `ClockSkew` | TimeSpan | No (default 5m) | Allowed clock drift when checking `exp/nbf`. |
+| `JwksCacheTtl` | int (hours) | No | Cache duration for OIDC signing keys. |
+| `Issuers` | array | Yes | List of identity providers the API accepts. |
+| `Diagnostics` | object | No | Dev-only diagnostics; no secrets returned. |
+
+**Issuers**
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `Name` | string | Yes | Friendly label (e.g., LocalDev, AzureAD, Auth0). |
+| `Type` | enum | Yes | `Jwt`, `AzureAD`, `Auth0`, `Oidc`, `Google`, `Cognito`. |
+| `Issuer` | string | Yes | Expected `iss` claim. For OIDC, usually matches Authority. |
+| `Authority` | string | No (OIDC) | OIDC authority URL (used to fetch discovery/JWKS). |
+| `JwksUrl` | string | No (OIDC) | Explicit JWKS URL override. |
+| `Secret` | string | Yes for `Jwt` | HMAC secret (min 32 chars) for local/dev tokens. |
+| `Audiences` | array | Yes | Allowed `aud` claim values. |
+
+---
+
+## Middleware order
 
 ```csharp
-var app = builder.Build();
-
-// 1. Exception handling (first)
-app.UseExceptionHandler("/error");
-
-// 2. HTTPS redirection
 app.UseHttpsRedirection();
-
-// 3. Static files (if any)
-app.UseStaticFiles();
-
-// 4. Routing
-app.UseRouting();
-
-// 5. CORS (before auth)
-app.UseCors();
-
-// 6. Authentication (validates tokens)
 app.UseAuthentication();
-
-// 7. Authorization (enforces policies)
 app.UseAuthorization();
-
-// 8. Dev diagnostics (optional, development only)
-if (app.Environment.IsDevelopment())
-{
-    app.MapPrimusDevDiagnostics();  // Adds /_primus/diagnostics/* endpoints
-}
-
-// 9. Endpoints
+// app.MapPrimusIdentityDiagnostics(); // dev only
 app.MapControllers();
-
-app.Run();
 ```
 
 ---
 
-## 7. Required Dependencies
+## Troubleshooting (quick)
 
-The package automatically includes these dependencies:
+| Symptom | Likely cause | What to check |
+|---------|--------------|---------------|
+| 401 Unauthorized | Missing/invalid token | `Authorization: Bearer <token>` header. |
+| Issuer not configured | `iss` mismatch | `Issuer` in config matches token `iss`. |
+| Audience mismatch | `aud` mismatch | `Audiences` include the token’s `aud`. |
+| Signature invalid | Wrong secret/JWKS | For `Jwt`, secret matches; for OIDC, authority/JWKS reachable. |
+| Expired token | `exp` in past | Renew token; adjust `ClockSkew` only if clocks drift. |
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `Microsoft.AspNetCore.Authentication.JwtBearer` | 6.0.36–9.0.11* | JWT Bearer authentication |
-| `Microsoft.IdentityModel.Tokens` | (transitive) | Token validation |
-| `System.IdentityModel.Tokens.Jwt` | (transitive) | JWT parsing |
-| `Swashbuckle.AspNetCore.SwaggerGen` | 6.6.2 | Swagger integration |
-| `Microsoft.SourceLink.GitHub` | 8.0.0 | Source debugging |
-
-*Version varies by target framework (.NET 6/7/8/9)
-
-### Additional Framework Dependencies
-
-No additional packages are required. All dependencies are bundled with the NuGet package.
+In development, enable diagnostics and hit `/primus/diagnostics` to see non-secret config and recent failures.
 
 ---
 
-## 8. External Guides & Resources
-
-### Azure AD Setup
-- [Register an application with Microsoft Identity Platform](https://learn.microsoft.com/azure/active-directory/develop/quickstart-register-app)
-- [Configure app roles in Azure AD](https://learn.microsoft.com/azure/active-directory/develop/howto-add-app-roles-in-azure-ad-apps)
-- [Azure AD v2.0 tokens reference](https://learn.microsoft.com/azure/active-directory/develop/access-tokens)
-
-### Auth0 Setup
-- [Auth0 .NET Web API Quickstart](https://auth0.com/docs/quickstart/backend/aspnet-core-webapi)
-- [Auth0 RBAC configuration](https://auth0.com/docs/manage-users/access-control/rbac)
-
-### General JWT/OIDC
-- [JWT.io Debugger](https://jwt.io/) — Decode and inspect tokens
-- [OpenID Connect Specification](https://openid.net/specs/openid-connect-core-1_0.html)
-
----
-
-## 9. End-to-End Working Example
-
-### Complete Minimal API Example
-
-Create a new project and follow these steps:
-
-**Step 1: Create project and install package**
-```bash
-dotnet new webapi -n MySecureApi
-cd MySecureApi
-dotnet add package PrimusSaaS.Identity.Validator
-```
-
-**Step 2: Replace `Program.cs`**
-```csharp
-using PrimusSaaS.Identity.Validator;
-using PrimusSaaS.Identity.Validator.Authorization;
-using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Register Primus Identity
-builder.Services.AddPrimusIdentity(options =>
-{
-    builder.Configuration.GetSection("PrimusIdentity").Bind(options);
-});
-
-builder.Services.AddAuthorization();
-
-var app = builder.Build();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Public endpoint - no auth required
-app.MapGet("/", () => "Hello, World!");
-
-// Protected endpoint - requires valid token
-app.MapGet("/whoami", [Authorize] (ClaimsPrincipal user) =>
-{
-    return new
-    {
-        UserId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value,
-        Email = user.FindFirst(ClaimTypes.Email)?.Value,
-        Name = user.FindFirst(ClaimTypes.Name)?.Value,
-        Roles = user.FindAll(ClaimTypes.Role).Select(c => c.Value).ToArray(),
-        Issuer = user.FindFirst("iss")?.Value
-    };
-});
-
-// Admin-only endpoint - requires "Admin" role
-app.MapGet("/admin", [Authorize(Roles = "Admin")] () => 
-    new { Message = "Welcome, Admin!" });
-
-app.Run();
-```
-
-**Step 3: Add `appsettings.json` configuration**
-```json
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information"
-    }
-  },
-  "PrimusIdentity": {
-    "RequireHttpsMetadata": false,
-    "ValidateLifetime": true,
-    "ClockSkew": "00:05:00",
-    "Issuers": [
-      {
-        "Name": "LocalDev",
-        "Type": "Jwt",
-        "Issuer": "https://localhost:5001",
-        "Secret": "this-is-a-32-character-secret-key!",
-        "Audiences": ["api://my-secure-api"]
-      }
-    ]
-  }
-}
-```
-
-**Step 4: Run and test**
-```bash
-dotnet run
-```
-
-**Step 5: Test with curl**
-```bash
-# Public endpoint (no token needed)
-curl https://localhost:5001/
-
-# Generate a test JWT at jwt.io with:
-# - Header: {"alg": "HS256", "typ": "JWT"}
-# - Payload: {"iss": "https://localhost:5001", "aud": "api://my-secure-api", "sub": "user-123", "exp": 9999999999}
-# - Secret: this-is-a-32-character-secret-key!
-
-# Protected endpoint
-curl -H "Authorization: Bearer YOUR_JWT_TOKEN" https://localhost:5001/whoami
-```
-
-### Complete Controller-Based Example
-
-```csharp
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-
-[ApiController]
-[Route("api/[controller]")]
-public class UsersController : ControllerBase
-{
-    // GET /api/users/me - Requires any authenticated user
-    [HttpGet("me")]
-    [Authorize]
-    public IActionResult GetCurrentUser()
-    {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var email = User.FindFirst(ClaimTypes.Email)?.Value;
-        var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value);
-        
-        return Ok(new { userId, email, roles });
-    }
-
-    // GET /api/users - Admin only
-    [HttpGet]
-    [Authorize(Roles = "Admin")]
-    public IActionResult GetAllUsers()
-    {
-        return Ok(new[] { 
-            new { Id = "1", Name = "Alice" },
-            new { Id = "2", Name = "Bob" }
-        });
-    }
-
-    // DELETE /api/users/{id} - Requires custom policy
-    [HttpDelete("{id}")]
-    [Authorize(Policy = "CanDeleteUsers")]
-    public IActionResult DeleteUser(string id)
-    {
-        return Ok(new { Message = $"User {id} deleted" });
-    }
-
-    // POST /api/users/bulk - Requires Admin OR Manager role
-    [HttpPost("bulk")]
-    [Authorize(Roles = "Admin,Manager")]
-    public IActionResult BulkOperation()
-    {
-        return Ok(new { Message = "Bulk operation completed" });
-    }
-}
-```
-
----
-
-## 10. Troubleshooting
-
-### Common Issues and Solutions
-
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| `401 Unauthorized` with no details | Token missing or malformed | Check `Authorization: Bearer <token>` header format |
-| `IssuerNotConfigured` | Token `iss` claim doesn't match any configured issuer | Verify `Issuer` value in appsettings matches token's `iss` exactly |
-| `AudienceMismatch` | Token `aud` doesn't match configured audiences | Add the token's `aud` value to `Audiences` array |
-| `SignatureInvalid` | Wrong signing key or algorithm | For Jwt type: verify `Secret` matches; For OIDC: check JWKS URL |
-| `ExpiredOrNotYetValid` | Token expired or `nbf` in future | Check server clock sync; increase `ClockSkew` if needed |
-| JWKS fetch fails | Network or firewall issue | Verify `Authority` URL is accessible from server |
-
-### Debug Token Validation in Development
-
-Enable dev diagnostics to troubleshoot token issues:
-
-**1. Enable in appsettings.Development.json:**
-```json
-{
-  "PrimusIdentity": {
-    "Diagnostics": {
-      "EnableInDevelopment": true,
-      "IncludeTokenHints": true,
-      "TrackFailures": true
-    }
-  }
-}
-```
-
-**2. Map diagnostics endpoints:**
-```csharp
-if (app.Environment.IsDevelopment())
-{
-    app.MapPrimusDevDiagnostics();
-}
-```
-
-**3. Available diagnostic endpoints:**
-- `GET /_primus/diagnostics/config` — View configured issuers (sanitized)
-- `GET /_primus/diagnostics/failures` — View recent auth failures
-- `GET /_primus/diagnostics/failures/stats` — Failure statistics
-- `POST /_primus/diagnostics/validate-token` — Test token validation
-- `DELETE /_primus/diagnostics/failures` — Clear failure history
-
-### Decoding Tokens for Debugging
-
-Use [jwt.io](https://jwt.io) to decode tokens and verify:
-1. `iss` (issuer) matches a configured `Issuer` value
-2. `aud` (audience) matches a configured `Audiences` value
-3. `exp` (expiration) is in the future
-4. Signature is valid (for local JWT, use your secret)
-
-**⚠️ Never paste production tokens into online decoders**
-
----
-
-## 11. FAQ
-
-### Q: Can I use multiple identity providers simultaneously?
-**A:** Yes. Configure multiple entries in the `Issuers` array. The validator automatically routes tokens to the correct validator based on the `iss` claim.
-
-### Q: Does Primus Identity store any user data?
-**A:** No. All validation happens locally in your application. Primus never receives, stores, or transmits user tokens or PII.
-
-### Q: How do I add custom claims to the user context?
-**A:** Use `ClaimMappings` in your issuer configuration:
-```json
-{
-  "ClaimMappings": {
-    "https://myapp.com/tenant": "tenant_id",
-    "department": "department"
-  }
-}
-```
-
-### Q: How do I implement role-based authorization?
-**A:** Use ASP.NET Core's standard `[Authorize]` attribute with roles:
-```csharp
-[Authorize(Roles = "Admin")]
-public IActionResult AdminOnly() => Ok();
-
-[Authorize(Roles = "Admin,Manager")]  // OR logic
-public IActionResult AdminOrManager() => Ok();
-```
-
-### Q: How do I support machine-to-machine (M2M) tokens?
-**A:** Set `AllowMachineToMachine: true` on the issuer configuration. For Azure AD, this enables validation of tokens obtained via client_credentials flow.
-
-### Q: How do I migrate from manual JWT Bearer configuration?
-**A:** Replace `AddAuthentication().AddJwtBearer()` with `AddPrimusIdentity()`. The middleware pipeline (`UseAuthentication`, `UseAuthorization`) remains the same.
-
-### Q: Can I use this with Azure Functions?
-**A:** Yes, but you'll need to manually validate tokens using the `ITokenValidator` service rather than middleware. See the SDK source for `ITokenValidator` usage.
-
----
-
-## 12. Version Compatibility
-
-| SDK Version | .NET 6 | .NET 7 | .NET 8 | .NET 9 | Notes |
-|-------------|--------|--------|--------|--------|-------|
-| 1.5.0 | ✅ | ✅ | ✅ | ✅ | Current release, SourceLink enabled |
-| 1.4.0 | ✅ | ✅ | ✅ | ✅ | Added .NET 9 support |
-| 1.3.6 | ✅ | ✅ | ✅ | ❌ | Last .NET 8 max version |
-
-### Breaking Changes
-
-**v1.5.0**: No breaking changes. New features are additive.
-
-**v1.4.0**: No breaking changes. Added net9.0 target.
-
-### Upgrading
-
-```bash
-dotnet add package PrimusSaaS.Identity.Validator --version 1.5.0
-```
-
----
-
-## Troubleshooting (field feedback)
-- **Type naming mismatch (AzureAD vs Oidc in diagnostics)**: Diagnostics normalizes types (e.g., AzureAD → Oidc). Expected behavior; note when debugging.
-- **Authority/Issuer duplication**: For OIDC providers, set `Authority`; `Issuer` typically matches. Avoid divergence to prevent validation errors.
-- **LocalDev JWT + `/secure`**: Ensure `AllowMachineToMachine` is set when using local/M2M tokens if needed; use a 32+ char secret. Watch warnings about disabled M2M.
-- **Placeholders**: Replace `{tenant-id}`, `{client-id}`, and dummy secrets before running; add startup validation to fail fast.
-- **Auth0 M2M**: For machine-to-machine Auth0 flows, set `AllowMachineToMachine: true`; OIDC discovery/JWKS work out of the box.
-- **Swagger security**: Package doesn’t auto-configure Swagger schemes; add them manually to secure `/secure` endpoints.
-- **HTTP with RequireHttpsMetadata**: If running HTTP in dev with `RequireHttpsMetadata: true`, disable it locally or run HTTPS to avoid metadata fetch failures.
-
-## 13. Next Steps
-
-After integrating Identity Validator, consider these complementary modules:
-
-| Module | Purpose | Docs |
-|--------|---------|------|
-| **[Logging Module](/docs/modules/logging-module)** | Add structured logging with correlation IDs and PII masking | →Next |
-| **[Notifications Module](/docs/modules/notifications)** | Send templated emails/SMS with Liquid templates | →Then |
-| **[Feature Flags](/docs/modules/feature-flags)** | Control feature rollouts with percentage and user targeting | →Optional |
-
-### Full Integration Example
-
-See the [Live Demo API](/docs/modules/live-demo-api) for a complete working example with all modules integrated.
-
+## Version and compatibility (brief)
+- NuGet package: `PrimusSaaS.Identity.Validator`
+- Targets: .NET 6, 7, 8, 9
+- Depends on ASP.NET Core JWT bearer (transitive)
+
+See the version matrix for exact package versions. Further provider-specific setup lives in the Auth0, Azure AD, Local JWT, and Multi-Issuer pages.

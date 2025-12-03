@@ -11,11 +11,8 @@ Accept tokens from multiple identity providers (Auth0, Azure AD, Local JWT) in a
 
 ---
 
-## Use Cases
-
-| Scenario | Configuration |
-|----------|---------------|
-| Enterprise with Azure AD + partner Auth0 | Azure AD + Auth0 |`r`n| Migration from Auth0 to Azure AD | Azure AD + Auth0 |`r`n| Production + Dev testing | External provider + Local JWT |`r`n| Multi-tenant SaaS | Multiple Azure AD tenants |`r`n| Full demo (all) | Azure AD + Auth0 + Local JWT |
+## Use Cases`r`n`r`n| Scenario | Configuration |`r`n|----------|---------------|`r`n| Enterprise with Azure AD + partner Auth0 | Azure AD + Auth0 |`r`n| Migration from Auth0 to Azure AD | Azure AD + Auth0 |`r`n| Production + Dev testing | External provider + Local JWT |`r`n| Multi-tenant SaaS | Multiple Azure AD tenants |`r`n| Full demo (all) | Azure AD + Auth0 + Local JWT |`r`n`r`n----------|---------------|
+| Enterprise with Azure AD + partner Auth0 | Azure AD + Auth0 |`r`n| Migration from Auth0 to Azure AD | Azure AD + Auth0 |`r`n| Production + Dev testing | External provider + Local JWT |`r`n|| Enterprise with Azure AD + partner Auth0 | Azure AD + Auth0 |`r`n| Migration from Auth0 to Azure AD | Azure AD + Auth0 |`r`n| Production + Dev testing | External provider + Local JWT |`r`n| Multi-tenant SaaS | Multiple Azure AD tenants |`r`n| Full demo (all) | Azure AD + Auth0 + Local JWT |`r`n| Full demo (all) | Azure AD + Auth0 + Local JWT |
 
 ---
 
@@ -337,113 +334,6 @@ string? GetName(ClaimsPrincipal user, string provider)
 
 ---
 
-## Identifying the Token Source
-
-### In Controllers
-
-```csharp
-[Authorize]
-[HttpGet("provider-info")]
-public IActionResult GetProviderInfo()
-{
-    var issuer = User.FindFirst("iss")?.Value;
-    var provider = issuer switch
-    {
-        var i when i?.Contains("auth0") == true => "Auth0",
-        var i when i?.Contains("microsoftonline") == true => "AzureAD",
-        var i when i?.Contains("sts.windows.net") == true => "AzureAD",
-        var i when i?.Contains("local") == true => "Local",
-        _ => "Unknown"
-    };
-
-    return Ok(new {
-        provider,
-        issuer,
-        tenantId = User.FindFirst("tid")?.Value,  // Azure AD only
-        auth0Org = User.FindFirst("org_id")?.Value // Auth0 orgs
-    });
-}
-```
-
-### Require Specific Provider
-
-```csharp
-[Authorize]
-[HttpGet("azure-users")]
-public IActionResult AzureUsersOnly()
-{
-    var issuer = User.FindFirst("iss")?.Value ?? "";
-    
-    if (!issuer.Contains("microsoftonline") && !issuer.Contains("sts.windows.net"))
-    {
-        return StatusCode(403, new { 
-            error = "This endpoint requires Azure AD authentication" 
-        });
-    }
-
-    return Ok(new { message = "Welcome Azure AD user!" });
-}
-```
-
----
-
-## Claims Normalization
-
-Different providers use different claim names. Normalize them:
-
-```csharp
-public static class ClaimsHelper
-{
-    public static string? GetUserId(ClaimsPrincipal user)
-    {
-        // Try standard claim first
-        return user.FindFirst("sub")?.Value
-            ?? user.FindFirst("oid")?.Value  // Azure AD object ID
-            ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-    }
-
-    public static string? GetEmail(ClaimsPrincipal user)
-    {
-        return user.FindFirst("email")?.Value
-            ?? user.FindFirst("preferred_username")?.Value  // Azure AD
-            ?? user.FindFirst(ClaimTypes.Email)?.Value;
-    }
-
-    public static string? GetName(ClaimsPrincipal user)
-    {
-        return user.FindFirst("name")?.Value
-            ?? user.FindFirst("nickname")?.Value  // Auth0
-            ?? user.FindFirst(ClaimTypes.Name)?.Value;
-    }
-
-    public static IEnumerable<string> GetRoles(ClaimsPrincipal user)
-    {
-        // Auth0 uses "roles" array, Azure AD uses "roles" or ClaimTypes.Role
-        return user.FindAll("roles").Select(c => c.Value)
-            .Concat(user.FindAll(ClaimTypes.Role).Select(c => c.Value))
-            .Distinct();
-    }
-}
-```
-
-Usage:
-
-```csharp
-[Authorize]
-[HttpGet("normalized")]
-public IActionResult GetNormalizedUser()
-{
-    return Ok(new {
-        userId = ClaimsHelper.GetUserId(User),
-        email = ClaimsHelper.GetEmail(User),
-        name = ClaimsHelper.GetName(User),
-        roles = ClaimsHelper.GetRoles(User)
-    });
-}
-```
-
----
-
 ## Environment-Based Configuration
 
 ### appsettings.json (Base)
@@ -610,4 +500,7 @@ Console.WriteLine($"Token issuer: {jwt.Issuer}");
 | Swagger integration & diagnostics | [Advanced Features →](/docs/modules/identity-advanced) |
 | Provider-specific setup | [Auth0 →](/docs/modules/identity-auth0) • [Azure AD →](/docs/modules/identity-azure-ad) • [Local →](/docs/modules/identity-local-jwt) |
 | Full API reference | [Identity Validator Reference →](/docs/modules/identity-validator) |
+
+
+
 

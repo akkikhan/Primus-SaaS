@@ -35,7 +35,7 @@ dotnet add package Primus.Documents
         "Issuer": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
         "Audiences": [ "api://<CLIENT_ID>" ],
         "Authority": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
-        "Type": "Oidc"
+        "Type": "AzureAD"
       },
       {
         "Name": "LocalJwt",
@@ -178,3 +178,4 @@ These come from the Live Demo; remove them for production or put them behind str
 - `GET /feature-flags/test` returns definitions with user context.
 - `POST /documents/self-test` returns `success: true`.
 - Application Insights receives request/dependency telemetry when configured.
+

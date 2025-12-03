@@ -242,38 +242,7 @@ app.UseAuthorization();
 // Health check
 app.MapGet("/", () => new { status = "healthy", auth = "Azure AD" });
 
-// Get current user info
-app.MapGet("/me", [Authorize] (HttpContext ctx) =>
-{
-    return new { 
-        objectId = ctx.User.FindFirst("oid")?.Value,
-        name = ctx.User.FindFirst("name")?.Value,
-        email = ctx.User.FindFirst("preferred_username")?.Value,
-        tenantId = ctx.User.FindFirst("tid")?.Value
-    };
-});
-
-// List all claims (for debugging)
-app.MapGet("/debug/claims", [Authorize] (HttpContext ctx) =>
-{
-    return ctx.User.Claims.Select(c => new { 
-        type = c.Type, 
-        value = c.Value 
-    });
-});
-
-// Check group membership
-app.MapGet("/check-group/{groupId}", [Authorize] (string groupId, HttpContext ctx) =>
-{
-    var groups = ctx.User.FindAll("groups").Select(c => c.Value).ToList();
-    return new {
-        requested = groupId,
-        isMember = groups.Contains(groupId),
-        allGroups = groups
-    };
-});
-
-app.Run();
+// Get current user info`r`napp.MapGet("/me", [Authorize] (HttpContext ctx) => new {`r`n    objectId = ctx.User.FindFirst("oid")?.Value,`r`n    name = ctx.User.FindFirst("name")?.Value,`r`n    email = ctx.User.FindFirst("preferred_username")?.Value,`r`n    tenantId = ctx.User.FindFirst("tid")?.Value`r`n});`r`n`r`napp.Run();
 ```
 
 ### appsettings.json
@@ -289,8 +258,7 @@ app.Run();
         "Type": "AzureAD",
         "Authority": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
         "Issuer": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
-        "Audiences": [ "api://<CLIENT_ID>" ],
-        "AllowMachineToMachine": true
+        "Audiences": [ "api://<CLIENT_ID>" ]
       }
     ],
     "Diagnostics": {
@@ -304,37 +272,6 @@ app.Run();
   }
 }
 ```
-
----
-
-## Azure AD Claims Reference
-
-| Claim | Description | Example |
-|-------|-------------|---------|
-| `oid` | User's Object ID (unique per tenant) | `12345678-...` |
-| `sub` | Subject (unique per app) | `abcdef-...` |
-| `tid` | Tenant ID | `tenant-id-...` |
-| `upn` | User Principal Name | `user@contoso.com` |
-| `preferred_username` | Display username | `user@contoso.com` |
-| `name` | Display name | `John Doe` |
-| `email` | Email (if configured) | `john@example.com` |
-| `groups` | Group IDs (if configured) | `["group-id-1", ...]` |
-| `roles` | App roles | `["Admin", "User"]` |
-| `scp` | Scopes (delegated) | `read write` |
-
----
-
-## Enabling Group Claims
-
-To include group claims in tokens:
-
-1. Go to your API app registration
-2. Click **Token configuration**
-3. Click **Add groups claim**
-4. Select **Security groups** (or All groups)
-5. For Access tokens, choose **Group ID**
-
-⚠️ **Note**: If user is in >150 groups, Azure AD sends a `hasgroups` claim instead. Use Microsoft Graph API for full group list.
 
 ---
 
@@ -422,3 +359,6 @@ if (!allowedTenants.Contains(tenantId))
 | Use Azure AD groups for authorization | [Advanced Features →](/docs/modules/identity-advanced) |
 | Integrate with Swagger UI | [Advanced Features →](/docs/modules/identity-advanced) |
 | Full API reference | [Identity Validator Reference →](/docs/modules/identity-validator) |
+
+
+

@@ -153,19 +153,8 @@ curl http://localhost:xxxx/secure -H "Authorization: Bearer YOUR-JWT-TOKEN"
 You now have JWT authentication working locally. Your API:
 - Validates JWT tokens signed with your local dev secret
 - Returns 401 for invalid/missing tokens
-- Works with standard [Authorize] attribute on controllers
-- Ships with a dev-only diagnostics endpoint (/primus/diagnostics) that never returns secrets
-
-### Authorization Options
-
-| Attribute | Description |
-|-----------|-------------|
-| `[Authorize]` | Standard ASP.NET Core - works out of the box |
-| `[Authorize(Roles = "Admin")]` | Require specific roles |
-| `[Authorize(Policy = "MyPolicy")]` | Use custom authorization policies |
-| `.RequireAuthorization()` | Minimal API protection |
-
-Primus handles **authentication** (validating tokens). Use ASP.NET Core's standard authorization system for **authorization** (roles, policies, claims).
+- Works with standard `[Authorize]`
+- Ships with a dev-only diagnostics endpoint (`/primus/diagnostics`) that never returns secrets
 
 ---
 

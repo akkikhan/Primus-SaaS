@@ -80,7 +80,7 @@ builder.Services.AddPrimusNotifications(notifications =>
 {
     notifications.UseLogger(); // dev-safe: logs instead of sending
     notifications.UseSmtp(builder.Configuration.GetSection("Notifications:Smtp"));
-    notifications.UseFileTemplates(Path.Combine(builder.Environment.ContentRootPath, "NotificationTemplates"));
+    notifications.UseFileTemplates(Path.Combine(builder.Environment.ContentRootPath, "NotificationTemplates")); // folder must exist
 });
 
 var app = builder.Build();
@@ -121,7 +121,7 @@ builder.Services.AddPrimusNotifications(notifications =>
         o.BaseRetryDelayMs = 250;
     });
     notifications.UseSmtp(opts => builder.Configuration.GetSection("Notifications:Smtp").Bind(opts));
-    notifications.UseTwilio(opts => builder.Configuration.GetSection("Notifications:Twilio").Bind(opts));
+    notifications.UseTwilio(opts => builder.Configuration.GetSection("Notifications:Twilio").Bind(opts)); // FromNumber must be E.164
     notifications.ConfigureDispatch(o =>
     {
         o.ThrowOnFailure = true;
@@ -186,6 +186,7 @@ Provide SMTP/Twilio settings and queue options so channels can send and retry co
   }
 }
 ```
+Use real SMTP/Twilio credentials (store in user secrets/env vars). Twilio `FromNumber` must be E.164 (e.g., `+15551234567`).
 
 > For AWS SNS or Azure Communication Services SMS, see the advanced providers section (optional; not required for SMTP/Twilio flows).
 
@@ -254,6 +255,7 @@ Docs: https://learn.microsoft.com/azure/communication-services/quickstarts/sms/s
 - Quick curl:
   - Welcome email: `curl -X POST "http://localhost:5004/notify/welcome?email=test@example.com"`
   - SMS ping (advanced): `curl -X POST "http://localhost:5005/notify/sms?number=+15551234567"`
+  - Health (advanced sample): `curl http://localhost:5005/primus/notifications/health`
 
 > Provider-specific sections (e.g., AWS SNS, Azure Communication Services) are optional and can be skimmed; core flow is SMTP + Twilio + logger + queue/dispatch.
 
@@ -477,7 +479,7 @@ app.MapPost("/send-welcome", async (
 });
 
 // Health check endpoint
-app.MapGet("/health/notifications", async (NotificationHealthService health) =>
+app.MapGet("/primus/notifications/health", async (NotificationHealthService health) =>
 {
     var snapshot = await health.GetChannelHealthAsync();
     return Results.Json(snapshot);

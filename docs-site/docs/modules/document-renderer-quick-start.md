@@ -34,7 +34,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddPrimusDocumentRenderer(opts => 
     builder.Configuration.GetSection("PrimusDocuments").Bind(opts));
 
+builder.Services.AddControllers();
 var app = builder.Build();
+
+app.MapControllers();
 app.Run();
 ```
 
@@ -47,8 +50,16 @@ app.Run();
 ```json
 {
   "PrimusDocuments": {
-    "DefaultFormat": "PDF",
-    "TemplatePath": "DocumentTemplates"
+    "Provider": "Default",
+    "MaxContentLength": 20000,
+    "LinkTtl": "00:10:00",
+    "SelfTestEnabled": false,
+    "BrandName": "Your Company",
+    "IncludeTimestampInFooter": true,
+    "IncludeTenantInFooter": true,
+    "PageMargin": 50,
+    "BodyFontSize": 12,
+    "TitleFontSize": 24
   }
 }
 ```
@@ -58,6 +69,8 @@ app.Run();
 ## Generate PDF from HTML
 
 ```csharp
+using Primus.Documents;
+
 public class InvoiceController : ControllerBase
 {
     private readonly IDocumentRenderer _renderer;
@@ -70,17 +83,19 @@ public class InvoiceController : ControllerBase
     [HttpGet("{id}/pdf")]
     public async Task<IActionResult> GetInvoicePdf(int id)
     {
-        var html = $@"
-            <html>
-            <body>
+        var request = new RenderDocumentRequest
+        {
+            TenantId = "demo-tenant",
+            Title = $"Invoice #{id}",
+            ContentType = DocumentContentType.Html,
+            Content = $"""
                 <h1>Invoice #{id}</h1>
                 <p>Amount: $100.00</p>
-                <p>Date: {DateTime.Now:yyyy-MM-dd}</p>
-            </body>
-            </html>";
+                <p>Date: {DateTime.UtcNow:yyyy-MM-dd}</p>
+            """
+        };
 
-        var pdf = await _renderer.RenderHtmlToPdfAsync(html);
-        
+        var pdf = await _renderer.RenderPdfAsync(request);
         return File(pdf, "application/pdf", $"invoice-{id}.pdf");
     }
 }
@@ -94,75 +109,29 @@ public class InvoiceController : ControllerBase
 [HttpGet("report")]
 public async Task<IActionResult> GetReport()
 {
-    var markdown = @"
-# Monthly Report
+    var request = new RenderDocumentRequest
+    {
+        TenantId = "demo-tenant",
+        Title = "Monthly Report",
+        ContentType = DocumentContentType.Markdown,
+        Content = """
+        # Monthly Report
 
-## Summary
-- Total Sales: $10,000
-- New Customers: 50
+        ## Summary
+        - Total Sales: $10,000
+        - New Customers: 50
 
-## Details
-| Month | Sales |
-|-------|-------|
-| Jan   | $5,000 |
-| Feb   | $5,000 |
-";
+        ## Details
+        | Month | Sales |
+        |-------|-------|
+        | Jan   | $5,000 |
+        | Feb   | $5,000 |
+        """
+    };
 
-    var pdf = await _renderer.RenderMarkdownToPdfAsync(markdown);
-    
+    var pdf = await _renderer.RenderPdfAsync(request);
     return File(pdf, "application/pdf", "report.pdf");
 }
-```
-
----
-
-## Use Template File
-
-### DocumentTemplates/invoice.html
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        .header { background: #4F46E5; color: white; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 8px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Invoice #{{InvoiceNumber}}</h1>
-    </div>
-    <p>Customer: {{CustomerName}}</p>
-    <p>Date: {{Date}}</p>
-    <table>
-        <tr><th>Item</th><th>Amount</th></tr>
-        {{#Items}}
-        <tr><td>{{Name}}</td><td>{{Price}}</td></tr>
-        {{/Items}}
-    </table>
-    <p><strong>Total: {{Total}}</strong></p>
-</body>
-</html>
-```
-
-### Generate from Template
-
-```csharp
-var pdf = await _renderer.RenderTemplateAsync("invoice.html", new
-{
-    InvoiceNumber = "INV-001",
-    CustomerName = "Acme Corp",
-    Date = DateTime.Now.ToString("yyyy-MM-dd"),
-    Items = new[]
-    {
-        new { Name = "Widget", Price = "$50.00" },
-        new { Name = "Gadget", Price = "$75.00" }
-    },
-    Total = "$125.00"
-});
 ```
 
 ---
@@ -171,7 +140,7 @@ var pdf = await _renderer.RenderTemplateAsync("invoice.html", new
 
 | Want to... | See Guide |
 |------------|-----------|
-| Custom styling | [Advanced Features →](/docs/modules/document-renderer-advanced) |
-| Page headers/footers | [Advanced Features →](/docs/modules/document-renderer-advanced) |
-| Batch generation | [Advanced Features →](/docs/modules/document-renderer-advanced) |
-| Full reference | [Document Renderer Reference →](/docs/modules/document-renderer) |
+| All options | [Document Renderer Reference ->](/docs/modules/document-renderer) |
+| Link TTLs & temp storage | [Document Renderer Reference ->](/docs/modules/document-renderer#configuration-reference-primusdocuments) |
+| Self-test endpoint | [Document Renderer Reference ->](/docs/modules/document-renderer#self-test) |
+

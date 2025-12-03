@@ -36,7 +36,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add this ONE line
 builder.Services.AddPrimusFeatureFlags(opts => 
-    builder.Configuration.GetSection("FeatureFlags").Bind(opts));
+    builder.Configuration.GetSection("PrimusFeatureFlags").Bind(opts));
 
 var app = builder.Build();
 app.Run();
@@ -50,7 +50,7 @@ app.Run();
 
 ```json
 {
-  "FeatureFlags": {
+  "PrimusFeatureFlags": {
     "Flags": {
       "NewDashboard": {
         "Enabled": true,
@@ -97,17 +97,6 @@ public class DashboardController : ControllerBase
 }
 ```
 
-### Check Flag with User Context
-
-```csharp
-var userId = User.FindFirst("sub")?.Value;
-
-if (_flags.IsEnabled("BetaFeature", userId))
-{
-    // Show beta feature
-}
-```
-
 ---
 
 ## Minimal API
@@ -128,7 +117,7 @@ app.MapGet("/feature/{name}", (string name, IFeatureFlagService flags) =>
 
 | Want to... | See Guide |
 |------------|-----------|
-| User targeting | [Advanced Features →](/docs/modules/feature-flags-advanced) |
-| Percentage rollouts | [Advanced Features →](/docs/modules/feature-flags-advanced) |
-| External providers | [Advanced Features →](/docs/modules/feature-flags-advanced) |
-| Full reference | [Feature Flags Reference →](/docs/modules/feature-flags) |
+| Learn all options | [Feature Flags Reference ->](/docs/modules/feature-flags) |
+| Use Json/Azure App Config | [Feature Flags Reference ->](/docs/modules/feature-flags#providers) |
+| Troubleshoot | [Feature Flags Reference ->](/docs/modules/feature-flags#troubleshooting) |
+

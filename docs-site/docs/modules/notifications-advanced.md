@@ -44,6 +44,7 @@ builder.Services.AddPrimusNotifications(n => n
   }
 }
 ```
+Use real credentials (not placeholders) and keep secrets in user secrets or environment variables. `FromNumber` must be E.164 (for example, `+15551234567`)-spaces/dashes will fail.
 
 ### Create SMS Template
 
@@ -69,6 +70,11 @@ public async Task SendPasswordReset(string email, string phone, string code)
     await _notifications.SendAsync("PasswordReset", context);
 }
 ```
+
+## Operational checks and responses
+
+- Health: `GET /primus/notifications/health` to verify template path, SMTP, and Twilio are configured before sending.
+- Responses: When fallback-to-logger is enabled, check `mode`/`channels` in the response to see whether a notification was delivered or only logged.
 
 ---
 
@@ -209,72 +215,6 @@ builder.Services.AddPrimusNotifications(n => n
         opts.FallbackToDefault = true;  // Use default if locale not found
     })
     .UseLogger());
-```
-
----
-
-## Custom Notification Providers
-
-### Create Custom Provider
-
-```csharp
-public class SlackNotificationProvider : INotificationProvider
-{
-    private readonly HttpClient _httpClient;
-    private readonly SlackOptions _options;
-
-    public SlackNotificationProvider(HttpClient httpClient, IOptions<SlackOptions> options)
-    {
-        _httpClient = httpClient;
-        _options = options.Value;
-    }
-
-    public string Channel => "Slack";  // Provider identifier
-
-    public async Task<NotificationResult> SendAsync(
-        NotificationContext context, 
-        string renderedContent,
-        CancellationToken cancellationToken = default)
-    {
-        var payload = new
-        {
-            channel = context.Data.Get<string>("slackChannel") ?? _options.DefaultChannel,
-            text = renderedContent
-        };
-
-        var response = await _httpClient.PostAsJsonAsync(_options.WebhookUrl, payload);
-        
-        return new NotificationResult
-        {
-            Success = response.IsSuccessStatusCode,
-            Provider = Channel,
-            ErrorMessage = response.IsSuccessStatusCode ? null : await response.Content.ReadAsStringAsync()
-        };
-    }
-}
-```
-
-### Register Custom Provider
-
-```csharp
-builder.Services.AddPrimusNotifications(n => n
-    .UseSmtp(builder.Configuration.GetSection("Notifications:Smtp"))
-    .UseFileTemplates("NotificationTemplates")
-    .AddProvider<SlackNotificationProvider>()
-    .UseLogger());
-```
-
-### Create Slack Template
-
-#### NotificationTemplates/AlertNotification/SlackBody.liquid
-
-```liquid
-:warning: *Alert from {{ app.name }}*
-
-{{ data.message }}
-
-*Severity:* {{ data.severity }}
-*Time:* {{ 'now' | date: '%Y-%m-%d %H:%M:%S' }}
 ```
 
 ---
@@ -454,23 +394,6 @@ if (args.Contains("--preview-notification"))
     Console.WriteLine(preview.EmailBody);
     return;
 }
-```
-
----
-
-## Rate Limiting
-
-```csharp
-builder.Services.AddPrimusNotifications(n => n
-    .UseSmtp(builder.Configuration.GetSection("Notifications:Smtp"))
-    .UseFileTemplates("NotificationTemplates")
-    .UseRateLimiting(opts =>
-    {
-        opts.MaxPerRecipient = 10;
-        opts.WindowMinutes = 60;
-        opts.MaxPerMinuteGlobal = 100;
-    })
-    .UseLogger());
 ```
 
 ---

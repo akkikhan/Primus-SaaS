@@ -13,13 +13,10 @@ Use locally-signed JWTs for development and testing without needing Auth0 or Azu
 
 ## When to Use Local JWT
 
-| Use Case | Local JWT | External Provider |
-|----------|-----------|-------------------|
-| Unit tests | ✅ | ❌ |
-| Integration tests | ✅ | ❌ |
-| Local development | ✅ | Optional |
-| CI/CD pipelines | ✅ | ❌ |
-| Production | ❌ | ✅ |
+- Local development and demos (no external IdP needed)
+- Unit/integration tests
+- CI smoke tests
+*Not for production.*
 
 ---
 
@@ -57,7 +54,7 @@ openssl rand -base64 32
 [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
 ```
 
-⚠️ **Key must be at least 32 characters (256 bits) for HMAC-SHA256**
+?? **Key must be at least 32 characters (256 bits) for HMAC-SHA256**
 
 ---
 
@@ -104,9 +101,6 @@ using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ========================================
-// Register Primus Identity for Local JWT
-// ========================================
 builder.Services.AddPrimusIdentity(opts => 
     builder.Configuration.GetSection("PrimusIdentity").Bind(opts));
 
@@ -141,8 +135,6 @@ var token = TestTokenBuilder
 
 ### Option B: Manual Token Generator
 
-Create a helper class to generate test tokens manually:
-
 ```csharp
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -158,7 +150,6 @@ public static class TestTokenGenerator
     public static string GenerateToken(
         string userId = "test-user-123",
         string email = "test@example.com",
-        string[] roles = null,
         int expiresInMinutes = 60)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SecretKey));
@@ -172,12 +163,6 @@ public static class TestTokenGenerator
             new Claim("name", "Test User")
         };
 
-        // Add roles
-        foreach (var role in roles ?? Array.Empty<string>())
-        {
-            claims.Add(new Claim(ClaimTypes.Role, role));
-        }
-
         var token = new JwtSecurityToken(
             issuer: Issuer,
             audience: Audience,
@@ -189,7 +174,6 @@ public static class TestTokenGenerator
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    // Generate expired token for testing
     public static string GenerateExpiredToken()
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SecretKey));
@@ -199,7 +183,7 @@ public static class TestTokenGenerator
             issuer: Issuer,
             audience: Audience,
             claims: new[] { new Claim("sub", "expired-user") },
-            expires: DateTime.UtcNow.AddMinutes(-10), // Already expired
+            expires: DateTime.UtcNow.AddMinutes(-10),
             signingCredentials: credentials
         );
 
@@ -208,7 +192,7 @@ public static class TestTokenGenerator
 }
 ```
 
-### Option B: Add Token Endpoint to Your API
+### Option C: Add Token Endpoint to Your API
 
 ```csharp
 // Add this endpoint for development only!
@@ -219,7 +203,6 @@ if (app.Environment.IsDevelopment())
         var token = TestTokenGenerator.GenerateToken(
             userId: request.UserId ?? "dev-user",
             email: request.Email ?? "dev@example.com",
-            roles: request.Roles,
             expiresInMinutes: request.ExpiresInMinutes ?? 60
         );
         
@@ -234,27 +217,8 @@ if (app.Environment.IsDevelopment())
 record TokenRequest(
     string UserId, 
     string Email, 
-    string[] Roles, 
     int? ExpiresInMinutes);
 ```
-
-### Option C: Use JWT.io
-
-1. Go to [jwt.io](https://jwt.io)
-2. Select Algorithm: **HS256**
-3. Edit payload:
-   ```json
-   {
-     "sub": "test-user-123",
-     "email": "test@example.com",
-     "iss": "local-dev-issuer",
-     "aud": "local-dev-api",
-     "exp": 1999999999,
-     "iat": 1600000000
-   }
-   ```
-4. Enter your secret key in "Verify Signature"
-5. Copy the encoded token
 
 ---
 
@@ -300,7 +264,7 @@ app.MapGet("/", () => new { status = "healthy", auth = "Local JWT" });
 // Token generator (development only!)
 if (app.Environment.IsDevelopment())
 {
-    app.MapGet("/dev/token", (string? user, string? email, string? roles) =>
+    app.MapGet("/dev/token", (string? user, string? email) =>
     {
         var config = builder.Configuration.GetSection("PrimusIdentity:Issuers:0");
         var signingKey = config["Secret"]!;
@@ -316,14 +280,6 @@ if (app.Environment.IsDevelopment())
             new Claim(JwtRegisteredClaimNames.Email, email ?? "dev@example.com"),
             new Claim("name", "Dev User")
         };
-        
-        if (!string.IsNullOrEmpty(roles))
-        {
-            foreach (var role in roles.Split(','))
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role.Trim()));
-            }
-        }
         
         var token = new JwtSecurityToken(
             issuer: issuer,
@@ -346,15 +302,8 @@ app.MapGet("/me", [Authorize] (HttpContext ctx) =>
     return new {
         userId = ctx.User.FindFirst("sub")?.Value,
         email = ctx.User.FindFirst("email")?.Value,
-        name = ctx.User.FindFirst("name")?.Value,
-        roles = ctx.User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList()
+        name = ctx.User.FindFirst("name")?.Value
     };
-});
-
-// Role-protected endpoint
-app.MapGet("/admin", [Authorize(Roles = "admin")] () =>
-{
-    return new { message = "Admin access granted" };
 });
 
 app.Run();
@@ -402,7 +351,6 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task ProtectedEndpoint_WithValidToken_ReturnsOk()
     {
-        // Arrange
         var token = TestTokenGenerator.GenerateToken(
             userId: "test-user",
             email: "test@example.com"
@@ -410,62 +358,21 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
         _client.DefaultRequestHeaders.Authorization = 
             new AuthenticationHeaderValue("Bearer", token);
 
-        // Act
         var response = await _client.GetAsync("/me");
 
-        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
     public async Task ProtectedEndpoint_WithExpiredToken_Returns401()
     {
-        // Arrange
         var token = TestTokenGenerator.GenerateExpiredToken();
         _client.DefaultRequestHeaders.Authorization = 
             new AuthenticationHeaderValue("Bearer", token);
 
-        // Act
         var response = await _client.GetAsync("/me");
 
-        // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task AdminEndpoint_WithoutRole_Returns403()
-    {
-        // Arrange - token without admin role
-        var token = TestTokenGenerator.GenerateToken(
-            userId: "regular-user",
-            roles: new[] { "user" }
-        );
-        _client.DefaultRequestHeaders.Authorization = 
-            new AuthenticationHeaderValue("Bearer", token);
-
-        // Act
-        var response = await _client.GetAsync("/admin");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task AdminEndpoint_WithAdminRole_ReturnsOk()
-    {
-        // Arrange
-        var token = TestTokenGenerator.GenerateToken(
-            userId: "admin-user",
-            roles: new[] { "admin" }
-        );
-        _client.DefaultRequestHeaders.Authorization = 
-            new AuthenticationHeaderValue("Bearer", token);
-
-        // Act
-        var response = await _client.GetAsync("/admin");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 }
 ```
@@ -516,7 +423,7 @@ foreach (var claim in jwt.Claims)
 
 ## Security Reminder
 
-⚠️ **Local JWT is for development/testing only!**
+?? **Local JWT is for development/testing only!**
 
 - Never use the same signing key in production
 - Never commit signing keys to source control

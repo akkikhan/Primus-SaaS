@@ -62,7 +62,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add Primus Notifications with SMTP
 builder.Services.AddPrimusNotifications(n => n
     .UseSmtp(builder.Configuration.GetSection("Notifications:Smtp"))
-    .UseFileTemplates("NotificationTemplates")
+    .UseFileTemplates("NotificationTemplates") // folder must exist
     .UseLogger());
 
 var app = builder.Build();
@@ -89,6 +89,7 @@ var app = builder.Build();
   }
 }
 ```
+Replace the placeholders above with real SMTP host/credentials before running; keep secrets in user secrets or environment variables.
 
 ---
 
@@ -146,14 +147,19 @@ public class AccountService
 ```csharp
 app.MapPost("/test-email", async (INotificationService notifications) =>
 {
-    await notifications.SendAsync("WelcomeEmail", new
+    var result = await notifications.SendAsync("WelcomeEmail", new
     {
         recipient = new { email = "test@example.com", name = "Test User" },
         app = new { name = "My App" },
         data = new { activationLink = "https://example.com/activate/abc123" }
     });
     
-    return new { sent = true };
+    return Results.Ok(new
+    {
+        sent = result.Success,
+        mode = result.ChannelUsed ?? "logged",
+        channels = result.Channels
+    });
 });
 ```
 
