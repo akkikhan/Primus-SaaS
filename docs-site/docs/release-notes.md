@@ -60,7 +60,7 @@ dotnet add package PrimusSaaS.Identity.Validator --version 1.3.0
 
 ### Documentation
 
-- [Identity Validator Module](/docs/modules/identity-validator)
+- [Identity Quick Start](/docs/modules/identity-quick-start)
 - [README.md](https://www.nuget.org/packages/PrimusSaaS.Identity.Validator)
 
 ### Acknowledgments

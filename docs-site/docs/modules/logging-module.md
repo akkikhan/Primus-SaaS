@@ -646,7 +646,7 @@ After integrating Logging Module, consider these complementary modules:
 
 | Module | Purpose | Docs |
 |--------|---------|------|
-| **[Identity Validator](/docs/modules/identity-validator)** | Add JWT/OIDC authentication with multi-issuer support | ←Previous |
+| **[Identity Quick Start](/docs/modules/identity-quick-start)** | Add JWT/OIDC authentication with multi-issuer support | ←Previous |
 | **[Notifications Module](/docs/modules/notifications)** | Send templated emails/SMS with Liquid templates | →Next |
 | **[Feature Flags](/docs/modules/feature-flags)** | Control feature rollouts with percentage and user targeting | →Optional |
 

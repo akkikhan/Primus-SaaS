@@ -333,7 +333,6 @@ curl -v http://localhost:5000/api/profile/private \
 
 | Want to... | See Guide |
 |------------|-----------|
-| Add Azure AD as second issuer | [Multi-Issuer Setup →](/docs/modules/identity-multi-issuer) |
-| Add role-based authorization | [Advanced Features →](/docs/modules/identity-advanced) |
-| Integrate with Swagger UI | [Advanced Features →](/docs/modules/identity-advanced) |
-| Full API reference | [Identity Validator Reference →](/docs/modules/identity-validator) |
+| Add Azure AD as second issuer | [Multi-Issuer Setup ->](/docs/modules/identity-multi-issuer) |
+| Harden local/dev tokens | [Local JWT Guide ->](/docs/modules/identity-local-jwt) |
+| Revisit basics quickly | [Identity Quick Start ->](/docs/modules/identity-quick-start) |

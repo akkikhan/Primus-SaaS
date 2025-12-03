@@ -39,8 +39,8 @@ const config = {
       {
       redirects: [
             // Legacy identity pages
-            { from: '/docs/modules/identity-validator-nodejs', to: '/docs/intro' },
-            { from: '/docs/modules/identity-validator-dotnet', to: '/docs/intro' },
+            { from: '/docs/modules/identity-validator-nodejs', to: '/docs/modules/identity-quick-start' },
+            { from: '/docs/modules/identity-validator-dotnet', to: '/docs/modules/identity-quick-start' },
             { from: '/docs/modules/identity-configuration', to: '/docs/intro' },
             { from: '/docs/modules/identity-token-generation', to: '/docs/intro' },
             { from: '/docs/modules/identity-tenant-resolver', to: '/docs/intro' },
@@ -54,7 +54,7 @@ const config = {
             { from: '/docs/modules/logging-targets', to: '/docs/intro' },
             // Non-docs-prefixed paths
             { from: '/modules/client-integration-guide', to: '/docs/intro' },
-            { from: '/modules/identity-validator', to: '/docs/modules/identity-validator' },
+            { from: '/modules/identity-validator', to: '/docs/modules/identity-quick-start' },
             { from: '/modules/logging-module', to: '/docs/modules/logging-module' },
             // Redirect /docs root to intro
             { from: '/docs', to: '/docs/intro' }

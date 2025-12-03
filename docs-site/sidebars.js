@@ -12,8 +12,6 @@ const sidebars = {
         'modules/identity-azure-ad',
         'modules/identity-local-jwt',
         'modules/identity-multi-issuer',
-        'modules/identity-advanced',
-        'modules/identity-validator',
       ]
     },
     {

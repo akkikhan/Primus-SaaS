@@ -28,18 +28,6 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
     href={useBaseUrl('/downloads/identity-minimal-swagger.json')} download>
     Swagger (minimal)
   </a>
-  <a
-    className="button button--primary button--sm"
-    style={{ fontWeight: 700, textAlign: 'center', background: '#a20000', color: '#ffffff', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 0, padding: '10px 7px' }}
-    href={useBaseUrl('/downloads/identity-advanced.zip')}>
-    Advanced starter (.zip)
-  </a>
-  <a
-    className="button button--secondary button--sm"
-    style={{ fontWeight: 700, textAlign: 'center', background: '#ffffff', color: '#a20000', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 0, padding: '10px 7px' }}
-    href={useBaseUrl('/downloads/identity-advanced-swagger.json')} download>
-    Swagger (advanced)
-  </a>
 </div>
 
 ---
@@ -166,8 +154,3 @@ You now have JWT authentication working locally. Your API:
 | Use Azure AD with full setup | [Azure AD Integration →](/docs/modules/identity-azure-ad) |
 | Use Local JWT for development | [Local JWT Guide →](/docs/modules/identity-local-jwt) |
 | Combine multiple issuers | [Multi-Issuer Setup →](/docs/modules/identity-multi-issuer) |
-| Add advanced features | [Advanced Features →](/docs/modules/identity-advanced) |
-| Troubleshoot issues | [Identity Validator Reference →](/docs/modules/identity-validator) |
-
-
-

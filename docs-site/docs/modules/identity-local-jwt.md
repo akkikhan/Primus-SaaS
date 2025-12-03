@@ -438,7 +438,7 @@ foreach (var claim in jwt.Claims)
 
 | Want to... | See Guide |
 |------------|-----------|
-| Use Auth0 in production | [Auth0 Guide →](/docs/modules/identity-auth0) |
-| Use Azure AD in production | [Azure AD Guide →](/docs/modules/identity-azure-ad) |
-| Combine with external providers | [Multi-Issuer Setup →](/docs/modules/identity-multi-issuer) |
-| Swagger integration & diagnostics | [Advanced Features →](/docs/modules/identity-advanced) |
+| Use Auth0 in production | [Auth0 Guide ->](/docs/modules/identity-auth0) |
+| Use Azure AD in production | [Azure AD Guide ->](/docs/modules/identity-azure-ad) |
+| Combine with external providers | [Multi-Issuer Setup ->](/docs/modules/identity-multi-issuer) |
+| Revisit the basics | [Identity Quick Start ->](/docs/modules/identity-quick-start) |
