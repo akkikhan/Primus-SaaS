@@ -111,6 +111,10 @@ public class DashboardController : ControllerBase
 - **JsonFile**: set `Provider: "JsonFile"` and `JsonFilePath: "flags.json"`; file uses the same `Flags` shape.
 - **AzureAppConfiguration**: set `Provider: "AzureAppConfiguration"` and either `AzureAppConfigConnectionString` or `AzureAppConfigEndpoint` (with managed identity). Use `AzureAppConfigLabel` to filter.
 
+:::warning Azure App Configuration
+The Azure App Configuration provider currently throws `NotSupportedException` at runtime. A separate `PrimusSaaS.FeatureFlags.AzureAppConfig` package is required but not yet shipped—use `InMemory` or `JsonFile` until that package is available.
+:::
+
 ---
 
 ## Optional targeting

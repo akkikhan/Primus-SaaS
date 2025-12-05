@@ -6,6 +6,8 @@ const config = {
   url: 'https://akkikhan.github.io',
   baseUrl: '/Primus-SaaS-Docs/',
   onBrokenLinks: 'throw',
+  onBrokenMarkdownLinks: 'warn',
+  trailingSlash: false,
   markdown: {
     hooks: {
       onBrokenMarkdownLinks: 'warn'
@@ -14,6 +16,7 @@ const config = {
   favicon: 'img/favicon.ico',
   organizationName: 'akkikhan',
   projectName: 'Primus-SaaS-Docs',
+  deploymentBranch: 'gh-pages',
   i18n: {
     defaultLocale: 'en',
     locales: ['en']

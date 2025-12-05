@@ -1,0 +1,60 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "IdentityAdvanced",
+    "version": "1.0"
+  },
+  "paths": {
+    "/primus/diagnostics": {
+      "get": {
+        "tags": [
+          "IdentityAdvanced"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/public": {
+      "get": {
+        "tags": [
+          "IdentityAdvanced"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/secure": {
+      "get": {
+        "tags": [
+          "IdentityAdvanced"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {}
+}

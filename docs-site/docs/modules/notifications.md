@@ -241,6 +241,14 @@ notifications.UseAzureCommunicationServices(opts =>
 Docs: https://learn.microsoft.com/azure/communication-services/quickstarts/sms/send
 </details>
 
+### Other Email Providers (optional)
+- **SendGrid** (email): `notifications.UseSendGrid(opts => builder.Configuration.GetSection("Notifications:SendGrid").Bind(opts));` (requires `ApiKey`)
+- **Amazon SES** (email): `notifications.UseAmazonSes(opts => builder.Configuration.GetSection("Notifications:Ses").Bind(opts));` (requires AWS creds/region)
+
+### Queue backends (optional)
+- **Redis queue**: `notifications.UseRedisQueue(opts => builder.Configuration.GetSection("Notifications:RedisQueue").Bind(opts));`
+- **Azure Service Bus queue**: `notifications.UseAzureServiceBusQueue(opts => builder.Configuration.GetSection("Notifications:ServiceBusQueue").Bind(opts));`
+
 ---
 
 ## Examples and downloads

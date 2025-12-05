@@ -329,23 +329,10 @@ For apps accepting tokens from any Azure AD tenant:
         "Type": "AzureAD",
         "Authority": "https://login.microsoftonline.com/common/v2.0",
         "Issuer": "https://login.microsoftonline.com/common/v2.0",
-        "Audiences": [ "api://YOUR-CLIENT-ID" ],
-        "ValidateIssuer": false
+        "Audiences": [ "api://YOUR-CLIENT-ID" ]
       }
     ]
   }
-}
-```
-
-⚠️ **Security Note**: When `ValidateIssuer` is false, validate tenant in your code:
-
-```csharp
-var tenantId = User.FindFirst("tid")?.Value;
-var allowedTenants = new[] { "tenant-1-id", "tenant-2-id" };
-
-if (!allowedTenants.Contains(tenantId))
-{
-    return Forbid();
 }
 ```
 
