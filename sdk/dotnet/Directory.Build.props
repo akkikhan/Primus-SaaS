@@ -1,0 +1,116 @@
+<Project>
+  <!-- This file applies settings to all C# projects in the Security Module -->
+  
+  <PropertyGroup>
+    <!-- Language Version -->
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    
+    <!-- Code Analysis -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    
+    <!-- Documentation -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn> <!-- Missing XML comment warnings -->
+    
+    <!-- Security Settings -->
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+    
+    <!-- Build Output -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <!-- Roslyn Analyzers -->
+  <ItemGroup>
+    <!-- Security Code Scan -->
+    <PackageReference Include="SecurityCodeScan.VS2019" Version="5.6.7">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    
+    <!-- Microsoft Code Analysis -->
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    
+    <!-- Style Cop Analyzers -->
+    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    
+    <!-- Roslyn Guard Analyzers -->
+    <PackageReference Include="Roslynator.Analyzers" Version="4.7.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- Code Analysis Rules -->
+  <PropertyGroup>
+    <!-- Security Rules -->
+    <CA2007>warning</CA2007> <!-- ConfigureAwait -->
+    <CA3075>error</CA3075>   <!-- Insecure DTD processing -->
+    <CA3076>error</CA3076>   <!-- Insecure XSLT script -->
+    <CA3077>error</CA3077>   <!-- Insecure XML document processing -->
+    <CA5350>error</CA5350>   <!-- Weak cryptographic algorithm -->
+    <CA5351>error</CA5351>   <!-- Broken cryptographic algorithm -->
+    <CA5359>error</CA5359>   <!-- Disable certificate validation -->
+    <CA5360>error</CA5360>   <!-- Dangerous method call in deserialization -->
+    <CA5361>error</CA5361>   <!-- SChannel usage -->
+    <CA5362>error</CA5362>   <!-- Potential reference cycle in deserialized object graph -->
+    <CA5363>error</CA5363>   <!-- Request validation disabled -->
+    <CA5364>error</CA5364>   <!-- Deprecated security protocol -->
+    <CA5365>error</CA5365>   <!-- HTTP header checking disabled -->
+    <CA5366>error</CA5366>   <!-- XmlReader insecure settings -->
+    <CA5367>error</CA5367>   <!-- Types with pointer fields -->
+    <CA5368>error</CA5368>   <!-- ViewState validation disabled -->
+    <CA5369>error</CA5369>   <!-- XmlReader without secure settings -->
+    <CA5370>error</CA5370>   <!-- XmlReader insecure configuration -->
+    <CA5371>error</CA5371>   <!-- XmlReader insecure schema read -->
+    <CA5372>error</CA5372>   <!-- XPathDocument insecure configuration -->
+    <CA5373>error</CA5373>   <!-- Obsolete key derivation function -->
+    <CA5374>error</CA5374>   <!-- XslTransform insecure configuration -->
+    <CA5375>error</CA5375>   <!-- Account shared access signature -->
+    <CA5376>error</CA5376>   <!-- SharedAccessProtocol http -->
+    <CA5377>error</CA5377>   <!-- Container-level access policy -->
+    <CA5378>error</CA5378>   <!-- ServicePointManagerSecurityProtocols -->
+    <CA5379>error</CA5379>   <!-- Weak key derivation function algorithm -->
+    <CA5380>error</CA5380>   <!-- Certificates not validated -->
+    <CA5381>error</CA5381>   <!-- Certificates verification disabled -->
+    <CA5382>error</CA5382>   <!-- Unsafe cookies -->
+    <CA5383>error</CA5383>   <!-- Cookies without secure attributes -->
+    <CA5384>error</CA5384>   <!-- DSA -->
+    <CA5385>error</CA5385>   <!-- RSA with insufficient key size -->
+    <CA5386>error</CA5386>   <!-- Hardcoded encryption key -->
+    <CA5387>error</CA5387>   <!-- Weak key derivation function iterations -->
+    <CA5388>error</CA5388>   <!-- Weak key derivation function salt -->
+    <CA5389>error</CA5389>   <!-- Archive items extraction path -->
+    <CA5390>error</CA5390>   <!-- Hardcoded initialization vector -->
+    <CA5391>error</CA5391>   <!-- Antiforgery token validation -->
+    <CA5392>error</CA5392>   <!-- DefaultAzureCredential -->
+    <CA5393>error</CA5393>   <!-- Insecure deserializer -->
+    <CA5394>error</CA5394>   <!-- Random is insecure -->
+    <CA5395>error</CA5395>   <!-- Missing HttpVerb attribute -->
+    <CA5396>error</CA5396>   <!-- HttpOnly flag for HttpCookie -->
+    <CA5397>error</CA5397>   <!-- SslProtocols deprecated -->
+    <CA5398>error</CA5398>   <!-- Hardcoded SslProtocols -->
+    <CA5399>error</CA5399>   <!-- HttpClient certificate revocation check -->
+    <CA5400>error</CA5400>   <!-- HttpClient certificate revocation list check -->
+    <CA5401>error</CA5401>   <!-- CreateEncryptor with non-default IV -->
+    <CA5402>error</CA5402>   <!-- CreateEncryptor with default parameters -->
+    <CA5403>error</CA5403>   <!-- Hardcoded certificate -->
+  </PropertyGroup>
+
+  <!-- StyleCop Configuration -->
+  <PropertyGroup>
+    <CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)security.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+
+</Project>

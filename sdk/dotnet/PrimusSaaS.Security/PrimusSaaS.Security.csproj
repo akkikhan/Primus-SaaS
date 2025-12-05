@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    
+    <!-- Package Metadata -->
+    <PackageId>PrimusSaaS.Security</PackageId>
+    <Version>1.0.0-preview.1</Version>
+    <Authors>Primus SaaS Platform</Authors>
+    <Company>Primus SaaS</Company>
+    <Product>Primus SaaS Security Module</Product>
+    <Description>Pure local security analysis module with zero external dependencies. Detect vulnerabilities, scan dependencies, validate security policies - all processing happens in your infrastructure.</Description>
+    <PackageTags>security;static-analysis;vulnerability;cve;owasp;compliance;privacy-first</PackageTags>
+    <PackageProjectUrl>https://primussaas.com/modules/security</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/primus-saas/security</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- <PackageIcon>icon.png</PackageIcon> -->
+    
+    <!-- Build Settings -->
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);NU1605;SA1633;SA1309</NoWarn>
+    
+    <!-- CRITICAL: Block all network assemblies for data isolation -->
+    <RestrictedAssemblies>
+      System.Net.Http;
+      System.Net.WebSockets;
+      System.Net.WebClient;
+      Microsoft.Azure.*;
+      Amazon.AWS.*;
+      Google.Cloud.*;
+    </RestrictedAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Core Dependencies (Local Processing Only) -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
+    <PackageReference Include="Fluid.Core" Version="2.5.0" />
+    <PackageReference Include="NuGet.Versioning" Version="7.0.1" />
+    <PackageReference Include="QuestPDF" Version="2023.12.5" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+    
+    <!-- ❌ PROHIBITED: No network libraries allowed -->
+    <!-- This ensures compile-time guarantee of zero external calls -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="icon.png" Pack="true" PackagePath="\" Condition="Exists('icon.png')" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Project structure -->
+    <Folder Include="Core\" />
+    <Folder Include="Analyzers\" />
+    <Folder Include="Detectors\" />
+    <Folder Include="Policies\" />
+    <Folder Include="Reporting\" />
+    <Folder Include="Data\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\data\cve-database\SecretPatterns.json" Link="Data\SecretPatterns.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

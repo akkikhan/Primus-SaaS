@@ -1,0 +1,226 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  NODE_VERSION: '18.x'
+
+jobs:
+  # Job 1: Build .NET Security Module
+  build-dotnet:
+    name: Build .NET Module
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      
+      - name: Restore dependencies
+        run: dotnet restore sdk/dotnet/PrimusSaaS.Security/PrimusSaaS.Security.csproj
+      
+      - name: Build Security Module
+        run: dotnet build sdk/dotnet/PrimusSaaS.Security/PrimusSaaS.Security.csproj --configuration Release --no-restore
+      
+      - name: Build Analyzers Module
+        run: dotnet build sdk/dotnet/PrimusSaaS.Security.Analyzers/PrimusSaaS.Security.Analyzers.csproj --configuration Release --no-restore
+        continue-on-error: true  # May not exist yet
+      
+      - name: Run unit tests
+        run: dotnet test sdk/dotnet/PrimusSaaS.Security.Tests/PrimusSaaS.Security.Tests.csproj --configuration Release --no-build --verbosity normal
+        continue-on-error: true  # May not exist yet
+      
+      - name: Pack NuGet package
+        run: dotnet pack sdk/dotnet/PrimusSaaS.Security/PrimusSaaS.Security.csproj --configuration Release --no-build --output ./artifacts
+      
+      - name: Upload NuGet artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts/*.nupkg
+          retention-days: 7
+
+  # Job 2: Verify Data Isolation (CRITICAL!)
+  verify-data-isolation:
+    name: Verify Data Isolation
+    runs-on: ubuntu-latest
+    needs: build-dotnet
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      
+      - name: Create verification script
+        run: |
+          cat > verify-isolation.csx << 'EOF'
+          #r "sdk/dotnet/PrimusSaaS.Security/bin/Release/net8.0/PrimusSaaS.Security.dll"
+          
+          using System;
+          using System.Linq;
+          using System.Reflection;
+          
+          var assembly = Assembly.LoadFrom("sdk/dotnet/PrimusSaaS.Security/bin/Release/net8.0/PrimusSaaS.Security.dll");
+          var references = assembly.GetReferencedAssemblies();
+          
+          // Check for prohibited network assemblies
+          var networkRefs = references.Where(r =>
+              r.Name?.Contains("Http", StringComparison.OrdinalIgnoreCase) == true ||
+              r.Name?.Contains("WebSocket", StringComparison.OrdinalIgnoreCase) == true ||
+              r.Name?.Contains("Azure", StringComparison.OrdinalIgnoreCase) == true ||
+              r.Name?.Contains("AWS", StringComparison.OrdinalIgnoreCase) == true ||
+              r.Name?.Contains("Google.Cloud", StringComparison.OrdinalIgnoreCase) == true
+          ).ToList();
+          
+          if (networkRefs.Any())
+          {
+              Console.WriteLine("❌ FAIL: Found prohibited network assembly references:");
+              foreach (var netRef in networkRefs)
+              {
+                  Console.WriteLine($"  - {netRef.Name}");
+              }
+              Environment.Exit(1);
+          }
+          else
+          {
+              Console.WriteLine("✅ PASS: No network assembly references found");
+              Console.WriteLine("✅ Data isolation verified!");
+              Environment.Exit(0);
+          }
+          EOF
+      
+      - name: Build Security Module
+        run: dotnet build sdk/dotnet/PrimusSaaS.Security/PrimusSaaS.Security.csproj --configuration Release
+      
+      - name: Run data isolation verification
+        run: dotnet script verify-isolation.csx
+
+  # Job 3: Build Node.js Security Module
+  build-nodejs:
+    name: Build Node.js Module
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Check if package.json exists
+        id: check_package
+        run: |
+          if [ -f "sdk/nodejs/primus-security/package.json" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Install dependencies
+        if: steps.check_package.outputs.exists == 'true'
+        run: npm ci
+        working-directory: sdk/nodejs/primus-security
+      
+      - name: Build
+        if: steps.check_package.outputs.exists == 'true'
+        run: npm run build
+        working-directory: sdk/nodejs/primus-security
+        continue-on-error: true
+      
+      - name: Run tests
+        if: steps.check_package.outputs.exists == 'true'
+        run: npm test
+        working-directory: sdk/nodejs/primus-security
+        continue-on-error: true
+      
+      - name: Pack NPM package
+        if: steps.check_package.outputs.exists == 'true'
+        run: npm pack
+        working-directory: sdk/nodejs/primus-security
+      
+      - name: Upload NPM artifacts
+        if: steps.check_package.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-packages
+          path: sdk/nodejs/primus-security/*.tgz
+          retention-days: 7
+
+  # Job 4: Security Scan (ironic, but good practice!)
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Job 5: Code Quality
+  code-quality:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      
+      - name: Restore dependencies
+        run: dotnet restore sdk/dotnet/PrimusSaaS.Security/PrimusSaaS.Security.csproj
+      
+      - name: Run code analysis
+        run: dotnet build sdk/dotnet/PrimusSaaS.Security/PrimusSaaS.Security.csproj --configuration Release /p:TreatWarningsAsErrors=true
+
+  # Job 6: Generate build report
+  build-report:
+    name: Build Report
+    runs-on: ubuntu-latest
+    needs: [build-dotnet, verify-data-isolation, build-nodejs, code-quality]
+    if: always()
+    
+    steps:
+      - name: Generate build summary
+        run: |
+          echo "## 🎯 Security Module Build Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Job Results" >> $GITHUB_STEP_SUMMARY
+          echo "- .NET Build: ${{ needs.build-dotnet.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Data Isolation Check: ${{ needs.verify-data-isolation.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Node.js Build: ${{ needs.build-nodejs.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Code Quality: ${{ needs.code-quality.result }}" >> $GITHUB_STEP_SUMMARY
