@@ -25,6 +25,10 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn);NU1605;SA1633;SA1309</NoWarn>
     
+    <!-- Analyzer Settings -->
+    <!-- EnforceExtendedAnalyzerRules cannot be true for hybrid projects doing IO in runtime components -->
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    
     <!-- CRITICAL: Block all network assemblies for data isolation -->
     <RestrictedAssemblies>
       System.Net.Http;
@@ -53,6 +57,8 @@
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Include="icon.png" Pack="true" PackagePath="\" Condition="Exists('icon.png')" />
+    <!-- Pack the DLL as an analyzer as well -->
+    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -66,9 +72,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\..\data\cve-database\SecretPatterns.json" Link="Data\SecretPatterns.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <EmbeddedResource Include="Data\SecretPatterns.json" />
   </ItemGroup>
 
 </Project>

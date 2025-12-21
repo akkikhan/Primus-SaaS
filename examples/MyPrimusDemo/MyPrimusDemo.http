@@ -1,6 +1,0 @@
-@MyPrimusDemo_HostAddress = http://localhost:5170
-
-GET {{MyPrimusDemo_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

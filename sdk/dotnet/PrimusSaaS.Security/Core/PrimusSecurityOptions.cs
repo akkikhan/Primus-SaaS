@@ -26,6 +26,11 @@ public class PrimusSecurityOptions
     public bool EnablePolicyValidation { get; set; } = true;
 
     /// <summary>
+    /// Gets or sets the security policy rules.
+    /// </summary>
+    public Policies.SecurityPolicy Policy { get; set; } = new Policies.SecurityPolicy();
+
+    /// <summary>
     /// Gets or sets the compliance standards to validate against.
     /// </summary>
     public string[] ComplianceStandards { get; set; } = Array.Empty<string>();

@@ -48,3 +48,10 @@ public interface INuGetAdvisoryScraper : ICveScraper
 public interface INpmAdvisoryScraper : ICveScraper
 {
 }
+
+/// <summary>
+/// Dummy scraper for testing
+/// </summary>
+public interface IDummyScraper : ICveScraper
+{
+}

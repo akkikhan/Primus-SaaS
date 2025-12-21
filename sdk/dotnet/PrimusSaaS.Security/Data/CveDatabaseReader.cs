@@ -49,10 +49,11 @@ public class CveDatabaseReader
         var product = parts.Last();
         
         var query = @"
-            SELECT v.cve_id, v.description, v.severity, v.cvss_v3_score, p.version_range, p.package_name, v.reference_urls
+            SELECT v.cve_id, v.description, v.severity, v.cvss_v3_score, p.affected_version_range, p.package_name, v.reference_urls
             FROM affected_packages p
             JOIN vulnerabilities v ON p.vulnerability_id = v.id
-            WHERE p.package_name LIKE @namePattern 
+            WHERE p.package_name = @exactName COLLATE NOCASE
+               OR p.package_name LIKE @namePattern 
                OR p.package_name LIKE @namePattern2
                OR p.package_name LIKE @productPattern
                OR p.package_name LIKE @productPattern2
@@ -60,6 +61,7 @@ public class CveDatabaseReader
 
         using var cmd = connection.CreateCommand();
         cmd.CommandText = query;
+        cmd.Parameters.AddWithValue("@exactName", packageName);
         cmd.Parameters.AddWithValue("@namePattern", $"%:{searchName}"); 
         cmd.Parameters.AddWithValue("@namePattern2", $"%:{searchName}:%");
         cmd.Parameters.AddWithValue("@productPattern", $"%:{product}");
@@ -98,41 +100,19 @@ public class CveDatabaseReader
         {
             if (!NuGetVersion.TryParse(versionStr, out var version))
             {
-                if (Version.TryParse(versionStr, out var v))
-                {
-                    version = new NuGetVersion(v);
-                }
-                else
-                {
-                    return true; // Fail safe
-                }
+                // Fallback for non-semver strings
+                return true; 
             }
 
-            var conditions = rangeStr.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var condition in conditions)
+            // Try to parse as NuGet VersionRange (covers intervals like [1.0, 2.0))
+            if (VersionRange.TryParse(rangeStr, out var range))
             {
-                if (condition.StartsWith(">="))
-                {
-                    if (!NuGetVersion.TryParse(condition.Substring(2), out var v) || version < v) return false;
-                }
-                else if (condition.StartsWith(">"))
-                {
-                    if (!NuGetVersion.TryParse(condition.Substring(1), out var v) || version <= v) return false;
-                }
-                else if (condition.StartsWith("<="))
-                {
-                    if (!NuGetVersion.TryParse(condition.Substring(2), out var v) || version > v) return false;
-                }
-                else if (condition.StartsWith("<"))
-                {
-                    if (!NuGetVersion.TryParse(condition.Substring(1), out var v) || version >= v) return false;
-                }
-                else if (condition.StartsWith("="))
-                {
-                    if (!NuGetVersion.TryParse(condition.Substring(1), out var v) || version != v) return false;
-                }
+                return range.Satisfies(version);
             }
             
+            // If that fails, it might be an NPM style range (e.g. "< 2.0.0") which NuGet doesn't fully support 
+            // natively in VersionRange.Parse without specific handling, but we can try basic operators.
+            // For now, if we can't parse the range, assume unsafe.
             return true;
         }
         catch

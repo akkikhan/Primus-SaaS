@@ -1,6 +1,0 @@
-Objective,Key Result (KR),Target,Current,Status
-Accelerate Development,Reduce Setup Time to < 15 mins,15 mins,12 mins,On Track
-Improve Quality,Zero Critical Bugs in Prod,0,0,On Track
-Adoption,Onboard 5 Pilot Teams,5,2,At Risk
-Performance,API Latency < 100ms,100ms,85ms,On Track
-Documentation,Docs Coverage > 90%,90%,95%,Exceeded

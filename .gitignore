@@ -53,6 +53,7 @@ examples/**/.env
 *.nupkg
 *.snupkg
 nupkg/
+nupkgs/
 
 # Publish output
 **/publish/
@@ -73,3 +74,15 @@ token_final.json
 # Security scan outputs
 SECURITY_SCAN_RESULTS.md
 temp-security-scan/
+temp_advisories/
+
+# Build artifacts and temp files
+build_output.txt
+token_error*.txt
+token_error*.html
+
+# Debug logs in examples
+examples/**/debug_log*.txt
+
+# Tools generated databases (except CveAggregator)
+tools/generated.db

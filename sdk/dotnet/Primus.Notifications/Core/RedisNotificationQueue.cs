@@ -46,7 +46,7 @@ public sealed class RedisNotificationQueue : INotificationQueue
                     continue;
                 }
 
-                var envelope = JsonSerializer.Deserialize<QueuedNotificationEnvelope>(value!, _serializerOptions);
+                var envelope = JsonSerializer.Deserialize<QueuedNotificationEnvelope>((string)value!, _serializerOptions);
                 return envelope?.ToNotification();
             }
             catch (OperationCanceledException)

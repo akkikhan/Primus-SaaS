@@ -32,6 +32,7 @@ class Program
             .AddSingleton<IGitHubAdvisoryScraper, GitHubAdvisoryScraper>()
             .AddSingleton<INuGetAdvisoryScraper, NuGetAdvisoryScraper>()
             .AddSingleton<INpmAdvisoryScraper, NpmAdvisoryScraper>()
+            .AddSingleton<IDummyScraper, DummyScraper>()
             .AddSingleton<CveAggregatorService>()
             .BuildServiceProvider();
 

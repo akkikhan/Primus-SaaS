@@ -11,17 +11,17 @@ namespace PrimusSaaS.Security.Detectors;
 public class SecretDetector
 {
     private readonly ILogger<SecretDetector> _logger;
-    private readonly List<SecretPattern> _patterns;
+    private readonly IEnumerable<SecretPattern> _patterns;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SecretDetector"/> class.
     /// </summary>
     /// <param name="logger">Logger instance.</param>
-    /// <param name="patternsJsonPath">Optional path to patterns file.</param>
-    public SecretDetector(ILogger<SecretDetector> logger, string? patternsJsonPath = null)
+    /// <param name="patternProvider">Provider for secret patterns.</param>
+    public SecretDetector(ILogger<SecretDetector> logger, ISecretPatternProvider patternProvider)
     {
         this._logger = logger;
-        this._patterns = this.LoadPatterns(patternsJsonPath);
+        this._patterns = patternProvider.GetPatterns().ToList();
     }
 
     /// <summary>
@@ -77,48 +77,7 @@ public class SecretDetector
         return findings;
     }
 
-    private List<SecretPattern> LoadPatterns(string? path)
-    {
-        try 
-        {
-            string json;
-            if (!string.IsNullOrEmpty(path) && File.Exists(path))
-            {
-                json = File.ReadAllText(path);
-            }
-            else
-            {
-                // Fallback: Try to load from default location relative to execution
-                var defaultPath = Path.Combine(AppContext.BaseDirectory, "Data", "SecretPatterns.json");
-                if (File.Exists(defaultPath))
-                {
-                    json = File.ReadAllText(defaultPath);
-                }
-                else
-                {
-                    // Try one more level up (for test projects)
-                    defaultPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Data", "SecretPatterns.json");
-                    if (File.Exists(defaultPath))
-                    {
-                        json = File.ReadAllText(defaultPath);
-                    }
-                    else
-                    {
-                        this._logger.LogWarning("Secret patterns file not found at {Path} or default locations.", path);
-                        return new List<SecretPattern>();
-                    }
-                }
-            }
-            
-            var config = JsonSerializer.Deserialize<SecretPatternsConfig>(json);
-            return config?.Patterns ?? new List<SecretPattern>();
-        }
-        catch (Exception ex)
-        {
-            this._logger.LogError(ex, "Failed to load secret patterns");
-            return new List<SecretPattern>();
-        }
-    }
+
 
     private SecuritySeverity ParseSeverity(string severity)
     {

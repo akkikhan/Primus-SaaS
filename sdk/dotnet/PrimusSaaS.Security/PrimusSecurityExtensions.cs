@@ -21,16 +21,23 @@ public static class PrimusSecurityExtensions
         var options = new PrimusSecurityOptions();
         configure?.Invoke(options);
 
-        // Register options
+        // Register options as singleton
         services.AddSingleton(options);
 
-        // Register core services
-        // services.AddSingleton<ISecurityScanner, SecurityScanner>();
-        // services.AddSingleton<ICveDatabase, CveDatabase>();
-        // services.AddSingleton<ISecretDetector, SecretDetector>();
-        // services.AddSingleton<IPolicyEngine, PolicyEngine>();
+        // Register the main security scanner service
+        // Note: Requires ILoggerFactory to be registered by the host application
+        // Register the main security scanner service
+        services.AddSingleton<ISecurityScanner, SecurityScanner>();
+        
+        // Register Policy Engine
+        services.AddSingleton<Policies.PolicyEngine>();
 
-        // TODO: Implement service registrations in Milestone 2
+        // Register vulnerability provider based on configuration
+        if (!string.IsNullOrEmpty(options.CveDatabasePath) && File.Exists(options.CveDatabasePath))
+        {
+            services.AddSingleton<IVulnerabilityProvider>(sp =>
+                new LocalVulnerabilityProvider(options.CveDatabasePath));
+        }
 
         return services;
     }

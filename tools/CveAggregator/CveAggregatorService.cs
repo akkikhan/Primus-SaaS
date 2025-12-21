@@ -13,6 +13,7 @@ public class CveAggregatorService
     private readonly IGitHubAdvisoryScraper _gitHubScraper;
     private readonly INuGetAdvisoryScraper _nugetScraper;
     private readonly INpmAdvisoryScraper _npmScraper;
+    private readonly IDummyScraper _dummyScraper;
 
     public CveAggregatorService(
         ILogger<CveAggregatorService> logger,
@@ -20,7 +21,8 @@ public class CveAggregatorService
         INvdScraper nvdScraper,
         IGitHubAdvisoryScraper gitHubScraper,
         INuGetAdvisoryScraper nugetScraper,
-        INpmAdvisoryScraper npmScraper)
+        INpmAdvisoryScraper npmScraper,
+        IDummyScraper dummyScraper)
     {
         _logger = logger;
         _database = database;
@@ -28,6 +30,7 @@ public class CveAggregatorService
         _gitHubScraper = gitHubScraper;
         _nugetScraper = nugetScraper;
         _npmScraper = npmScraper;
+        _dummyScraper = dummyScraper;
     }
 
     public async Task ScrapeAsync(string[] sources, int days, string outputPath)
@@ -50,6 +53,7 @@ public class CveAggregatorService
                     "github" => _gitHubScraper,
                     "nuget" => _nugetScraper,
                     "npm" => _npmScraper,
+                    "dummy" => _dummyScraper,
                     _ => null
                 };
 

@@ -2,6 +2,9 @@ using PrimusSaaS.Identity.Validator;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// TODO: REMOVE THIS BEFORE PRODUCTION - Hardcoded Fake Secret for Security Scan Test
+var awsAccessKey = "AKIAIOSFODNN7EXAMPLE"; // This should trigger the scanner
+
 // Add controllers and Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

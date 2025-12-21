@@ -56,6 +56,14 @@ const sidebars = {
     },
     {
       type: 'category',
+      label: 'Security',
+      collapsible: true,
+      items: [
+        'modules/security',
+      ]
+    },
+    {
+      type: 'category',
       label: 'Reference',
       collapsible: true,
       items: [
