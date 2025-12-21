@@ -3,8 +3,8 @@
 const config = {
   title: 'Primus SaaS Platform Documentation',
   tagline: 'Production-ready backend modules for Node.js and .NET - Reduce development time with enterprise-grade authentication, logging, and more',
-  url: 'https://akkikhan.github.io',
-  baseUrl: '/Primus-SaaS/',
+  url: 'https://primussoft.github.io',
+  baseUrl: '/Primus-SaaS-Framework/',
   onBrokenLinks: 'throw',
   markdown: {
     hooks: {
@@ -12,8 +12,8 @@ const config = {
     }
   },
   favicon: 'img/favicon.ico',
-  organizationName: 'akkikhan',
-  projectName: 'Primus-SaaS',
+  organizationName: 'primussoft',
+  projectName: 'Primus-SaaS-Framework',
   i18n: {
     defaultLocale: 'en',
     locales: ['en']
@@ -80,7 +80,7 @@ const config = {
           label: 'Documentation'
         },
         {
-          href: 'https://github.com/akkikhan/Primus-SaaS',
+          href: 'https://github.com/primussoft/Primus-SaaS-Framework',
           label: 'GitHub',
           position: 'right'
         }

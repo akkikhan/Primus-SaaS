@@ -5,9 +5,7 @@ on:
     branches:
       - main
       - master
-      - AG-nine
-      - AG-23-New-odule
-      - AG-24
+      - development
     paths:
       - 'docs-site/**'
       - '.github/workflows/deploy-docs.yml'
