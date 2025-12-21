@@ -1,1 +1,0 @@
-{"version":3,"file":"LogEntry.js","sourceRoot":"","sources":["../../src/core/LogEntry.ts"],"names":[],"mappings":";;AAsBA,wCAWC;AAdD;;GAEG;AACH,SAAgB,cAAc,CAC1B,KAAe,EACf,OAAe,EACf,UAA+B,EAAE;IAEjC,OAAO;QACH,SAAS,EAAE,IAAI,IAAI,EAAE,CAAC,WAAW,EAAE;QACnC,KAAK;QACL,OAAO;QACP,OAAO;KACV,CAAC;AACN,CAAC"}

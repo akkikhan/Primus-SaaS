@@ -62,7 +62,10 @@ examples/LiveDemoApi/appsettings.Development.json
 *.snupkg
 nupkg/
 nupkgs/
-dist/
+
+# Build output (all locations)
+**/dist/
+!docs-site/static/
 
 # Publish output
 **/publish/
