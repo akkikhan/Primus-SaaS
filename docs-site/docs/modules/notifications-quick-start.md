@@ -15,29 +15,17 @@ Primus Notifications runs **entirely within your application**. Emails are sent 
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
-<div style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', maxWidth: '560px', margin: '1rem auto', alignItems: 'stretch' }}>
-  <a
-    className="button button--primary button--sm"
-    style={{ fontWeight: 700, textAlign: 'center', background: '#a20000', color: '#ffffff', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-    href={useBaseUrl('/downloads/notifications-minimal.zip')}>
+<div className="download-grid">
+  <a className="download-btn primary" href={useBaseUrl('/downloads/notifications-minimal.zip')}>
     Minimal starter (.zip)
   </a>
-  <a
-    className="button button--secondary button--sm"
-    style={{ fontWeight: 700, textAlign: 'center', background: '#ffffff', color: '#a20000', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-    href={useBaseUrl('/downloads/notifications-minimal-swagger.json')} download>
+  <a className="download-btn secondary" href={useBaseUrl('/downloads/notifications-minimal-swagger.json')} download>
     Swagger (minimal)
   </a>
-  <a
-    className="button button--primary button--sm"
-    style={{ fontWeight: 700, textAlign: 'center', background: '#a20000', color: '#ffffff', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-    href={useBaseUrl('/downloads/notifications-advanced.zip')}>
+  <a className="download-btn primary" href={useBaseUrl('/downloads/notifications-advanced.zip')}>
     Advanced starter (.zip)
   </a>
-  <a
-    className="button button--secondary button--sm"
-    style={{ fontWeight: 700, textAlign: 'center', background: '#ffffff', color: '#a20000', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-    href={useBaseUrl('/downloads/notifications-advanced-swagger.json')} download>
+  <a className="download-btn secondary" href={useBaseUrl('/downloads/notifications-advanced-swagger.json')} download>
     Swagger (advanced)
   </a>
 </div>
