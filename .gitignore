@@ -28,6 +28,11 @@ test-apps/azure-ad-token.txt
 
 # IDE/editor
 .vscode/
+.ai-ide/
+.agent/
+
+# Python virtual environment
+.venv/
 
 # Generated config artifacts
 portal/frontend/vite.config.d.ts
@@ -54,6 +59,7 @@ examples/**/.env
 *.snupkg
 nupkg/
 nupkgs/
+dist/
 
 # Publish output
 **/publish/
