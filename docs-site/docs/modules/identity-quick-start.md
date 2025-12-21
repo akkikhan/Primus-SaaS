@@ -18,15 +18,27 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 <div style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', maxWidth: '560px', margin: '1rem auto', alignItems: 'stretch' }}>
   <a
     className="button button--primary button--sm"
-    style={{ fontWeight: 700, textAlign: 'center', background: '#a20000', color: '#ffffff', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 0, padding: '10px 7px' }}
+    style={{ fontWeight: 700, textAlign: 'center', background: '#a20000', color: '#ffffff', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     href={useBaseUrl('/downloads/identity-minimal.zip')}>
     Minimal starter (.zip)
   </a>
   <a
     className="button button--secondary button--sm"
-    style={{ fontWeight: 700, textAlign: 'center', background: '#ffffff', color: '#a20000', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 0, padding: '10px 7px' }}
+    style={{ fontWeight: 700, textAlign: 'center', background: '#ffffff', color: '#a20000', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     href={useBaseUrl('/downloads/identity-minimal-swagger.json')} download>
     Swagger (minimal)
+  </a>
+  <a
+    className="button button--primary button--sm"
+    style={{ fontWeight: 700, textAlign: 'center', background: '#a20000', color: '#ffffff', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    href={useBaseUrl('/downloads/identity-advanced.zip')}>
+    Advanced starter (.zip)
+  </a>
+  <a
+    className="button button--secondary button--sm"
+    style={{ fontWeight: 700, textAlign: 'center', background: '#ffffff', color: '#a20000', border: '1px solid #a20000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    href={useBaseUrl('/downloads/identity-advanced-swagger.json')} download>
+    Swagger (advanced)
   </a>
 </div>
 

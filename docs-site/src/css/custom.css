@@ -142,6 +142,17 @@ h4 {
   background: rgba(15, 118, 110, 0.05);
 }
 
+/* Download buttons - ensure proper centering */
+.button--sm {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  box-sizing: border-box;
+  min-height: 40px;
+  padding: 0.5rem 1rem;
+}
+
 /* Code blocks */
 .theme-doc-markdown code {
   background: var(--ifm-code-background);
