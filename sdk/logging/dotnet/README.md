@@ -392,7 +392,6 @@ See the `Examples/` directory:
 - [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Common issues and solutions
 - [VERIFICATION_GUIDE.md](./VERIFICATION_GUIDE.md) - Verification steps
 - [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) - Moving from Microsoft.Extensions.Logging to Primus
-- [ROLLOUT_RUNBOOK.md](./ROLLOUT_RUNBOOK.md) - Canary/dual/cutover steps + monitoring
 - Call-site converter (dry-run by default): `dotnet run --project ./PrimusSaaS.Logging.CallsiteConverter/PrimusSaaS.Logging.CallsiteConverter.csproj -- --path <root> [--write]`
 
 ## License

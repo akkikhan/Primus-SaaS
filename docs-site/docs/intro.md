@@ -19,8 +19,8 @@ Primus is a set of production-ready backend modules you drop into your app (Node
 - **Identity Validator** (.NET/Node): multi-issuer JWT/OIDC validation that plugs into `[Authorize]` / middleware.
 - **Logging** (.NET/Node): structured logs with correlation IDs, PII masking, console/file/App Insights.
 - **Notifications** (.NET): templated email/SMS with SMTP/Twilio, logger fallback, optional queue.
-- **Feature Flags** (coming soon): percentage/user targeting with pluggable providers.
-- **Document Renderer** (coming soon): HTML/Markdown to PDF with tokenized downloads.
+- **Feature Flags** (preview): percentage/user/group targeting with pluggable providers (not yet on public NuGet).
+- **Document Renderer**: text-to-PDF renderer; Markdown/HTML inputs are converted to plain text.
 
 ## Get started
 - Identity: `/docs/modules/identity-quick-start`

@@ -1,8 +1,12 @@
 # PrimusSaaS.Security - Technical Architecture
 
 **Version**: 1.0.0-preview.1  
-**Date**: December 4, 2025  
-**Status**: Foundation Phase (Milestone 1)
+**Date**: December 21, 2025  
+**Status**: Preview Release (Core Features Complete)
+
+:::info Implementation Status
+This document describes both **implemented features** (marked ✅) and **planned features** (marked 🚧). See the [SDK README](https://github.com/primus-saas/Primus-SaaS-Framework/blob/main/sdk/dotnet/PrimusSaaS.Security/README.md) for current implementation status.
+:::
 
 ---
 
@@ -31,8 +35,8 @@
 │  │  │  └─────────────────┘    └──────────────────┘    │ │ │
 │  │  │                                                   │ │ │
 │  │  │  ┌─────────────────┐    ┌──────────────────┐    │ │ │
-│  │  │  │ Pen Test        │    │ Report Generator │    │ │ │
-│  │  │  │ Simulator       │    │ (PDF/HTML)       │    │ │ │
+│  │  │  │ 🚧 Pen Test     │    │ Report Generator │    │ │ │
+│  │  │  │ Simulator       │    │ (PDF) ✅         │    │ │ │
 │  │  │  └─────────────────┘    └──────────────────┘    │ │ │
 │  │  └──────────────────────────────────────────────────┘ │ │
 │  └────────────────────────────────────────────────────────┘ │
@@ -64,16 +68,23 @@
 
 ## 🏗️ Component Architecture
 
-### 1. Security Scanner (Orchestrator)
+### 1. Security Scanner (Orchestrator) ✅
 
 **Responsibility**: Coordinate all analyzers and produce unified scan results
 
 ```csharp
+// Actual implemented interface
 public interface ISecurityScanner
 {
-    Task<ScanResult> ScanAsync(ScanRequest request, CancellationToken ct = default);
-    Task<ScanResult> ScanDirectoryAsync(string path, CancellationToken ct = default);
-    Task<ScanResult> ScanFileAsync(string filePath, CancellationToken ct = default);
+    /// <summary>
+    /// Scans a directory or file for security vulnerabilities.
+    /// </summary>
+    Task<ScanResult> ScanAsync(string path, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Scans the provided source code content for security issues.
+    /// </summary>
+    Task<ScanResult> ScanContentAsync(string content, string fileName, CancellationToken cancellationToken = default);
 }
 
 public class SecurityScanner : ISecurityScanner
@@ -201,7 +212,9 @@ public class SqlInjectionAnalyzer : CSharpSyntaxWalker, IAnalyzer
 
 ---
 
-### 3. Taint Analysis Engine
+### 3. Taint Analysis Engine 🚧 (Planned)
+
+**Status**: Not yet implemented. Current Roslyn analyzers use AST-level detection.
 
 **Responsibility**: Track data flow from sources (user input) to sinks (SQL, HTML, etc.)
 
@@ -268,7 +281,7 @@ public class TaintAnalyzer
 
 ---
 
-### 4. Secret Detector
+### 4. Secret Detector ✅
 
 **Responsibility**: Detect hardcoded secrets using regex patterns and entropy analysis
 
@@ -374,7 +387,7 @@ public class SecretPattern
 
 ---
 
-### 5. Dependency Scanner
+### 5. Dependency Scanner ✅
 
 **Responsibility**: Scan package manifests and query local CVE database
 
@@ -457,7 +470,7 @@ public class DependencyScanner : IDependencyScanner
 
 ---
 
-### 6. CVE Database (Local SQLite)
+### 6. CVE Database (Local SQLite) ✅
 
 **Responsibility**: Store and query vulnerability data offline
 
@@ -628,7 +641,7 @@ public static DataIsolationReport VerifyDataIsolation()
 | Component | Technology | Rationale |
 |-----------|-----------|-----------|
 | **C# AST Parser** | Microsoft.CodeAnalysis.CSharp (Roslyn) | Industry standard, mature, excellent semantic analysis |
-| **TypeScript Parser** | @typescript-eslint/parser | Best-in-class TypeScript AST, used by ESLint |
+| **TypeScript Parser** | @typescript-eslint/parser | 🚧 Planned - Best-in-class TypeScript AST |
 | **Local Database** | SQLite (Microsoft.Data.Sqlite) | Fast, portable, zero-config, perfect for local data |
 | **Template Engine** | Fluid.Core | Already used in Primus.Notifications, Liquid syntax |
 | **PDF Generation** | QuestPDF | Modern, fluent API, professional output |
@@ -672,16 +685,22 @@ public static DataIsolationReport VerifyDataIsolation()
 
 ## 🎯 Module Boundaries
 
-### What's In Scope
+### What's Implemented ✅
 
-- ✅ Static code analysis (C#, TypeScript)
+- ✅ Static code analysis (C# via Roslyn Analyzers)
 - ✅ Secret detection (regex + entropy)
-- ✅ Dependency vulnerability scanning
-- ✅ Local CVE database queries
-- ✅ Security policy validation
-- ✅ Compliance reporting (OWASP, PCI-DSS, SOC2, HIPAA)
-- ✅ Simulated penetration testing (safe, local)
-- ✅ Report generation (PDF, HTML, Markdown)
+- ✅ Dependency vulnerability scanning (NuGet, npm, pip, Maven)
+- ✅ Local CVE database queries (SQLite)
+- ✅ Security policy validation (Block/Warn/Audit/Ignore)
+- ✅ Report generation (PDF via QuestPDF)
+
+### What's Planned 🚧
+
+- 🚧 Static code analysis (TypeScript, Python, Java)
+- 🚧 Taint analysis (data flow tracking)
+- 🚧 Compliance reporting templates (OWASP, PCI-DSS, SOC2, HIPAA)
+- 🚧 Simulated penetration testing (safe, local)
+- 🚧 Report generation (HTML, Markdown)
 
 ### What's Out of Scope
 
@@ -753,6 +772,7 @@ builder.Services.AddPrimusSecurity(options =>
 
 ---
 
-**Last Updated**: December 4, 2025  
-**Status**: Foundation Phase ✅  
-**Next**: Implement core analyzers (Milestone 2)
+**Last Updated**: December 21, 2025  
+**Status**: Preview Release ✅  
+**Completed**: Core analyzers (PS0001, PS0002, PS0003), Secret Detection, Dependency Scanning, PDF Reports  
+**Next**: TypeScript support, Compliance templates, Taint analysis

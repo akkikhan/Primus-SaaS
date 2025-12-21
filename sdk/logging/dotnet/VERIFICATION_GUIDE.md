@@ -24,7 +24,7 @@ dotnet list package | grep PrimusSaaS.Logging
 
 **Expected output:**
 ```
-PrimusSaaS.Logging    1.1.0
+PrimusSaaS.Logging    1.2.4
 ```
 
 ### Step 2: Verify No Build Warnings
@@ -37,7 +37,7 @@ dotnet build
 
 If you see warnings, you're using an older version. Update:
 ```bash
-dotnet add package PrimusSaaS.Logging --version 1.1.0
+dotnet add package PrimusSaaS.Logging --version 1.2.4
 ```
 
 ---

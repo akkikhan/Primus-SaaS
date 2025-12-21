@@ -1,15 +1,15 @@
 ---
 id: documents-coming-soon
-title: Document Renderer (Coming Soon)
+title: Document Renderer
 sidebar_position: 21
-description: HTML/Markdown-to-PDF rendering with tokenized download links is coming soon.
+description: Text-to-PDF rendering with Markdown/HTML inputs converted to plain text.
 ---
 
-# Document Renderer (Coming Soon)
+# Document Renderer
 
-The Primus Document Renderer module will render HTML/Markdown to PDF, support tokenized downloads, and integrate with Notifications for email attachments. Expect:
+Primus Document Renderer is available now. It renders text to PDF, accepts Markdown/HTML inputs (converted to plain text), supports tokenized downloads, and integrates with Notifications for email attachments. Expect:
 - Local rendering with no data exfiltration
 - Optional link store with one-time tokens
 - Basic/extended self-test endpoints
 
-ETA and full docs will be added here when the module is available.
+See the full guide at /docs/modules/document-renderer.

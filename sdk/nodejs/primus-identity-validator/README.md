@@ -2,18 +2,18 @@
 
 **Version:** 1.3.3
 
-Library-only validator for JWT/OIDC tokens from your configured issuers (Azure AD, local, or any JWT provider). No Primus-hosted login or Primus-issued tokens.
+Library-only validator for JWT/OIDC tokens from your configured issuers (Azure AD, any OIDC authority, or JWT with secret/JWKS). No Primus-hosted login or Primus-issued tokens.
 
 > Module quick starts live in `docs-site/docs/modules` (Identity, Logging, Notifications). Use those instead of the removed integration guide.
 
 ## Features
 
-- **Multi-Issuer Support**: Configure multiple identity providers (Azure AD, Local, Custom)
+- **Multi-Issuer Support**: Configure multiple identity providers (Azure AD, any OIDC authority, Local/JWKS JWT)
 - Express middleware for seamless integration
 - Role-based access control
-- **Azure AD/OIDC**: JWKS fetching, RS256 validation, tenant verification
+- **OIDC**: Discovery + JWKS fetching, RS256/RS384/RS512/ES256/ES384/ES512 validation; Azure path retains tenant verification
 - Full TypeScript support with type definitions
-- 74 tests passing (100% core logic covered)
+- 74 tests passing (core logic covered)
 - Intelligent JWKS caching (24-hour TTL)
 
 ## Installation

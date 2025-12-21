@@ -129,6 +129,8 @@ Environment variables (examples):
 - Logging: the logger channel mirrors notifications to your logs for auditing or dev environments.
 - Metrics: wire `NotificationMetrics` through OpenTelemetry or `MeterListener` to export counters and histograms.
 - Fail-fast: `NotificationOptions.ThrowOnFailure` (enabled by default) throws `NotificationFailedException` when no channel delivers the notification so APIs don't return 200 on dropped messages.
+- Distributed rate limiting: register Redis-backed rate limiting and enable `NotificationOptions.RateLimit` for multi-instance deployments.
+- Delivery store: register a persistent delivery store (e.g., Redis) if you need audit history beyond in-memory storage.
 
 ## 7. Production checklist
 - Provide SMTP credentials via secret storage (Key Vault, AWS Secrets Manager, etc.).

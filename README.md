@@ -1,6 +1,6 @@
 # Primus SaaS Platform
 
-**Version**: Identity (Node) 1.3.2 · Identity (.NET) 1.3.0 · Logging (Node) 1.2.4 / (.NET) 1.2.4  
+**Version**: Identity (Node) 1.3.3 · Identity (.NET) 1.5.0 · Logging (Node) 1.2.4 / (.NET) 1.2.4  
 **Type**: Developer Platform for reusable backend modules (Identity + Logging)
 
 ---
@@ -56,7 +56,7 @@ Internal web application for:
 
 - **Identity Validator** — Multi-issuer JWT/OIDC validation with RBAC (Azure AD + Local JWT).  
   - npm: `@primus-saas/identity-validator@1.3.2`  
-  - NuGet: `PrimusSaaS.Identity.Validator` 1.3.0
+  - NuGet: `PrimusSaaS.Identity.Validator` 1.5.0
 - **Logging Module** — Structured logging with enrichment, correlation IDs, timers, file/AI targets, PII masking.  
   - npm: `@primus-saas/logging@1.2.4`  
   - NuGet: `PrimusSaaS.Logging` 1.2.4
@@ -65,7 +65,7 @@ Internal web application for:
 ```bash
 # Identity
 npm install @primus-saas/identity-validator
-dotnet add package PrimusSaaS.Identity.Validator --version 1.3.0
+dotnet add package PrimusSaaS.Identity.Validator --version 1.5.0
 
 # Logging
 npm install @primus-saas/logging
@@ -96,7 +96,7 @@ For detailed integration steps, see the module quick starts under `docs-site/doc
    ```bash
    # Identity
    npm install @primus-saas/identity-validator
-   dotnet add package PrimusSaaS.Identity.Validator --version 1.3.0
+   dotnet add package PrimusSaaS.Identity.Validator --version 1.5.0
 
    # Logging
    npm install @primus-saas/logging

@@ -25,9 +25,9 @@ warning : Microsoft.Extensions.Logging 10.0.0 doesn't support net7.0
 
 **Cause:** Package dependency version mismatch
 
-**Solution:** This has been fixed in version 1.1.0+. Update to the latest version:
+**Solution:** This has been fixed in version 1.2.4+. Update to the latest version:
 ```bash
-dotnet add package PrimusSaaS.Logging --version 1.1.0
+dotnet add package PrimusSaaS.Logging --version 1.2.4
 ```
 
 If you're still seeing warnings, clean and rebuild:

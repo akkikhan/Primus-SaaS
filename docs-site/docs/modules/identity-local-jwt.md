@@ -54,7 +54,7 @@ openssl rand -base64 32
 [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
 ```
 
-?? **Key must be at least 32 characters (256 bits) for HMAC-SHA256**
+NOTE: Key must be at least 32 characters (256 bits) for HMAC-SHA256.
 
 ---
 
@@ -63,18 +63,25 @@ openssl rand -base64 32
 ```json
 {
   "PrimusIdentity": {
+    "ValidateLifetime": true,
+    "ClockSkew": "00:05:00",
     "Issuers": [
       {
         "Name": "LocalDev",
         "Type": "Jwt",
         "Secret": "your-256-bit-secret-key-at-least-32-chars-long!!",
         "Issuer": "https://local-dev-issuer",
-        "Audiences": [ "local-dev-api" ],
-        "ValidateLifetime": true,
-        "ClockSkewSeconds": 300
+        "Audiences": [ "local-dev-api" ]
       }
     ],
-    "EnableDetailedErrors": true
+    "Diagnostics": {
+      "EnableDetailedErrors": true,
+      "IncludeTokenHintsInChallenges": true,
+      "IncludeDebugHeaders": true,
+      "LogTokenRejectionReasons": true,
+      "MaxRecentFailures": 50,
+      "AutoDetectDevelopment": true
+    }
   }
 }
 ```
@@ -88,8 +95,9 @@ openssl rand -base64 32
 | `Secret` | Yes | HMAC secret (min 32 chars) |
 | `Issuer` | Yes | Token issuer claim value |
 | `Audiences` | Yes | Array of token audience values |
-| `ValidateLifetime` | No | Validate expiration (default: true) |
-| `ClockSkewSeconds` | No | Allowed clock skew (default: 300) |
+Top-level options (PrimusIdentity):
+- `ValidateLifetime` (default: true)
+- `ClockSkew` (default: 00:05:00)
 
 ---
 
@@ -124,9 +132,9 @@ app.Run();
 ```csharp
 using PrimusSaaS.Identity.Validator;
 
-// Pull issuer/audience/secret straight from PrimusIdentity:Issuers:LocalDev
+// Pull issuer/audience/secret straight from PrimusIdentity:Issuers:0
 var token = TestTokenBuilder
-    .CreateFromConfig(builder.Configuration.GetSection("PrimusIdentity:Issuers:LocalDev"))
+    .CreateFromConfig(builder.Configuration.GetSection("PrimusIdentity:Issuers:0"))
     .WithExpiry(TimeSpan.FromHours(8)) // optional override (default is 1 hour)
     .Build();
 ```
@@ -323,7 +331,9 @@ app.Run();
         "Audiences": [ "local-dev-api" ]
       }
     ],
-    "EnableDetailedErrors": true
+    "Diagnostics": {
+      "EnableDetailedErrors": true
+    }
   }
 }
 ```
@@ -396,7 +406,11 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
 
 **Solution:** Generate a new token or disable lifetime validation for testing:
 ```json
-"ValidateLifetime": false
+{
+  "PrimusIdentity": {
+    "ValidateLifetime": false
+  }
+}
 ```
 
 ### Error: "IDX10208: Unable to validate audience"
@@ -423,7 +437,7 @@ foreach (var claim in jwt.Claims)
 
 ## Security Reminder
 
-?? **Local JWT is for development/testing only!**
+WARNING: Local JWT is for development/testing only.
 
 - Never use the same signing key in production
 - Never commit signing keys to source control

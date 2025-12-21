@@ -361,6 +361,54 @@ app.MapGet("/health/notifications", async (NotificationHealthService health) =>
 ## Background processing
 Calling `.UseInMemoryQueue()` registers `InMemoryNotificationQueue` and `NotificationBackgroundService` to drain the queue using scoped `NotificationService` instances. Configure capacity, max parallel handlers, and retry/backoff per `NotificationQueueOptions`.
 
+## Persistent queues (Redis or Azure Service Bus)
+Use a durable queue instead of the in-memory queue:
+
+```csharp
+builder.Services.AddPrimusNotifications(notifications =>
+{
+    notifications.UseRedisQueue(opts =>
+        builder.Configuration.GetSection("Notifications:RedisQueue").Bind(opts));
+});
+```
+
+```csharp
+builder.Services.AddPrimusNotifications(notifications =>
+{
+    notifications.UseAzureServiceBusQueue(opts =>
+        builder.Configuration.GetSection("Notifications:ServiceBusQueue").Bind(opts));
+});
+```
+
+## Delivery store (Redis)
+Persist delivery outcomes to Redis:
+
+```csharp
+builder.Services.AddPrimusNotifications(notifications =>
+{
+    notifications.UseRedisDeliveryStore(opts =>
+        builder.Configuration.GetSection("Notifications:RedisDeliveryStore").Bind(opts));
+});
+```
+
+## Distributed rate limiting (Redis)
+Enable Redis-backed rate limiting for multi-instance deployments. This uses a fixed window per key.
+
+```csharp
+builder.Services.AddPrimusNotifications(notifications =>
+{
+    notifications.UseRedisRateLimiting(opts =>
+        builder.Configuration.GetSection("Notifications:RedisRateLimit").Bind(opts));
+});
+
+builder.Services.Configure<NotificationOptions>(o =>
+{
+    o.RateLimit.Enabled = true;
+    o.RateLimit.MaxPerWindow = 100;
+    o.RateLimit.WindowSeconds = 60;
+});
+```
+
 ## Diagnostics
 Expose metrics via `NotificationMetrics` (System.Diagnostics.Metrics instruments) and quick in-process stats via `NotificationRuntimeStats.GetSnapshot()`.
 

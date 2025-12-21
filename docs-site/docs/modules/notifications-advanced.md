@@ -53,8 +53,8 @@ app.Run();
       "Port": 587,
       "Username": "smtp-user",
       "Password": "use-user-secrets-not-here",
-      "UseSsl": true,
-      "FromEmail": "noreply@example.com"
+      "EnableSsl": true,
+      "FromAddress": "noreply@example.com"
     },
     "Twilio": {
       "AccountSid": "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",

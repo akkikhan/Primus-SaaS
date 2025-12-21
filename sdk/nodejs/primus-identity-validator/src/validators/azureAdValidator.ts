@@ -4,9 +4,16 @@ import { JwksService } from '../services/jwksService';
 import { JwksCache } from '../services/jwksCache';
 import { TokenValidationResult } from '../types';
 
+function normalizeAudience(aud: string | string[]): string | [string, ...string[]] {
+  if (typeof aud === 'string') return aud;
+  if (aud.length === 0) return '';
+  if (aud.length === 1) return aud[0];
+  return [aud[0], ...aud.slice(1)];
+}
+
 export interface AzureAdValidationOptions {
   tenantId: string;
-  audience: string;
+  audience: string | string[];
   validateLifetime?: boolean;
   clockSkew?: number; // seconds
 }
@@ -77,9 +84,11 @@ export class AzureAdValidator {
       const validIssuers = this.getValidIssuers(options.tenantId);
       const clockSkew = options.clockSkew ?? 300; // 5 minutes default
 
+      const audience = normalizeAudience(options.audience);
+
       const verifyOptions: jwt.VerifyOptions = {
         algorithms: ['RS256'],
-        audience: options.audience,
+        audience,
         issuer: validIssuers as [string, ...string[]], // Type assertion for tuple
         clockTolerance: clockSkew,
         ignoreExpiration: options.validateLifetime === false

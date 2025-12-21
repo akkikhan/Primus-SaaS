@@ -3,7 +3,7 @@
 ## Installation
 
 ```bash
-dotnet add package PrimusSaaS.Logging --version 1.1.0
+dotnet add package PrimusSaaS.Logging --version 1.2.4
 ```
 
 ---
@@ -170,9 +170,9 @@ app.UsePrimusLogging();
 ## Common Issues
 
 ### Issue: Build warnings about .NET version
-**Solution:** Update to v1.1.0
+**Solution:** Update to v1.2.4
 ```bash
-dotnet add package PrimusSaaS.Logging --version 1.1.0
+dotnet add package PrimusSaaS.Logging --version 1.2.4
 ```
 
 ### Issue: "AddPrimusLogging" not found

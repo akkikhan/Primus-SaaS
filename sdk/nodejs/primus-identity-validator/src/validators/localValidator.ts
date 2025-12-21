@@ -1,10 +1,18 @@
 import * as jwt from 'jsonwebtoken';
 import { TokenValidationResult } from '../types';
 
+function normalizeAudience(aud: string | string[] | undefined): string | [string, ...string[]] | undefined {
+  if (aud === undefined) return undefined;
+  if (typeof aud === 'string') return aud;
+  if (aud.length === 0) return undefined;
+  if (aud.length === 1) return aud[0];
+  return [aud[0], ...aud.slice(1)];
+}
+
 export interface LocalValidationOptions {
   secret: string;
   issuer?: string;
-  audience?: string;
+  audience?: string | string[];
   validateLifetime?: boolean;
   clockSkew?: number;
 }
@@ -35,7 +43,7 @@ export class LocalValidator {
       const verifyOptions: jwt.VerifyOptions = {
         algorithms: ['HS256'],
         issuer: options.issuer,
-        audience: options.audience,
+        audience: normalizeAudience(options.audience),
         clockTolerance: options.clockSkew ?? 300,
         ignoreExpiration: options.validateLifetime === false
       };

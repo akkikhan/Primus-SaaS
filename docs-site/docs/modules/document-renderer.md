@@ -2,12 +2,12 @@
 id: document-renderer
 title: Document Renderer
 sidebar_position: 6
-description: Render plain text, Markdown, or HTML to PDF entirely inside your app.
+description: Render plain text to PDF; Markdown/HTML inputs are converted to plain text.
 ---
 
 # Document Renderer
 
-Render plain text, Markdown, or HTML into PDF with no external services. All processing stays in your app.
+Render plain text into PDF with no external services. Markdown and HTML inputs are accepted but currently converted to plain text (all formatting is stripped).
 
 ---
 
@@ -59,7 +59,7 @@ appsettings.json
 
 ## Use it
 
-HTML example
+HTML input (rendered as plain text)
 ```csharp
 var request = new RenderDocumentRequest
 {
@@ -75,7 +75,7 @@ var pdfBytes = await _renderer.RenderPdfAsync(request);
 return File(pdfBytes, "application/pdf", "invoice.pdf");
 ```
 
-Markdown example
+Markdown input (rendered as plain text)
 ```csharp
 var request = new RenderDocumentRequest
 {
@@ -148,6 +148,6 @@ Keep disabled in production.
 
 ## Notes
 
-- Content is rendered locally; do not pass untrusted HTML without sanitization.
+- Markdown/HTML inputs are converted to plain text; formatting, tables, and images are not rendered.
 - Store secrets (if any future provider options) outside source control (user secrets/Key Vault).
 - Max content length protects against oversized requests; tune as needed.

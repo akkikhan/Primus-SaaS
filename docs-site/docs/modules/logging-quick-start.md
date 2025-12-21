@@ -35,7 +35,7 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 ## Install
 
 ```bash
-dotnet add package PrimusSaaS.Logging
+dotnet add package PrimusSaaS.Logging --version 1.2.4
 ```
 
 ---
@@ -47,12 +47,9 @@ using PrimusSaaS.Logging.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add this ONE line
-builder.Logging.AddPrimus(opts => 
-    builder.Configuration.GetSection("PrimusLogging").Bind(opts));
-
-// Optional: remove default providers if you only want Primus targets
-// builder.Logging.ClearProviders();
+// Replace default providers and bind Primus config
+builder.Logging.ClearProviders();
+builder.Logging.AddPrimus(builder.Configuration.GetSection("PrimusLogging"));
 
 var app = builder.Build();
 
@@ -74,9 +71,22 @@ app.Run();
 {
   "PrimusLogging": {
     "ApplicationId": "MyService",
-    "MinimumLevel": "Information",
-    "Targets": ["Console"],
-    "EnablePiiMasking": true
+    "Environment": "Development",
+    "MinLevel": 1,
+    "Targets": [
+      {
+        "Type": "console",
+        "Pretty": true
+      }
+    ],
+    "Pii": {
+      "MaskEmails": true,
+      "MaskCreditCards": true,
+      "MaskSSN": true,
+      "MaskPasswords": true,
+      "MaskTokens": true,
+      "MaskSecrets": true
+    }
   }
 }
 ```
@@ -87,12 +97,13 @@ app.Run();
 {
   "PrimusLogging": {
     "ApplicationId": "MyService",
-    "MinimumLevel": "Information",
-    "Targets": ["Console", "ApplicationInsights"],
-    "ApplicationInsights": {
-      "ConnectionString": "InstrumentationKey=xxx"
-    },
-    "EnablePiiMasking": true
+    "Environment": "Production",
+    "MinLevel": 1,
+    "Targets": [
+      { "Type": "console", "Pretty": true },
+      { "Type": "applicationInsights", "ConnectionString": "InstrumentationKey=xxx" }
+    ],
+    "Pii": { "MaskEmails": true, "MaskCreditCards": true, "MaskSSN": true }
   }
 }
 ```
@@ -103,13 +114,20 @@ app.Run();
 {
   "PrimusLogging": {
     "ApplicationId": "MyService",
-    "MinimumLevel": "Information",
-    "Targets": ["Console", "File"],
-    "File": {
-      "Path": "logs/app-.log",
-      "RollingInterval": "Day"
-    },
-    "EnablePiiMasking": true
+    "Environment": "Production",
+    "MinLevel": 1,
+    "Targets": [
+      { "Type": "console", "Pretty": true },
+      {
+        "Type": "file",
+        "Path": "logs/app-.log",
+        "Async": true,
+        "MaxFileSize": 10485760,
+        "MaxRetainedFiles": 5,
+        "CompressRotatedFiles": true
+      }
+    ],
+    "Pii": { "MaskEmails": true, "MaskCreditCards": true, "MaskSSN": true }
   }
 }
 ```
@@ -143,7 +161,7 @@ public class OrderService
 ## Output Example
 
 ```
-[2024-01-15 10:30:45 INF] Processing order ORD-12345 for j***@example.com
+[2024-01-15 10:30:45 INF] Processing order ORD-12345 for ***REDACTED***
 ```
 
 PII like email addresses and credit card numbers are automatically masked!
@@ -154,7 +172,7 @@ PII like email addresses and credit card numbers are automatically masked!
 
 | Want to... | See Guide |
 |------------|-----------|
-| Custom PII patterns | [Advanced Features →](/docs/modules/logging-advanced) |
-| Correlation IDs | [Advanced Features →](/docs/modules/logging-advanced) |
-| Custom enrichers | [Advanced Features →](/docs/modules/logging-advanced) |
-| Full reference | [Logging Module Reference →](/docs/modules/logging-module) |
+| Custom PII patterns | [Advanced Features ->](/docs/modules/logging-advanced) |
+| Correlation IDs | [Advanced Features ->](/docs/modules/logging-advanced) |
+| Custom enrichers | [Advanced Features ->](/docs/modules/logging-advanced) |
+| Full reference | [Logging Module Reference ->](/docs/modules/logging-module) |

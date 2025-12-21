@@ -1,6 +1,6 @@
 # Release Notes
 
-## PrimusSaaS.Identity.Validator 1.3.2 (Node) / 1.3.0 (.NET)
+## PrimusSaaS.Identity.Validator 1.3.3 (Node) / 1.5.0 (.NET)
 
 **Release Date:** November 25, 2025
 
@@ -15,6 +15,7 @@ Multi-issuer validation hardening, JWKS caching/normalization, diagnostics endpo
 **Problem:** Some Azure AD tenants returned 404 on the first JWKS discovery call; tokens failed validation.
 
 **Solution:**
+
 - Normalized discovery URLs and added retry with backoff
 - Added diagnostics logging and metrics for JWKS failures
 - Improved cache invalidation when keys rotate
@@ -26,12 +27,15 @@ Added structured logging for validation failures and rate-limit events to aid SO
 ### Added
 
 #### Diagnostics Helper
+
 `app.MapPrimusIdentityDiagnostics();` – optional endpoint to surface issuer health, JWKS status, and security metrics (protect in production).
 
 #### Policy Helper Scaffolding
+
 Early helpers for policy-based authorization alignment with common RBAC patterns.
 
 #### Documentation
+
 - Module docs updated for multi-issuer setup and diagnostics
 - JWKS caching and diagnostics notes added
 
@@ -43,8 +47,8 @@ Early helpers for policy-based authorization alignment with common RBAC patterns
 
 ### Package Changes
 
-- Node: **1.3.2** (rate limiting + HTTPS metadata toggle + tenant context docs)
-- .NET: **1.3.0** (unchanged in this drop)
+- Node: **1.3.3** (generic OIDC support + multi-audience validation + rate limiting + HTTPS metadata toggle + tenant context docs)
+- .NET: **1.5.0** (current)
 - Documentation files updated and aligned to unified guide
 - No breaking changes; configuration shape unchanged since 1.2.0
 
@@ -52,10 +56,10 @@ Early helpers for policy-based authorization alignment with common RBAC patterns
 
 ```bash
 # Node
-npm install @primus-saas/identity-validator@1.3.2
+npm install @primus-saas/identity-validator@1.3.3
 
 # .NET
-dotnet add package PrimusSaaS.Identity.Validator --version 1.3.0
+dotnet add package PrimusSaaS.Identity.Validator --version 1.5.0
 ```
 
 ### Documentation
@@ -84,7 +88,8 @@ Async buffering and health/metrics guidance, file rotation/compression, and Appl
 **Problem:** Older packages pulled mismatched dependencies and lacked file rotation guidance.
 
 **Solution:**
-- TargetFrameworks net6.0/net7.0 (optional net8.0 when available)
+
+- TargetFrameworks net6.0/net7.0 (net8.0 when built with net8 SDK)
 - File target options documented with rotation and compression
 - Application Insights target docs refreshed
 
@@ -114,16 +119,18 @@ app.UsePrimusLogging();
 ```
 
 **Features:**
+
 - Automatic request ID generation
 - HTTP context enrichment (method, path, status)
 - User context extraction from claims
 - Response header injection (`X-Request-ID`)
 - Request/response logging
- - Correlation IDs for distributed tracing
+- Correlation IDs for distributed tracing
 
 #### API Aliases
 
 Both methods now work:
+
 ```csharp
 builder.Logging.AddPrimus(options => { ... });
 builder.Logging.AddPrimusLogging(options => { ... });  // Alias
@@ -141,8 +148,8 @@ builder.Logging.AddPrimusLogging(options => { ... });  // Alias
 
 ### Package Changes
 
-- Version: 1.1.x → **1.2.4**
-- Dependencies: net6/net7 (net8 optional)
+- Version: 1.1.x -> **1.2.4**
+- Dependencies: net6/net7 (net8 when built with net8 SDK)
 - All documentation files included in NuGet package
 - No breaking changes
 
@@ -157,6 +164,7 @@ dotnet add package PrimusSaaS.Logging --version 1.2.4
 **Optional improvements:**
 
 1. **Add middleware:**
+
    ```csharp
    app.UsePrimusLogging();
    ```
@@ -184,29 +192,31 @@ Special thanks to our clients for comprehensive hands-on testing and detailed fe
 ### Client Feedback Response
 
 **Before:**
+
 - Identity.Validator 1.2.x: JWKS edge cases, limited diagnostics
 - Logging 1.1.x: Less clarity on async/rotation and health/metrics
 - Client Rating: improving but seeking consistency
 
 **After:**
+
 - Identity.Validator 1.3.0: Hardened JWKS, diagnostics helper, aligned docs
 - Logging 1.2.4: Async buffering, rotation guidance, clarified middleware, aligned docs
 - Expected Rating: A- (9/10) - Production Ready
 
 ### All Critical Issues Resolved
 
-| Issue | Severity | Status |
-|-------|----------|--------|
-| JWKS discovery failures | HIGH | Fixed in 1.3.0 |
-| Need diagnostics helper | HIGH | Added in 1.3.0 |
-| Rotation/async clarity | MEDIUM | Fixed in 1.2.4 |
-| Missing documentation | MEDIUM | Unified guide across Node/.NET/Logging |
+| Issue                   | Severity | Status                                 |
+| ----------------------- | -------- | -------------------------------------- |
+| JWKS discovery failures | HIGH     | Fixed in 1.3.0                         |
+| Need diagnostics helper | HIGH     | Added in 1.3.0                         |
+| Rotation/async clarity  | MEDIUM   | Fixed in 1.2.4                         |
+| Missing documentation   | MEDIUM   | Unified guide across Node/.NET/Logging |
 
 ### Upgrade Instructions
 
 ```bash
 # Update both packages
-dotnet add package PrimusSaaS.Identity.Validator --version 1.3.0
+dotnet add package PrimusSaaS.Identity.Validator --version 1.5.0
 dotnet add package PrimusSaaS.Logging --version 1.2.4
 
 # Clean and rebuild

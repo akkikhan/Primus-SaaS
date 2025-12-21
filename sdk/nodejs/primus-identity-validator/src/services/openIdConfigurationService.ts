@@ -8,7 +8,7 @@ interface CachedConfiguration {
 }
 
 /**
- * Service for fetching and caching OpenID Connect configuration from Azure AD
+ * Service for fetching and caching OpenID Connect configuration (Azure AD and generic OIDC)
  */
 export class OpenIdConfigurationService {
   private readonly httpClient: AxiosInstance;
@@ -24,12 +24,12 @@ export class OpenIdConfigurationService {
   }
 
   /**
-   * Gets OpenID Connect configuration for a given Azure AD tenant
-   * @param tenantId Azure AD tenant ID
+   * Gets OpenID Connect configuration for a given authority or Azure AD tenant ID
+   * @param authorityOrTenant Authority URL (https://...) or tenant ID (Azure AD)
    * @returns OpenID Connect configuration
    */
-  async getConfigurationAsync(tenantId: string): Promise<OpenIdConfiguration> {
-    const wellKnownUrl = this.getWellKnownUrl(tenantId);
+  async getConfigurationAsync(authorityOrTenant: string): Promise<OpenIdConfiguration> {
+    const wellKnownUrl = this.getWellKnownUrl(authorityOrTenant);
     
     // Check cache
     const cached = this.configCache.get(wellKnownUrl);
@@ -74,12 +74,33 @@ export class OpenIdConfigurationService {
   }
 
   /**
-   * Gets the well-known OpenID Connect configuration URL for a tenant
-   * @param tenantId Azure AD tenant ID
+   * Gets the well-known OpenID Connect configuration URL
+   * @param authorityOrTenant Authority URL or Azure AD tenant ID
    * @returns Well-known configuration URL
    */
-  private getWellKnownUrl(tenantId: string): string {
-    return `https://login.microsoftonline.com/${tenantId}/v2.0/.well-known/openid-configuration`;
+  private getWellKnownUrl(authorityOrTenant: string): string {
+    // If caller passed a bare tenant ID (no scheme), assume Azure AD
+    const isBareTenantId = !authorityOrTenant.includes('://');
+    const authority = isBareTenantId
+      ? `https://login.microsoftonline.com/${authorityOrTenant}`
+      : authorityOrTenant;
+
+    const url = new URL(authority);
+    const isAzureHost =
+      url.hostname.toLowerCase().includes('login.microsoftonline.com') ||
+      url.hostname.toLowerCase().includes('sts.windows.net');
+
+    // Append /v2.0 for Azure AD when missing; leave others untouched
+    let path = url.pathname.endsWith('/') ? url.pathname.slice(0, -1) : url.pathname;
+    if (isAzureHost && !path.toLowerCase().endsWith('/v2.0')) {
+      path = `${path}/v2.0`;
+    }
+
+    // Build well-known path
+    url.pathname = `${path}/.well-known/openid-configuration`;
+    url.search = '';
+
+    return url.toString();
   }
 
   /**

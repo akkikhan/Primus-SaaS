@@ -25,7 +25,7 @@ public class NotificationService : INotificationService
     private readonly INotificationQueue? _queue;
     private readonly INotificationDeliveryStore? _deliveryStore;
     private readonly INotificationWebhookDispatcher? _webhookDispatcher;
-    private readonly RateLimiter _rateLimiter = new();
+    private readonly IRateLimiter _rateLimiter;
 
     public NotificationService(IEnumerable<IChannel> channels, ILogger<NotificationService> logger)
         : this(channels, logger, Options.Create(new NotificationOptions()), serviceProvider: null)
@@ -39,7 +39,8 @@ public class NotificationService : INotificationService
         IServiceProvider? serviceProvider = null,
         INotificationQueue? queue = null,
         INotificationDeliveryStore? deliveryStore = null,
-        INotificationWebhookDispatcher? webhookDispatcher = null)
+        INotificationWebhookDispatcher? webhookDispatcher = null,
+        IRateLimiter? rateLimiter = null)
     {
         _channels = channels;
         _logger = logger;
@@ -49,6 +50,9 @@ public class NotificationService : INotificationService
         _queue = queue ?? serviceProvider?.GetService(typeof(INotificationQueue)) as INotificationQueue;
         _deliveryStore = deliveryStore ?? serviceProvider?.GetService(typeof(INotificationDeliveryStore)) as INotificationDeliveryStore;
         _webhookDispatcher = webhookDispatcher ?? serviceProvider?.GetService(typeof(INotificationWebhookDispatcher)) as INotificationWebhookDispatcher;
+        _rateLimiter = rateLimiter
+            ?? serviceProvider?.GetService(typeof(IRateLimiter)) as IRateLimiter
+            ?? new InMemoryRateLimiter();
     }
 
     public Task<NotificationResult> SendEmailAsync(

@@ -2,12 +2,12 @@
 id: document-renderer-quick-start
 title: Document Renderer - Quick Start
 sidebar_position: 50
-description: 5-minute setup for generating PDFs from HTML/Markdown.
+description: 5-minute setup for generating PDFs from text (Markdown/HTML inputs are converted to plain text).
 ---
 
 # Document Renderer Quick Start
 
-Generate PDFs from HTML and Markdown in under 5 minutes.
+Generate PDFs from text inputs; Markdown and HTML are converted to plain text.
 
 :::info Complete Data Isolation
 Primus Document Renderer runs **entirely within your application**. All document generation happens locally. No document content or generated files are ever transmitted to Primus servers.
@@ -18,7 +18,7 @@ Primus Document Renderer runs **entirely within your application**. All document
 ## Install
 
 ```bash
-dotnet add package Primus.Documents
+dotnet add package PrimusSaaS.Documents
 ```
 
 ---
@@ -66,7 +66,7 @@ app.Run();
 
 ---
 
-## Generate PDF from HTML
+## Generate PDF from HTML (rendered as plain text)
 
 ```csharp
 using Primus.Documents;
@@ -103,7 +103,7 @@ public class InvoiceController : ControllerBase
 
 ---
 
-## Generate PDF from Markdown
+## Generate PDF from Markdown (rendered as plain text)
 
 ```csharp
 [HttpGet("report")]

@@ -1,10 +1,11 @@
+using System;
 using System.Collections.Concurrent;
 using PrimusSaaS.Notifications.Abstractions;
 using PrimusSaaS.Notifications.Configuration;
 
 namespace PrimusSaaS.Notifications.Core;
 
-internal sealed class RateLimiter
+internal sealed class InMemoryRateLimiter : IRateLimiter
 {
     private readonly ConcurrentDictionary<string, SlidingWindowCounter> _counters = new();
 

@@ -46,6 +46,7 @@ public static class ServiceCollectionExtensions
 
         services.AddOptions<NotificationOptions>();
         services.TryAddSingleton<INotificationDeliveryStore, InMemoryDeliveryStore>();
+        services.TryAddSingleton<IRateLimiter, InMemoryRateLimiter>();
         services.AddHttpClient<HttpNotificationWebhookDispatcher>();
         services.TryAddSingleton<INotificationWebhookDispatcher, HttpNotificationWebhookDispatcher>();
         services.AddScoped<NotificationService>();
@@ -232,6 +233,16 @@ public class PrimusNotificationBuilder
     }
 
     /// <summary>
+    /// Configures Redis as a persistent delivery store for notification results.
+    /// </summary>
+    public PrimusNotificationBuilder UseRedisDeliveryStore(Action<RedisDeliveryStoreOptions> configureOptions)
+    {
+        _services.Configure(configureOptions);
+        _services.AddSingleton<INotificationDeliveryStore, RedisDeliveryStore>();
+        return this;
+    }
+
+    /// <summary>
     /// Configures Azure Service Bus as the persistent queue backend.
     /// </summary>
     public PrimusNotificationBuilder UseAzureServiceBusQueue(Action<ServiceBusQueueOptions> configureOptions)
@@ -239,6 +250,16 @@ public class PrimusNotificationBuilder
         _services.Configure(configureOptions);
         _services.AddSingleton<INotificationQueue, ServiceBusNotificationQueue>();
         _services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, NotificationBackgroundService>());
+        return this;
+    }
+
+    /// <summary>
+    /// Configures Redis-backed distributed rate limiting.
+    /// </summary>
+    public PrimusNotificationBuilder UseRedisRateLimiting(Action<RedisRateLimitOptions> configureOptions)
+    {
+        _services.Configure(configureOptions);
+        _services.AddSingleton<IRateLimiter, RedisRateLimiter>();
         return this;
     }
 

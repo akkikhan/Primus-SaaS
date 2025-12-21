@@ -9,10 +9,10 @@ description: Production-ready email and SMS notifications with Liquid templates,
 
 ## 1. Module Overview
 
-The **Primus Notifications Module** is a production-ready notification delivery system that supports email (SMTP), SMS (Twilio, AWS SNS, Azure Communication Services), file-based Liquid templates, async queuing with background workers, and comprehensive instrumentation.
+The **Primus Notifications Module** is a production-ready notification delivery system that supports email (SMTP, SendGrid, AWS SES), SMS (Twilio, AWS SNS, Azure Communication Services), file-based Liquid templates, async queuing with background workers, and comprehensive instrumentation.
 
 **Key benefits:**
-- **Multi-channel delivery**: Email via SMTP, SMS via Twilio/AWS SNS/Azure Communication Services
+- **Multi-channel delivery**: Email via SMTP/SendGrid/SES, SMS via Twilio/AWS SNS/Azure Communication Services
 - **Template engine**: Liquid templates with caching, validation, and subject/body file conventions
 - **Async processing**: In-memory bounded queue with background worker for reliable delivery
 - **Built-in diagnostics**: Health checks, metrics, and runtime statistics
@@ -177,16 +177,17 @@ Provide SMTP/Twilio settings and queue options so channels can send and retry co
       "AccountSid": "ACxxxxxxxxxxxxxxxxxxxxx",
       "AuthToken": "use-user-secrets-not-here",
       "FromNumber": "+15551234567"
-    },
-    "NotificationQueue": {
-      "BoundedCapacity": 500,
-      "MaxParallelHandlers": 2,
-      "BaseRetryDelayMs": 250
     }
   }
 }
 ```
 Use real SMTP/Twilio credentials (store in user secrets/env vars). Twilio `FromNumber` must be E.164 (e.g., `+15551234567`).
+
+Queue options are configured in code (e.g., `UseInMemoryQueue`). If you prefer config-driven values, bind them explicitly:
+```csharp
+notifications.UseInMemoryQueue(o =>
+    builder.Configuration.GetSection("Notifications:NotificationQueue").Bind(o));
+```
 
 > For AWS SNS or Azure Communication Services SMS, see the advanced providers section (optional; not required for SMTP/Twilio flows).
 
@@ -243,6 +244,119 @@ Docs: https://learn.microsoft.com/azure/communication-services/quickstarts/sms/s
 
 ---
 
+### Other Email Providers (optional)
+If you prefer SendGrid or AWS SES instead of SMTP, register the email provider:
+
+```csharp
+notifications.UseSendGrid(opts =>
+    builder.Configuration.GetSection("Notifications:SendGrid").Bind(opts));
+```
+
+```csharp
+notifications.UseAmazonSes(opts =>
+    builder.Configuration.GetSection("Notifications:Ses").Bind(opts));
+```
+
+```json
+"Notifications": {
+  "SendGrid": {
+    "ApiKey": "use-user-secrets-not-here",
+    "FromAddress": "no-reply@example.com",
+    "FromName": "My App"
+  },
+  "Ses": {
+    "AccessKeyId": "AKIA...",
+    "SecretAccessKey": "use-user-secrets",
+    "Region": "us-east-1",
+    "FromAddress": "no-reply@example.com",
+    "FromName": "My App"
+  }
+}
+```
+
+---
+
+### Persistent queues (optional)
+Use Redis or Azure Service Bus for durable queueing instead of in-memory:
+
+```csharp
+notifications.UseRedisQueue(opts =>
+    builder.Configuration.GetSection("Notifications:RedisQueue").Bind(opts));
+```
+
+```csharp
+notifications.UseAzureServiceBusQueue(opts =>
+    builder.Configuration.GetSection("Notifications:ServiceBusQueue").Bind(opts));
+```
+
+```json
+"Notifications": {
+  "RedisQueue": {
+    "ConnectionString": "localhost:6379",
+    "QueueKey": "primus:notifications",
+    "PollIntervalMs": 250
+  },
+  "ServiceBusQueue": {
+    "ConnectionString": "Endpoint=sb://...",
+    "QueueName": "primus-notifications",
+    "PrefetchCount": 10,
+    "ReceiveWaitTimeSeconds": 5
+  }
+}
+```
+
+---
+
+### Persistent delivery store (optional)
+Enable a Redis delivery store to persist notification outcomes:
+
+```csharp
+notifications.UseRedisDeliveryStore(opts =>
+    builder.Configuration.GetSection("Notifications:RedisDeliveryStore").Bind(opts));
+```
+
+```json
+"Notifications": {
+  "RedisDeliveryStore": {
+    "ConnectionString": "localhost:6379",
+    "ListKey": "primus:notifications:delivery",
+    "MaxRecords": 10000
+  }
+}
+```
+
+---
+
+### Distributed rate limiting (optional)
+Use Redis-backed rate limiting for multi-instance deployments. This uses a fixed window per key.
+
+```csharp
+notifications.UseRedisRateLimiting(opts =>
+    builder.Configuration.GetSection("Notifications:RedisRateLimit").Bind(opts));
+```
+
+```csharp
+notifications.ConfigureDispatch(o =>
+{
+    o.RateLimit.Enabled = true;
+    o.RateLimit.MaxPerWindow = 100;
+    o.RateLimit.WindowSeconds = 60;
+    o.RateLimit.MaxPerRecipientPerWindow = 10;
+});
+```
+
+```json
+"Notifications": {
+  "RedisRateLimit": {
+    "ConnectionString": "localhost:6379",
+    "KeyPrefix": "primus:notifications:ratelimit",
+    "KeyExpiryPaddingSeconds": 5
+  }
+}
+```
+
+---
+
 ## Examples and downloads
 
 - **Minimal**: `examples/notifications/Minimal` — [Download zip](/downloads/notifications-minimal.zip) — Postman included in the zip.
@@ -268,7 +382,7 @@ Docs: https://learn.microsoft.com/azure/communication-services/quickstarts/sms/s
 | `Username` | string | `""` | SMTP authentication username |
 | `Password` | string | `""` | SMTP authentication password |
 | `FromAddress` | string | **required** | Sender email address |
-| `FromName` | string | `""` | Sender display name |
+| `FromName` | string | `"Primus Notification"` | Sender display name |
 | `EnableSsl` | bool | `true` | Enable TLS/SSL |
 | `TimeoutSeconds` | int | `30` | Connection timeout |
 | `MaxRetryCount` | int | `2` | Maximum retry attempts |
@@ -290,21 +404,19 @@ Docs: https://learn.microsoft.com/azure/communication-services/quickstarts/sms/s
 
 ```text
 NotificationTemplates/
-├── PasswordReset/
-│   ├── EmailSubject.liquid    # Subject line for email
-│   ├── EmailBody.liquid       # HTML body for email
-│   └── SmsBody.liquid         # SMS text content
-├── WelcomeEmail/
-│   ├── EmailSubject.liquid
-│   └── EmailBody.liquid
-├── OrderConfirmation/
-│   ├── EmailSubject.liquid
-│   ├── EmailBody.liquid
-│   └── SmsBody.liquid
-└── Partials/
-    ├── email_header.liquid
-    └── email_footer.liquid
+|-- PasswordReset/
+|   |-- EmailSubject.liquid    # Subject line for email
+|   |-- EmailBody.liquid       # HTML body for email
+|   `-- SmsBody.liquid         # SMS text content
+|-- WelcomeEmail/
+|   |-- EmailSubject.liquid
+|   `-- EmailBody.liquid
+`-- OrderConfirmation/
+    |-- EmailSubject.liquid
+    |-- EmailBody.liquid
+    `-- SmsBody.liquid
 ```
+
 
 ### Template Variables
 
@@ -325,8 +437,6 @@ Reset Your {{ app.name }} Password
 
 **`PasswordReset/EmailBody.liquid`**:
 ```liquid
-{% include 'Partials/email_header' %}
-
 {% if recipient.name %}
 <p>Hi {{ recipient.name }},</p>
 {% else %}
@@ -340,8 +450,6 @@ Reset Your {{ app.name }} Password
 <p>This link expires in {{ data.expiryMinutes }} minutes.</p>
 
 <p>If you didn't request this, please ignore this email.</p>
-
-{% include 'Partials/email_footer' %}
 ```
 
 **`PasswordReset/SmsBody.liquid`**:
@@ -367,7 +475,7 @@ These are included but only activated when configured:
 
 | Provider | Package | When Activated |
 |----------|---------|----------------|
-| Twilio | `Twilio` | When `UseTwilio()` is called |
+| Twilio | None (built-in HTTP client) | When `UseTwilio()` is called |
 | AWS SNS | `AWSSDK.SimpleNotificationService` | When `UseAwsSns()` is called |
 | Azure SMS | `Azure.Communication.Sms` | When `UseAzureCommunicationServices()` is called |
 
@@ -600,7 +708,7 @@ public record PasswordResetNotification(
 | Issue | Cause | Solution |
 |-------|-------|----------|
 | `NotificationFailedException` | No channel succeeded | Check SMTP credentials and connectivity |
-| `ServiceUnavailable` in result | SMS provider not configured | Configure Twilio/AWS SNS/Azure credentials |
+| `ServiceUnavailable` in result | Twilio returned HTTP 503 | Check Twilio credentials or provider status |
 | Template not found | Wrong path or naming | Verify folder structure: `{Type}/EmailBody.liquid` |
 | Liquid syntax error | Invalid template | Enable `validateOnStartup: true` to catch early |
 | Email not delivered | SMTP authentication | Check credentials, enable app passwords if needed |
@@ -652,14 +760,20 @@ app.MapGet("/health/notifications", async (NotificationHealthService health) =>
 });
 ```
 
+Health checks currently validate SMTP + Twilio configuration only.
+
+
 Returns:
 ```json
 {
-  "email": { "configured": true, "status": "healthy" },
-  "sms": { "configured": false, "status": "unconfigured" },
-  "logger": { "configured": true, "status": "healthy" }
+  "channels": {
+    "email": "configured",
+    "sms": "not_configured",
+    "logger": "available"
+  }
 }
 ```
+
 
 ---
 
@@ -676,7 +790,7 @@ await notifications.SendSmsAsync("+15551234567", "Your code is 123456");
 **A:** Replace the `UseTwilio()` call with `UseAwsSns()` or `UseAzureCommunicationServices()`. Only one SMS provider can be active at a time.
 
 ### Q: Does the queue persist across restarts?
-**A:** No, the in-memory queue is lost on restart. For durability, implement a custom `INotificationQueue` backed by a database or message broker.
+**A:** No, the in-memory queue is lost on restart. Use `UseRedisQueue` or `UseAzureServiceBusQueue` for durability.
 
 ### Q: How do I send both email and SMS for the same notification?
 **A:** Include both channels in your notification:

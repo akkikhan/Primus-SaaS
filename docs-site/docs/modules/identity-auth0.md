@@ -7,6 +7,8 @@ description: Complete Auth0 JWT validation setup with full examples.
 
 # Auth0 Integration Guide
 
+> See also: [Identity Validator Overview](./identity-validator) for package versions, OIDC/JWT options, and Node.js + .NET entrypoints.
+
 Complete guide to integrating Auth0 authentication with your .NET API using Primus Identity Validator.
 
 ---
@@ -31,7 +33,7 @@ dotnet add package PrimusSaaS.Identity.Validator
 
 From the [Auth0 Dashboard](https://manage.auth0.com/):
 
-1. Go to **Applications → APIs**
+1. Go to **Applications -> APIs**
 2. Select your API (or create one)
 3. Note down:
    - **Domain**: `your-tenant.auth0.com`
@@ -52,12 +54,16 @@ From the [Auth0 Dashboard](https://manage.auth0.com/):
         "Type": "Auth0",
         "Authority": "https://YOUR-TENANT.auth0.com/",
         "Issuer": "https://YOUR-TENANT.auth0.com/",
-        "Audiences": [ "https://your-api-identifier" ]
+        "Audiences": ["https://your-api-identifier"]
       }
     ],
     "Diagnostics": {
-      "EnableInDevelopment": true,
-      "IncludeTokenHints": true
+      "EnableDetailedErrors": true,
+      "IncludeTokenHintsInChallenges": true,
+      "IncludeDebugHeaders": true,
+      "LogTokenRejectionReasons": true,
+      "MaxRecentFailures": 50,
+      "AutoDetectDevelopment": true
     }
   }
 }
@@ -65,16 +71,16 @@ From the [Auth0 Dashboard](https://manage.auth0.com/):
 
 ### Configuration Reference
 
-| Property | Required | Description |
-|----------|----------|-------------|
-| `Name` | Yes | Friendly name for logging |
-| `Type` | Yes | Must be `"Auth0"` |
-| `Authority` | Yes | Your Auth0 domain with trailing slash |
-| `Issuer` | Yes | Usually the same as `Authority` |
-| `Audiences` | Yes | Array of API Identifiers from Auth0 dashboard |
-| `AllowMachineToMachine` | No | Allow client credentials tokens |
-| `RequireHttpsMetadata` | No | Require HTTPS for metadata (default: true) |
-| `Diagnostics` | No | Dev-only diagnostics (no secrets) |
+| Property                | Required | Description                                   |
+| ----------------------- | -------- | --------------------------------------------- |
+| `Name`                  | Yes      | Friendly name for logging                     |
+| `Type`                  | Yes      | Must be `"Auth0"`                             |
+| `Authority`             | Yes      | Your Auth0 domain with trailing slash         |
+| `Issuer`                | Yes      | Usually the same as `Authority`               |
+| `Audiences`             | Yes      | Array of API Identifiers from Auth0 dashboard |
+| `AllowMachineToMachine` | No       | Allow client credentials tokens               |
+| `RequireHttpsMetadata`  | No       | Require HTTPS for metadata (default: true)    |
+| `Diagnostics`           | No       | Dev-only diagnostics (no secrets)             |
 
 ---
 
@@ -86,7 +92,7 @@ using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddPrimusIdentity(opts => 
+builder.Services.AddPrimusIdentity(opts =>
     builder.Configuration.GetSection("PrimusIdentity").Bind(opts));
 
 builder.Services.AddControllers();
@@ -201,7 +207,7 @@ using Microsoft.AspNetCore.Mvc;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Auth0
-builder.Services.AddPrimusIdentity(opts => 
+builder.Services.AddPrimusIdentity(opts =>
     builder.Configuration.GetSection("PrimusIdentity").Bind(opts));
 
 builder.Services.AddEndpointsApiExplorer();
@@ -225,18 +231,18 @@ app.MapGet("/", () => new { status = "healthy", auth = "Auth0" });
 app.MapGet("/me", [Authorize] (HttpContext ctx) =>
 {
     var claims = ctx.User.Claims.Select(c => new { c.Type, c.Value });
-    return new { 
+    return new {
         authenticated = true,
-        claims 
+        claims
     };
 });
 
 // Claims inspection endpoint
 app.MapGet("/debug/claims", [Authorize] (HttpContext ctx) =>
 {
-    return ctx.User.Claims.Select(c => new { 
-        type = c.Type, 
-        value = c.Value 
+    return ctx.User.Claims.Select(c => new {
+        type = c.Type,
+        value = c.Value
     });
 });
 
@@ -254,12 +260,17 @@ app.Run();
         "Type": "Auth0",
         "Authority": "https://dev-example.auth0.com/",
         "Issuer": "https://dev-example.auth0.com/",
-        "Audiences": [ "https://my-api" ]
+        "Audiences": ["https://my-api"]
       }
     ],
     "RequireHttpsMetadata": true,
     "Diagnostics": {
-      "EnableInDevelopment": true
+      "EnableDetailedErrors": true,
+      "IncludeTokenHintsInChallenges": true,
+      "IncludeDebugHeaders": true,
+      "LogTokenRejectionReasons": true,
+      "MaxRecentFailures": 50,
+      "AutoDetectDevelopment": true
     }
   },
   "Logging": {
@@ -279,6 +290,7 @@ app.Run();
 **Cause:** Token validation failed.
 
 **Solutions:**
+
 1. Verify Authority URL has trailing slash: `https://tenant.auth0.com/`
 2. Verify Audience matches exactly what's in Auth0 dashboard
 3. Check token hasn't expired
@@ -289,6 +301,7 @@ app.Run();
 **Cause:** Token not being sent or malformed.
 
 **Solutions:**
+
 ```bash
 # Verify token is being sent
 curl -v http://localhost:5000/api/profile/private \
@@ -302,6 +315,7 @@ curl -v http://localhost:5000/api/profile/private \
 **Cause:** Token signed with different key than expected.
 
 **Solutions:**
+
 1. Ensure Authority URL is correct
 2. Check if using RS256 algorithm (Auth0 default)
 3. Verify token wasn't modified
@@ -311,7 +325,9 @@ curl -v http://localhost:5000/api/profile/private \
 ```json
 {
   "PrimusIdentity": {
-    "EnableDetailedErrors": true,
+    "Diagnostics": {
+      "EnableDetailedErrors": true
+    },
     "Issuers": [...]
   }
 }
@@ -331,8 +347,8 @@ curl -v http://localhost:5000/api/profile/private \
 
 ## Next Steps
 
-| Want to... | See Guide |
-|------------|-----------|
-| Add Azure AD as second issuer | [Multi-Issuer Setup ->](/docs/modules/identity-multi-issuer) |
-| Harden local/dev tokens | [Local JWT Guide ->](/docs/modules/identity-local-jwt) |
-| Revisit basics quickly | [Identity Quick Start ->](/docs/modules/identity-quick-start) |
+| Want to...                    | See Guide                                                     |
+| ----------------------------- | ------------------------------------------------------------- |
+| Add Azure AD as second issuer | [Multi-Issuer Setup ->](/docs/modules/identity-multi-issuer)  |
+| Harden local/dev tokens       | [Local JWT Guide ->](/docs/modules/identity-local-jwt)        |
+| Revisit basics quickly        | [Identity Quick Start ->](/docs/modules/identity-quick-start) |

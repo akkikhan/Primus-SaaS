@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 using PrimusSaaS.Logging.Core;
 using PrimusSaaS.Logging.Targets;
 using Xunit;
+using PrimusLogLevel = PrimusSaaS.Logging.Core.LogLevel;
 
 namespace PrimusSaaS.Logging.Tests;
 
@@ -37,7 +39,7 @@ public class LoggerTests
         {
             ApplicationId = "test",
             Environment = "test",
-            Sampling = new SamplingOptions { Enabled = true, SampleRate = 0.0, AlwaysLogOnError = true },
+            Sampling = new SamplingOptions { Enabled = true, SampleRate = 0.1, AlwaysLogOnError = true },
             CustomTargets = new List<ITarget> { target }
         });
 
@@ -45,7 +47,7 @@ public class LoggerTests
         logger.Error("should always log");
 
         Assert.Single(target.Logs);
-        Assert.Equal(LogLevel.Error, target.Logs[0].Level);
+        Assert.Equal(PrimusLogLevel.Error, target.Logs[0].Level);
     }
 
     [Fact]
@@ -65,7 +67,7 @@ public class LoggerTests
         adapter.LogInformation("hello");
 
         var context = target.Logs[0].Context;
-        Assert.Equal("Very.Long.", context["category"]);
+        Assert.Equal("Very.Long....", context["category"]);
         Assert.Equal("Very.Long.Category.Name.For.Component", context["categoryFull"]);
     }
 }

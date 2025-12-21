@@ -1,8 +1,12 @@
 # PrimusSaaS.Security - Pure Local Architecture
 
-**Version**: 2.0 (REVISED)  
-**Last Updated**: December 3, 2025  
-**Status**: Strategic Planning - Pure Local Implementation
+**Version**: 1.0.0-preview.1  
+**Last Updated**: December 21, 2025  
+**Status**: Preview Release
+
+:::info Implementation Status
+This document describes the **architectural vision** for the Security module. Features marked ✅ are implemented; features marked 🚧 are planned for future releases.
+:::
 
 ---
 
@@ -71,45 +75,45 @@ public class PrimusSecurityModule
 │  │         PrimusSaaS.Security Module (In-Process)        │   │
 │  │                                                         │   │
 │  │  ┌──────────────────────────────────────────────────┐ │   │
-│  │  │  1. Static Code Analyzer                         │ │   │
+│  │  │  1. Static Code Analyzer ✅                      │ │   │
 │  │  │     • AST parsing (in-memory)                    │ │   │
 │  │  │     • Pattern matching (local rules)             │ │   │
-│  │  │     • Taint analysis (control flow graph)        │ │   │
+│  │  │     • 🚧 Taint analysis (planned)                │ │   │
 │  │  └──────────────────────────────────────────────────┘ │   │
 │  │                                                         │   │
 │  │  ┌──────────────────────────────────────────────────┐ │   │
-│  │  │  2. Dependency Scanner                           │ │   │
+│  │  │  2. Dependency Scanner ✅                        │ │   │
 │  │  │     • Local CVE database (SQLite)                │ │   │
-│  │  │     • License checker (local rules)              │ │   │
+│  │  │     • 🚧 License checker (planned)               │ │   │
 │  │  │     • Version analyzer (semver parsing)          │ │   │
 │  │  └──────────────────────────────────────────────────┘ │   │
 │  │                                                         │   │
 │  │  ┌──────────────────────────────────────────────────┐ │   │
-│  │  │  3. Secret/Credential Detector                   │ │   │
-│  │  │     • Regex patterns (local)                     │ │   │
+│  │  │  3. Secret/Credential Detector ✅                │ │   │
+│  │  │     • Regex patterns (30 patterns)               │ │   │
 │  │  │     • Entropy analysis (statistical)             │ │   │
-│  │  │     • Known secret formats (local DB)            │ │   │
+│  │  │     • AWS/Azure/GCP/GitHub/Stripe etc.           │ │   │
 │  │  └──────────────────────────────────────────────────┘ │   │
 │  │                                                         │   │
 │  │  ┌──────────────────────────────────────────────────┐ │   │
-│  │  │  4. Security Policy Engine                       │ │   │
-│  │  │     • Custom rules (YAML/JSON)                   │ │   │
-│  │  │     • OWASP validation (local)                   │ │   │
-│  │  │     • Compliance checks (local)                  │ │   │
+│  │  │  4. Security Policy Engine ✅                    │ │   │
+│  │  │     • Custom rules (JSON policies)               │ │   │
+│  │  │     • Block/Warn/Audit/Ignore actions            │ │   │
+│  │  │     • 🚧 OWASP/PCI-DSS templates (planned)       │ │   │
 │  │  └──────────────────────────────────────────────────┘ │   │
 │  │                                                         │   │
 │  │  ┌──────────────────────────────────────────────────┐ │   │
-│  │  │  5. Simulated Penetration Testing                │ │   │
+│  │  │  5. 🚧 Penetration Testing (Planned)             │ │   │
 │  │  │     • Local attack simulation                    │ │   │
 │  │  │     • Vulnerability exploitation (safe sandbox)  │ │   │
 │  │  │     • Attack path analysis (graph traversal)     │ │   │
 │  │  └──────────────────────────────────────────────────┘ │   │
 │  │                                                         │   │
 │  │  ┌──────────────────────────────────────────────────┐ │   │
-│  │  │  6. Compliance Reporter                          │ │   │
-│  │  │     • Local template engine                      │ │   │
-│  │  │     • PDF generation (local)                     │ │   │
-│  │  │     • Markdown/HTML export (local)               │ │   │
+│  │  │  6. Report Generator                             │ │   │
+│  │  │     • PDF generation (QuestPDF) ✅               │ │   │
+│  │  │     • 🚧 HTML export (planned)                   │ │   │
+│  │  │     • 🚧 Markdown export (planned)               │ │   │
 │  │  └──────────────────────────────────────────────────┘ │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │                                                                  │
@@ -130,10 +134,9 @@ public class PrimusSecurityModule
 
 ## 🔧 Feature Implementation (AWS-Inspired, Locally Built)
 
-### Feature 1: Static Code Analysis
+### Feature 1: Static Code Analysis ✅
 
-**AWS Feature**: Code security reviews on pull requests  
-**Our Implementation**: Local AST parsing and pattern matching
+**Status**: Implemented via Roslyn Analyzers (compile-time)
 
 ```csharp
 public class LocalCodeAnalyzer : ISecurityAnalyzer
@@ -219,10 +222,9 @@ public class LocalCodeAnalyzer : ISecurityAnalyzer
 }
 ```
 
-### Feature 2: Dependency Vulnerability Scanning
+### Feature 2: Dependency Vulnerability Scanning ✅
 
-**AWS Feature**: Dependency scanning with CVE detection  
-**Our Implementation**: Local CVE database (updated via package updates)
+**Status**: Implemented - supports NuGet, npm, pip, Maven
 
 ```csharp
 public class LocalDependencyScanner : ISecurityAnalyzer
@@ -316,10 +318,9 @@ CREATE TABLE cve_vulnerabilities (
 */
 ```
 
-### Feature 3: Secret Detection
+### Feature 3: Secret Detection ✅
 
-**AWS Feature**: Credential scanning  
-**Our Implementation**: Local pattern matching and entropy analysis
+**Status**: Implemented - 30 patterns + entropy analysis
 
 ```csharp
 public class LocalSecretDetector : ISecurityAnalyzer
@@ -452,10 +453,9 @@ public class LocalSecretDetector : ISecurityAnalyzer
 */
 ```
 
-### Feature 4: Simulated Penetration Testing (Local)
+### Feature 4: Simulated Penetration Testing 🚧 (Planned)
 
-**AWS Feature**: On-demand penetration testing  
-**Our Implementation**: Local attack simulation in safe sandbox
+**Status**: Not yet implemented - roadmap item for v1.1.0
 
 ```csharp
 public class LocalPenetrationTester : ISecurityAnalyzer
@@ -606,10 +606,9 @@ public class LocalSandbox : ILocalSandbox
 }
 ```
 
-### Feature 5: Compliance Reporting (Local)
+### Feature 5: Compliance Reporting ✅ (Partial)
 
-**AWS Feature**: Compliance validation and reports  
-**Our Implementation**: Local template-based report generation
+**Status**: PDF reports implemented via QuestPDF. Compliance templates (OWASP, PCI-DSS) planned.
 
 ```csharp
 public class LocalComplianceReporter

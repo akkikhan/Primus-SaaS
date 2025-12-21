@@ -7,6 +7,8 @@ description: Get JWT authentication working in 5 minutes with minimal code.
 
 # Identity Validator - Quick Start
 
+> See also: [Identity Validator Overview](./identity-validator) for packages, OIDC/ JWT options, and Node.js examples.
+
 Get JWT authentication working in your .NET API in **under 5 minutes** with the simplest local JWT setup.
 
 :::info Complete Data Isolation
@@ -103,14 +105,16 @@ Keep secrets in User Secrets/Key Vault-not in source control.
         "Type": "Jwt",
         "Issuer": "https://localhost:5001",
         "Secret": "your-32-character-minimum-secret-key-here-1234",
-        "Audiences": [ "api://local-dev" ]
+        "Audiences": ["api://local-dev"]
       }
     ],
     "Diagnostics": {
-      "EnableInDevelopment": true,
-      "IncludeTokenHints": true,
-      "TrackFailures": true,
-      "MaxTrackedFailures": 50
+      "EnableDetailedErrors": true,
+      "IncludeTokenHintsInChallenges": true,
+      "IncludeDebugHeaders": true,
+      "LogTokenRejectionReasons": true,
+      "MaxRecentFailures": 50,
+      "AutoDetectDevelopment": true
     }
   }
 }
@@ -139,6 +143,7 @@ curl http://localhost:xxxx/secure -H "Authorization: Bearer YOUR-JWT-TOKEN"
 ## That's It!
 
 You now have JWT authentication working locally. Your API:
+
 - Validates JWT tokens signed with your local dev secret
 - Returns 401 for invalid/missing tokens
 - Works with standard `[Authorize]`
@@ -148,9 +153,9 @@ You now have JWT authentication working locally. Your API:
 
 ## Next Steps
 
-| Want to... | See Guide |
-|------------|-----------|
-| Use Auth0 with full setup | [Auth0 Integration →](/docs/modules/identity-auth0) |
-| Use Azure AD with full setup | [Azure AD Integration →](/docs/modules/identity-azure-ad) |
-| Use Local JWT for development | [Local JWT Guide →](/docs/modules/identity-local-jwt) |
-| Combine multiple issuers | [Multi-Issuer Setup →](/docs/modules/identity-multi-issuer) |
+| Want to...                    | See Guide                                                   |
+| ----------------------------- | ----------------------------------------------------------- |
+| Use Auth0 with full setup     | [Auth0 Integration ->](/docs/modules/identity-auth0)         |
+| Use Azure AD with full setup  | [Azure AD Integration ->](/docs/modules/identity-azure-ad)   |
+| Use Local JWT for development | [Local JWT Guide ->](/docs/modules/identity-local-jwt)       |
+| Combine multiple issuers      | [Multi-Issuer Setup ->](/docs/modules/identity-multi-issuer) |

@@ -1,6 +1,6 @@
 # @primus-saas/logging
 
-**Version:** 1.2.1
+**Version:** 1.2.4
 
 Enterprise-ready structured logging with PII masking and context enrichment.
 

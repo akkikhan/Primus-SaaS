@@ -41,11 +41,27 @@ public class SecretDetectorTests
     [Fact]
     public void ShouldIgnoreLowEntropyString()
     {
+        // AKIAAAAAAAAAAAAAAAAA has entropy ~1.0 (only 2 unique chars: A, I, K)
+        // With entropy_threshold: 3.0 on SEC001, this should be filtered out
         var content = "AKIAAAAAAAAAAAAAAAAA"; 
         var fileName = "TestFile.cs";
 
         var findings = _detector.Scan(content, fileName);
 
+        // After adding entropy threshold to AWS pattern, low-entropy strings are filtered
         Assert.Empty(findings);
+    }
+
+    [Fact]
+    public void ShouldDetectHighEntropyAwsKey()
+    {
+        // Real-looking AWS key with high entropy (many unique characters)
+        var content = "var key = \"AKIAIOSFODNN7EXAMPLE\";";
+        var fileName = "TestFile.cs";
+
+        var findings = _detector.Scan(content, fileName);
+
+        Assert.NotEmpty(findings);
+        Assert.Contains(findings, f => f.Title.Contains("AWS"));
     }
 }

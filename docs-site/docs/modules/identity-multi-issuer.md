@@ -56,8 +56,12 @@ Accept tokens from multiple identity providers (Auth0, Azure AD, Local JWT) in a
       }
     ],
     "Diagnostics": {
-      "EnableInDevelopment": true,
-      "TrackFailures": true
+      "EnableDetailedErrors": true,
+      "IncludeTokenHintsInChallenges": true,
+      "IncludeDebugHeaders": true,
+      "LogTokenRejectionReasons": true,
+      "MaxRecentFailures": 50,
+      "AutoDetectDevelopment": true
     }
   }
 }
@@ -346,7 +350,8 @@ string? GetName(ClaimsPrincipal user, string provider)
 ```json
 {
   "PrimusIdentity": {
-    "DefaultScheme": "Bearer"
+    "ValidateLifetime": true,
+    "ClockSkew": "00:05:00"
   }
 }
 ```
@@ -356,7 +361,14 @@ string? GetName(ClaimsPrincipal user, string provider)
 ```json
 {
   "PrimusIdentity": {
-    "EnableDetailedErrors": true,
+    "Diagnostics": {
+      "EnableDetailedErrors": true,
+      "IncludeTokenHintsInChallenges": true,
+      "IncludeDebugHeaders": true,
+      "LogTokenRejectionReasons": true,
+      "MaxRecentFailures": 50,
+      "AutoDetectDevelopment": true
+    },
     "Issuers": [
       {
         "Name": "LocalDev",
@@ -375,7 +387,14 @@ string? GetName(ClaimsPrincipal user, string provider)
 ```json
 {
   "PrimusIdentity": {
-    "EnableDetailedErrors": false,
+    "Diagnostics": {
+      "EnableDetailedErrors": false,
+      "IncludeTokenHintsInChallenges": false,
+      "IncludeDebugHeaders": false,
+      "LogTokenRejectionReasons": false,
+      "MaxRecentFailures": 0,
+      "AutoDetectDevelopment": false
+    },
     "Issuers": [
       {
         "Name": "Auth0",
@@ -477,26 +496,10 @@ Console.WriteLine($"Token issuer: {jwt.Issuer}");
 **Cause:** Configuration mismatch.
 
 **Checklist:**
-1. ✅ Authority URL correct for each provider
-2. ✅ Audience matches token's `aud` claim
-3. ✅ For Azure AD: correct TenantId and ClientId
-4. ✅ For Local: signing key matches
-
-### Error: "Multiple authentication schemes configured but none selected"
-
-**Cause:** Missing `DefaultScheme`.
-
-**Solution:**
-```json
-{
-  "PrimusIdentity": {
-    "DefaultScheme": "Bearer",
-    "Issuers": [...]
-  }
-}
-```
-
----
+1. Authority URL correct for each provider
+2. Audience matches token's `aud` claim
+3. For Azure AD: correct TenantId and ClientId
+4. For Local: signing key matches
 
 ## Next Steps
 

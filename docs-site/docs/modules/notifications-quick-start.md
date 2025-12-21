@@ -70,8 +70,8 @@ var app = builder.Build();
       "Port": 587,
       "Username": "your-username",
       "Password": "your-password",
-      "UseSsl": true,
-      "FromEmail": "noreply@example.com",
+      "EnableSsl": true,
+      "FromAddress": "noreply@example.com",
       "FromName": "My App"
     }
   }
@@ -161,7 +161,7 @@ curl -X POST http://localhost:5000/test-email
 
 | Want to... | See Guide |
 |------------|-----------|
-| Add SMS with Twilio | [Advanced Features →](/docs/modules/notifications-advanced) |
-| Custom providers | [Advanced Features →](/docs/modules/notifications-advanced) |
-| Template partials | [Advanced Features →](/docs/modules/notifications-advanced) |
-| Full reference | [Notifications Reference →](/docs/modules/notifications) |
+| Add SMS with Twilio | [Advanced Features ->](/docs/modules/notifications-advanced) |
+| Custom providers | [Advanced Features ->](/docs/modules/notifications-advanced) |
+| Template validation | [Advanced Features ->](/docs/modules/notifications-advanced) |
+| Full reference | [Notifications Reference ->](/docs/modules/notifications) |

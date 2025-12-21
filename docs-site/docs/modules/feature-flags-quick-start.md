@@ -58,7 +58,7 @@ app.Run();
       },
       "BetaFeature": {
         "Enabled": true,
-        "AllowedUsers": ["user-123", "user-456"]
+        "EnabledForUsers": ["user-123", "user-456"]
       },
       "MaintenanceMode": {
         "Enabled": false

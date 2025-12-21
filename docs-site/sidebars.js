@@ -1,78 +1,74 @@
 /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 const sidebars = {
   docs: [
-    'intro',
+    "intro",
     {
-      type: 'category',
-      label: 'Identity Validator',
+      type: "category",
+      label: "Identity Validator",
       collapsible: true,
       items: [
-        'modules/identity-quick-start',
-        'modules/identity-auth0',
-        'modules/identity-azure-ad',
-        'modules/identity-local-jwt',
-        'modules/identity-multi-issuer',
-      ]
+        "modules/identity-validator",
+        "modules/identity-quick-start",
+        "modules/identity-auth0",
+        "modules/identity-azure-ad",
+        "modules/identity-local-jwt",
+        "modules/identity-multi-issuer",
+      ],
     },
     {
-      type: 'category',
-      label: 'Logging',
+      type: "category",
+      label: "Logging",
       collapsible: true,
       items: [
-        'modules/logging-quick-start',
-        'modules/logging-advanced',
-        'modules/logging-module',
-      ]
+        "modules/logging-quick-start",
+        "modules/logging-advanced",
+        "modules/logging-module",
+      ],
     },
     {
-      type: 'category',
-      label: 'Notifications',
+      type: "category",
+      label: "Notifications",
       collapsible: true,
       items: [
-        'modules/notifications-quick-start',
-        'modules/notifications-advanced',
-        'modules/notifications',
-      ]
+        "modules/notifications-quick-start",
+        "modules/notifications-advanced",
+        "modules/notifications",
+      ],
     },
     {
-      type: 'category',
-      label: 'Feature Flags',
+      type: "category",
+      label: "Feature Flags",
       collapsible: true,
       items: [
-        'modules/feature-flags-quick-start',
-        'modules/feature-flags-advanced',
-        'modules/feature-flags',
-      ]
+        "modules/feature-flags-quick-start",
+        "modules/feature-flags-advanced",
+        "modules/feature-flags",
+      ],
     },
     {
-      type: 'category',
-      label: 'Document Renderer',
+      type: "category",
+      label: "Document Renderer",
       collapsible: true,
       items: [
-        'modules/document-renderer-quick-start',
-        'modules/document-renderer-advanced',
-        'modules/document-renderer',
-      ]
+        "modules/document-renderer-quick-start",
+        "modules/document-renderer-advanced",
+        "modules/document-renderer",
+      ],
     },
     {
-      type: 'category',
-      label: 'Security',
+      type: "category",
+      label: "Security",
       collapsible: true,
-      items: [
-        'modules/security',
-      ]
+      items: ["modules/security"],
     },
     {
-      type: 'category',
-      label: 'Reference',
+      type: "category",
+      label: "Reference",
       collapsible: true,
-      items: [
-        'modules/live-demo-api',
-        'modules/version-matrix',
-      ]
+      items: ["modules/live-demo-api", "modules/version-matrix"],
     },
-    'release-notes'
-  ]
+    "release-notes",
+  ],
 };
 
 module.exports = sidebars;

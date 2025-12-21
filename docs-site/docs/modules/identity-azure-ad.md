@@ -7,6 +7,8 @@ description: Complete Azure AD (Entra ID) JWT validation setup with full example
 
 # Azure AD / Entra ID Integration Guide
 
+> See also: [Identity Validator Overview](./identity-validator) for package versions, OIDC/JWT options, and Node.js + .NET entrypoints.
+
 Complete guide to integrating Microsoft Entra ID (formerly Azure AD) authentication with your .NET API using Primus Identity Validator.
 
 ---
@@ -31,8 +33,8 @@ dotnet add package PrimusSaaS.Identity.Validator
 
 ### Create App Registration
 
-1. Go to [Azure Portal](https://portal.azure.com) → **Microsoft Entra ID**
-2. Click **App registrations** → **New registration**
+1. Go to [Azure Portal](https://portal.azure.com) -> **Microsoft Entra ID**
+2. Click **App registrations** -> **New registration**
 3. Fill in:
    - **Name**: `My API` (or your API name)
    - **Supported account types**: Choose based on your needs
@@ -42,6 +44,7 @@ dotnet add package PrimusSaaS.Identity.Validator
 ### Note Your Values
 
 After registration, note down:
+
 - **Application (client) ID**: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
 - **Directory (tenant) ID**: `yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy`
 
@@ -75,14 +78,16 @@ After registration, note down:
         "Type": "AzureAD",
         "Authority": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
         "Issuer": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
-        "Audiences": [ "api://<CLIENT_ID>" ]
+        "Audiences": ["api://<CLIENT_ID>"]
       }
     ],
     "Diagnostics": {
-      "EnableInDevelopment": true,
-      "IncludeTokenHints": true,
-      "TrackFailures": true,
-      "MaxTrackedFailures": 50
+      "EnableDetailedErrors": true,
+      "IncludeTokenHintsInChallenges": true,
+      "IncludeDebugHeaders": true,
+      "LogTokenRejectionReasons": true,
+      "MaxRecentFailures": 50,
+      "AutoDetectDevelopment": true
     }
   }
 }
@@ -100,11 +105,16 @@ After registration, note down:
         "Type": "AzureAD",
         "Authority": "https://login.microsoftonline.com/common/v2.0",
         "Issuer": "https://login.microsoftonline.com/common/v2.0",
-        "Audiences": [ "api://<CLIENT_ID>" ]
+        "Audiences": ["api://<CLIENT_ID>"]
       }
     ],
     "Diagnostics": {
-      "EnableInDevelopment": true
+      "EnableDetailedErrors": true,
+      "IncludeTokenHintsInChallenges": true,
+      "IncludeDebugHeaders": true,
+      "LogTokenRejectionReasons": true,
+      "MaxRecentFailures": 50,
+      "AutoDetectDevelopment": true
     }
   }
 }
@@ -112,15 +122,15 @@ After registration, note down:
 
 ### Configuration Reference
 
-| Property | Required | Description |
-|----------|----------|-------------|
-| `Name` | Yes | Friendly name for logging |
-| `Type` | Yes | `"AzureAD"` |
-| `Authority` | Yes | `https://login.microsoftonline.com/<TENANT_ID>/v2.0` (or `common`/`organizations`) |
-| `Issuer` | Yes | Same as authority for v2 endpoints |
-| `Audiences` | Yes | Array of allowed audiences (e.g., `["api://<CLIENT_ID>"]`) |
-| `RequireHttpsMetadata` | No | Defaults to true |
-| `Diagnostics` | No | Dev-only diagnostics settings |
+| Property               | Required | Description                                                                        |
+| ---------------------- | -------- | ---------------------------------------------------------------------------------- |
+| `Name`                 | Yes      | Friendly name for logging                                                          |
+| `Type`                 | Yes      | `"AzureAD"`                                                                        |
+| `Authority`            | Yes      | `https://login.microsoftonline.com/<TENANT_ID>/v2.0` (or `common`/`organizations`) |
+| `Issuer`               | Yes      | Same as authority for v2 endpoints                                                 |
+| `Audiences`            | Yes      | Array of allowed audiences (e.g., `["api://<CLIENT_ID>"]`)                         |
+| `RequireHttpsMetadata` | No       | Defaults to true                                                                   |
+| `Diagnostics`          | No       | Dev-only diagnostics settings                                                      |
 
 ---
 
@@ -135,7 +145,7 @@ var builder = WebApplication.CreateBuilder(args);
 // ========================================
 // Register Primus Identity for Azure AD
 // ========================================
-builder.Services.AddPrimusIdentity(opts => 
+builder.Services.AddPrimusIdentity(opts =>
     builder.Configuration.GetSection("PrimusIdentity").Bind(opts));
 
 builder.Services.AddControllers();
@@ -222,7 +232,7 @@ using Microsoft.AspNetCore.Mvc;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Azure AD authentication
-builder.Services.AddPrimusIdentity(opts => 
+builder.Services.AddPrimusIdentity(opts =>
     builder.Configuration.GetSection("PrimusIdentity").Bind(opts));
 
 builder.Services.AddEndpointsApiExplorer();
@@ -242,7 +252,15 @@ app.UseAuthorization();
 // Health check
 app.MapGet("/", () => new { status = "healthy", auth = "Azure AD" });
 
-// Get current user info`r`napp.MapGet("/me", [Authorize] (HttpContext ctx) => new {`r`n    objectId = ctx.User.FindFirst("oid")?.Value,`r`n    name = ctx.User.FindFirst("name")?.Value,`r`n    email = ctx.User.FindFirst("preferred_username")?.Value,`r`n    tenantId = ctx.User.FindFirst("tid")?.Value`r`n});`r`n`r`napp.Run();
+// Get current user info
+app.MapGet("/me", [Authorize] (HttpContext ctx) => new {
+    objectId = ctx.User.FindFirst("oid")?.Value,
+    name = ctx.User.FindFirst("name")?.Value,
+    email = ctx.User.FindFirst("preferred_username")?.Value,
+    tenantId = ctx.User.FindFirst("tid")?.Value
+});
+
+app.Run();
 ```
 
 ### appsettings.json
@@ -258,11 +276,16 @@ app.MapGet("/", () => new { status = "healthy", auth = "Azure AD" });
         "Type": "AzureAD",
         "Authority": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
         "Issuer": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
-        "Audiences": [ "api://<CLIENT_ID>" ]
+        "Audiences": ["api://<CLIENT_ID>"]
       }
     ],
     "Diagnostics": {
-      "EnableInDevelopment": true
+      "EnableDetailedErrors": true,
+      "IncludeTokenHintsInChallenges": true,
+      "IncludeDebugHeaders": true,
+      "LogTokenRejectionReasons": true,
+      "MaxRecentFailures": 50,
+      "AutoDetectDevelopment": true
     }
   },
   "Logging": {
@@ -293,7 +316,8 @@ app.MapGet("/", () => new { status = "healthy", auth = "Azure AD" });
 
 **Cause:** Permissions not granted.
 
-**Solution:** 
+**Solution:**
+
 1. Go to API Permissions in Azure Portal
 2. Click "Grant admin consent for [Tenant]"
 
@@ -301,7 +325,8 @@ app.MapGet("/", () => new { status = "healthy", auth = "Azure AD" });
 
 **Cause:** Token from different tenant.
 
-**Solution:** 
+**Solution:**
+
 - Check tenant ID matches
 - For multi-tenant: use `common` or `organizations` endpoint
 
@@ -318,26 +343,32 @@ Or use [jwt.ms](https://jwt.ms) to inspect tokens.
 
 ## Multi-Tenant Configuration
 
-For apps accepting tokens from any Azure AD tenant:
+Primus Identity validates the `iss` claim against configured issuers. For multi-tenant apps, configure one issuer per tenant you allow.
 
 ```json
 {
   "PrimusIdentity": {
     "Issuers": [
       {
-        "Name": "AzureAD-MultiTenant",
+        "Name": "AzureAD-TenantA",
         "Type": "AzureAD",
-        "Authority": "https://login.microsoftonline.com/common/v2.0",
-        "Issuer": "https://login.microsoftonline.com/common/v2.0",
-        "Audiences": [ "api://YOUR-CLIENT-ID" ],
-        "ValidateIssuer": false
+        "Authority": "https://login.microsoftonline.com/TENANT-A/v2.0",
+        "Issuer": "https://login.microsoftonline.com/TENANT-A/v2.0",
+        "Audiences": ["api://YOUR-CLIENT-ID"]
+      },
+      {
+        "Name": "AzureAD-TenantB",
+        "Type": "AzureAD",
+        "Authority": "https://login.microsoftonline.com/TENANT-B/v2.0",
+        "Issuer": "https://login.microsoftonline.com/TENANT-B/v2.0",
+        "Audiences": ["api://YOUR-CLIENT-ID"]
       }
     ]
   }
 }
 ```
 
-⚠️ **Security Note**: When `ValidateIssuer` is false, validate tenant in your code:
+Security note: If you allow multiple tenants, validate tenant access in your app:
 
 ```csharp
 var tenantId = User.FindFirst("tid")?.Value;
@@ -349,12 +380,10 @@ if (!allowedTenants.Contains(tenantId))
 }
 ```
 
----
-
 ## Next Steps
 
-| Want to... | See Guide |
-|------------|-----------|
-| Add Auth0 as second issuer | [Multi-Issuer Setup ->](/docs/modules/identity-multi-issuer) |
-| Harden local/dev tokens | [Local JWT Guide ->](/docs/modules/identity-local-jwt) |
-| Revisit basics quickly | [Identity Quick Start ->](/docs/modules/identity-quick-start) |
+| Want to...                 | See Guide                                                     |
+| -------------------------- | ------------------------------------------------------------- |
+| Add Auth0 as second issuer | [Multi-Issuer Setup ->](/docs/modules/identity-multi-issuer)  |
+| Harden local/dev tokens    | [Local JWT Guide ->](/docs/modules/identity-local-jwt)        |
+| Revisit basics quickly     | [Identity Quick Start ->](/docs/modules/identity-quick-start) |

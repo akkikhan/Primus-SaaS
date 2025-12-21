@@ -107,13 +107,17 @@ Because PrimusSaaS.Security is **offline-first**, it does not download vulnerabi
 ## 📊 Current Implementation Status
 
 ```
-Overall Progress: ▰▰▰▰▰▰▰▰▰▰ 100% (Foundation & Core Engine Complete)
+Overall Progress: ▰▰▰▰▰▰▰▰▰▱ 90% (Preview Release Ready)
 
 Milestone 1: Foundation        ▰▰▰▰▰▰▰▰▰▰ 100%
 Milestone 2: Core Engine        ▰▰▰▰▰▰▰▰▰▰ 100%
 Milestone 3: Data Tools         ▰▰▰▰▰▰▰▰▰▰ 100% (Aggregator Tool Ready)
-Milestone 4: Test Coverage      ▰▰▰▰▰▰▰▰▱▱  80%
+Milestone 4: Test Coverage      ▰▰▰▰▰▰▰▱▱▱  70% (15 tests)
 ```
+
+**Current Limitations**:
+- Static Analysis (Roslyn Analyzers) runs at **compile-time only** — not via `ScanAsync()`
+- CVE database (`cve.db`) must be provided by the user (offline-first design)
 
 **Next Steps**:
 1. Integration testing in your CI/CD pipeline.

@@ -41,8 +41,7 @@ Control masking via config and optional custom patterns/keys.
 ```json
 {
   "PrimusLogging": {
-    "EnablePiiMasking": true,
-    "PiiOptions": {
+    "Pii": {
       "MaskEmails": true,
       "MaskCreditCards": true,
       "MaskSSN": true,
@@ -111,15 +110,27 @@ builder.Logging.AddPrimus(opts =>
 {
   "PrimusLogging": {
     "ApplicationId": "MyService",
-    "MinimumLevel": "Information",
-    "Targets": ["Console", "File", "ApplicationInsights"],
-    "File": {
-      "Path": "logs/app-.log",
-      "RollingInterval": "Day"
-    },
-    "ApplicationInsights": {
-      "ConnectionString": "your-connection-string",
-      "MinimumLevel": "Warning"
+    "Environment": "Production",
+    "MinLevel": 1,
+    "Targets": [
+      { "Type": "console", "Pretty": true },
+      {
+        "Type": "file",
+        "Path": "logs/app-.log",
+        "Async": true,
+        "MaxFileSize": 10485760,
+        "MaxRetainedFiles": 5,
+        "CompressRotatedFiles": true
+      },
+      {
+        "Type": "applicationInsights",
+        "ConnectionString": "your-connection-string"
+      }
+    ],
+    "Pii": {
+      "MaskEmails": true,
+      "MaskCreditCards": true,
+      "MaskSSN": true
     }
   }
 }

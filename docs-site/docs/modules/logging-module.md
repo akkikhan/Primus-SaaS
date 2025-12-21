@@ -28,7 +28,7 @@ The **Primus Logging Module** is an enterprise-grade structured logging library 
 dotnet add package PrimusSaaS.Logging
 ```
 
-**Current Version**: `1.2.4` (supports .NET 6, 7, and 8)
+**Current Version**: `1.2.4` (supports .NET 6 and 7; net8 when built with net8 SDK)
 
 See [Modules Version Matrix](/docs/modules/version-matrix) for the authoritative version list.
 
@@ -140,7 +140,7 @@ app.Run();
 ```
 
 ### Get your keys (telemetry)
-- **Application Insights Connection String**: In Azure Portal, open your Application Insights resource → “Overview” → copy “Connection string”.
+- **Application Insights Connection String**: In Azure Portal, open your Application Insights resource -> “Overview” -> copy “Connection string”.
 
 ---
 
@@ -177,12 +177,7 @@ Set your log levels, targets (console/file/App Insights), PII masking, and overr
       "MaskEmails": true,
       "MaskCreditCards": true,
       "MaskSSN": true,
-      "MaskingChar": "*",
       "CustomSensitiveKeys": ["password", "apiKey", "secret", "token"]
-    },
-    "CorrelationId": {
-      "HeaderName": "X-Correlation-ID",
-      "GenerateIfMissing": true
     }
   }
 }
@@ -207,9 +202,9 @@ Set your log levels, targets (console/file/App Insights), PII masking, and overr
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `ApplicationId` | string | `""` | Application identifier included in all logs |
-| `Environment` | string | `""` | Environment name (development, production, etc.) |
+| `Environment` | string | `"development"` | Environment name (development, production, etc.) |
 | `MinLevel` | int | `1` | Minimum log level: 0=Debug, 1=Info, 2=Warning, 3=Error, 4=Critical |
-| `Targets` | array | `[]` | List of output targets |
+| `Targets` | array | `[{"Type":"console"}]` | List of output targets |
 
 ### Target Configuration Reference
 
@@ -225,11 +220,14 @@ Set your log levels, targets (console/file/App Insights), PII masking, and overr
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `MaskEmails` | bool | `false` | Mask email addresses in logs |
-| `MaskCreditCards` | bool | `false` | Mask credit card numbers |
-| `MaskSSN` | bool | `false` | Mask social security numbers |
-| `MaskingChar` | string | `"*"` | Character used for masking |
+| `MaskEmails` | bool | `true` | Mask email addresses in logs |
+| `MaskCreditCards` | bool | `true` | Mask credit card numbers |
+| `MaskSSN` | bool | `true` | Mask social security numbers |
+| `MaskPasswords` | bool | `true` | Mask common password keys (`password`, `pwd`, `pass`) |
+| `MaskTokens` | bool | `true` | Mask JWT/bearer tokens and token fields |
+| `MaskSecrets` | bool | `true` | Mask secret-related keys (`secret`, `clientSecret`, `connectionString`, `apiKey`, `x-api-key`) |
 | `CustomSensitiveKeys` | array | `[]` | Additional field names to mask |
+| `CustomRegexPatterns` | array | `[]` | Additional regex patterns to mask in values |
 
 ---
 
@@ -275,7 +273,6 @@ app.Run();
 ## Troubleshooting (field feedback)
 
 - **Config binding ignored/silent**: Use `builder.Logging.AddPrimus(builder.Configuration.GetSection("PrimusLogging"))` and ensure at least one valid target (`console`, `file`, `applicationinsights`) is present. If nothing binds, nothing writes—add validation to throw when targets are missing/invalid.
-- **Mixed property names**: JSON uses `MinimumLevel`/`Targets` with `Type: "console"|"file"|"applicationinsights"` and `Pretty` for console. The API uses `MinLevel` and `TargetConfig`. Keep shapes consistent.
 - **Environment shows Production**: For dev-time Swagger in samples, set `ASPNETCORE_ENVIRONMENT=Development` when running (`dotnet run --urls=http://localhost:5002`).
 - **Prefer section overloads**: If available in your package version, use `AddPrimus(IConfigurationSection)` (optionally with an override Action) to avoid manual mapping.
 
@@ -646,9 +643,9 @@ After integrating Logging Module, consider these complementary modules:
 
 | Module | Purpose | Docs |
 |--------|---------|------|
-| **[Identity Quick Start](/docs/modules/identity-quick-start)** | Add JWT/OIDC authentication with multi-issuer support | ←Previous |
-| **[Notifications Module](/docs/modules/notifications)** | Send templated emails/SMS with Liquid templates | →Next |
-| **[Feature Flags](/docs/modules/feature-flags)** | Control feature rollouts with percentage and user targeting | →Optional |
+| **[Identity Quick Start](/docs/modules/identity-quick-start)** | Add JWT/OIDC authentication with multi-issuer support | Previous |
+| **[Notifications Module](/docs/modules/notifications)** | Send templated emails/SMS with Liquid templates | Next |
+| **[Feature Flags](/docs/modules/feature-flags)** | Control feature rollouts with percentage and user targeting | Optional |
 
 ### Full Integration Example
 

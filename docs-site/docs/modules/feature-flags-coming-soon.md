@@ -1,15 +1,14 @@
 ---
 id: feature-flags-coming-soon
-title: Feature Flags (Coming Soon)
+title: Feature Flags (Preview)
 sidebar_position: 20
-description: Percentage/user targeting and gradual rollouts are coming soon to the Primus modules.
+description: Percentage/user/group targeting with in-process evaluation (preview).
 ---
 
-# Feature Flags (Coming Soon)
+# Feature Flags (Preview)
 
-The Primus Feature Flags module will provide percentage rollouts, user/tenant targeting, and server-side evaluations with SDK-first ergonomics. Expect:
-- In-memory and pluggable providers
-- Typed evaluation helpers
-- Audit-friendly change tracking
+The Primus Feature Flags module is available in preview for local/internal builds. It provides percentage rollouts, user/group targeting, and in-process evaluations with SDK-first ergonomics.
 
-ETA and full docs will be added here when the module is available.
+Notes:
+- The `PrimusSaaS.FeatureFlags` package is not yet available on public NuGet.
+- Full reference docs live in the Feature Flags module pages.

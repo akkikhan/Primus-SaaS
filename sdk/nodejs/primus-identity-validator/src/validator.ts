@@ -4,6 +4,15 @@ import { LocalValidator } from './validators/localValidator';
 import { AzureAdValidator } from './validators/azureAdValidator';
 
 import { JwksClient } from './services/jwksClient';
+import { OpenIdConfigurationService } from './services/openIdConfigurationService';
+
+function normalizeAudience(audiences: string | string[] | undefined): string | [string, ...string[]] | undefined {
+  if (audiences === undefined) return undefined;
+  if (typeof audiences === 'string') return audiences;
+  if (audiences.length === 0) return undefined;
+  if (audiences.length === 1) return audiences[0];
+  return [audiences[0], ...audiences.slice(1)];
+}
 
 /**
  * Main validator class for Primus SaaS identity validation
@@ -13,6 +22,7 @@ export class PrimusIdentityValidator {
   private readonly localValidator: LocalValidator;
   private readonly azureAdValidator: AzureAdValidator;
   private readonly jwksClient: JwksClient;
+  private readonly openIdConfig: OpenIdConfigurationService;
 
   constructor(options: PrimusIdentityOptions) {
     this.validateOptions(options);
@@ -20,6 +30,7 @@ export class PrimusIdentityValidator {
     this.localValidator = new LocalValidator();
     this.azureAdValidator = new AzureAdValidator();
     this.jwksClient = new JwksClient(options.jwksCacheTtl);
+    this.openIdConfig = new OpenIdConfigurationService(options.jwksCacheTtl ? options.jwksCacheTtl * 60 * 60 * 1000 : undefined);
   }
 
   /**
@@ -102,32 +113,66 @@ export class PrimusIdentityValidator {
       return { isValid: false, error: `HTTPS is required for authority: ${config.authority}` };
     }
 
-    // Extract Tenant ID from Authority URL
-    // Expected format: https://login.microsoftonline.com/<tenant-id>/v2.0
-    const tenantId = this.extractTenantId(config.authority);
+    const isAzureAuthority =
+      config.authority.toLowerCase().includes('login.microsoftonline.com') ||
+      config.authority.toLowerCase().includes('sts.windows.net');
 
-    if (!tenantId) {
-      return { isValid: false, error: `Could not extract Tenant ID from authority: ${config.authority}` };
+    // Azure path (kept for compatibility)
+    if (isAzureAuthority) {
+      const tenantId = this.extractTenantId(config.authority);
+      if (!tenantId) {
+        return { isValid: false, error: `Could not extract Tenant ID from authority: ${config.authority}` };
+      }
+
+      return this.azureAdValidator.validateTokenAsync(token, {
+        tenantId: tenantId,
+        audience: config.audiences,
+        validateLifetime: this.options.validateLifetime ?? true,
+        clockSkew: this.options.clockSkew
+      });
     }
 
-    // Use the first audience for now (TODO: Update AzureAdValidator to support array)
-    const audience = config.audiences[0];
+    // Generic OIDC path
+    try {
+      const oidcConfig = await this.openIdConfig.getConfigurationAsync(config.authority);
+      const jwksUrl = oidcConfig.jwks_uri;
 
-    return this.azureAdValidator.validateTokenAsync(token, {
-      tenantId: tenantId,
-      audience: audience,
-      validateLifetime: this.options.validateLifetime ?? true,
-      clockSkew: this.options.clockSkew
-    });
+      // Get kid from token header
+      const decoded = jwt.decode(token, { complete: true });
+      const kid = decoded && typeof decoded !== 'string' ? decoded.header.kid : undefined;
+
+      const signingKey = await this.jwksClient.getSigningKey(jwksUrl, kid);
+
+      return await new Promise((resolve) => {
+        const audience = normalizeAudience(config.audiences);
+        jwt.verify(
+          token,
+          signingKey,
+          {
+            algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'],
+            audience,
+            issuer: config.issuer,
+            ignoreExpiration: !(this.options.validateLifetime ?? true),
+            clockTolerance: this.options.clockSkew
+          },
+          (err: jwt.VerifyErrors | null, decodedPayload: jwt.JwtPayload | string | undefined) => {
+            if (err) {
+              resolve({ isValid: false, error: err.message });
+            } else {
+              resolve({ isValid: true, claims: decodedPayload as Record<string, unknown> });
+            }
+          }
+        );
+      });
+    } catch (error) {
+      return { isValid: false, error: error instanceof Error ? error.message : 'OIDC validation failed' };
+    }
   }
 
   /**
    * Validates a token using Local JWT validation
    */
   private async validateJwtToken(token: string, config: IssuerConfig): Promise<TokenValidationResult> {
-    // Use the first audience for now
-    const audience = config.audiences[0];
-
     if (config.jwksUrl) {
       try {
         // Get kid from token header
@@ -139,28 +184,35 @@ export class PrimusIdentityValidator {
 
         // Validate using the key
         return new Promise((resolve) => {
-          jwt.verify(token, signingKey, {
-            algorithms: ['RS256'],
-            audience: audience,
-            issuer: config.issuer,
-            ignoreExpiration: !(this.options.validateLifetime ?? true),
-            clockTolerance: this.options.clockSkew
-          }, (err, decoded) => {
-            if (err) {
-              resolve({ isValid: false, error: err.message });
-            } else {
-              resolve({ isValid: true, claims: decoded as Record<string, unknown> });
+          const audience = normalizeAudience(config.audiences);
+          jwt.verify(
+            token,
+            signingKey,
+            {
+              algorithms: ['RS256'],
+              audience,
+              issuer: config.issuer,
+              ignoreExpiration: !(this.options.validateLifetime ?? true),
+              clockTolerance: this.options.clockSkew
+            },
+            (err: jwt.VerifyErrors | null, decoded: jwt.JwtPayload | string | undefined) => {
+              if (err) {
+                resolve({ isValid: false, error: err.message });
+              } else {
+                resolve({ isValid: true, claims: decoded as Record<string, unknown> });
+              }
             }
-          });
+          );
         });
       } catch (error) {
         return { isValid: false, error: `JWKS validation failed: ${error instanceof Error ? error.message : String(error)}` };
       }
     } else if (config.secret) {
+      const audience = normalizeAudience(config.audiences);
       return this.localValidator.validateTokenAsync(token, {
         secret: config.secret,
         issuer: config.issuer,
-        audience: audience,
+        audience,
         validateLifetime: this.options.validateLifetime ?? true,
         clockSkew: this.options.clockSkew
       });
