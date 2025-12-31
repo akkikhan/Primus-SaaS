@@ -50,12 +50,40 @@ See `GITHUB_PAGES_SETUP.md` for:
 - Full troubleshooting guide
 - How to update documentation
 
-## ⚠️ Note about Repository URL
+## ⚠️ Important: Repository URL Configuration
 
 The current gh-pages branch is configured for:
-- `baseUrl: /Primus-SaaS-Framework/`
+- **Current baseUrl**: `/Primus-SaaS-Framework/`
+- **Expected baseUrl**: `/Primus-SaaS/` (for akkikhan/Primus-SaaS repository)
 
-For this repository (akkikhan/Primus-SaaS), the baseUrl should be:
-- `baseUrl: /Primus-SaaS/`
+### What This Means
 
-If you encounter routing issues after deployment, you may need to update the Docusaurus configuration and rebuild the site.
+If you deploy the site as-is, you may encounter:
+- Broken links and navigation
+- Missing CSS and JavaScript files
+- 404 errors when clicking on documentation pages
+
+### How to Fix
+
+**Option 1: Test First (Recommended)**
+1. Deploy the site using the steps above
+2. Visit `https://akkikhan.github.io/Primus-SaaS/`
+3. If links work correctly, no action needed
+4. If you see routing issues, proceed with Option 2
+
+**Option 2: Update baseUrl Before Deploying**
+If you have access to the Docusaurus source:
+1. Find `docusaurus.config.js` (in the source, not gh-pages branch)
+2. Update the baseUrl:
+   ```js
+   module.exports = {
+     baseUrl: '/Primus-SaaS/',  // Changed from /Primus-SaaS-Framework/
+     // ... other config
+   };
+   ```
+3. Rebuild the site: `npm run build` or `yarn build`
+4. Update the gh-pages branch with the new build
+5. Run the deployment workflow
+
+**Option 3: Use Custom Domain**
+Configure a custom domain (e.g., docs.yourdomain.com) to avoid baseUrl issues entirely. See `GITHUB_PAGES_SETUP.md` for details.

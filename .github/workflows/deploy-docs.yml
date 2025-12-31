@@ -1,16 +1,12 @@
 name: Deploy Documentation to GitHub Pages
 
 on:
-  # Trigger on push to main branch
+  # Trigger on updates to gh-pages branch
   push:
     branches:
-      - main
-    paths:
-      - 'docs/**'
-      - 'website/**'
-      - '.github/workflows/deploy-docs.yml'
+      - gh-pages
   
-  # Allow manual trigger
+  # Allow manual trigger from any branch
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages

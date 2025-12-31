@@ -22,8 +22,8 @@ To manually deploy the documentation:
 ### Automatic Trigger
 
 The workflow automatically runs when:
-- Changes are pushed to the `main` branch in the `docs/` or `website/` directories
-- Changes are made to the workflow file itself
+- Changes are pushed to the `gh-pages` branch
+- This ensures the deployed site stays in sync with the gh-pages branch
 
 ### Requirements
 

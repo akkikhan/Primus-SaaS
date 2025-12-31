@@ -57,7 +57,7 @@ This option serves the existing `gh-pages` branch directly without GitHub Action
 The GitHub Actions workflow (`.github/workflows/deploy-docs.yml`):
 
 - **Triggers**: 
-  - Automatically on push to `main` branch when docs change
+  - Automatically on push to `gh-pages` branch
   - Manually via "Run workflow" button in Actions tab
   
 - **What it does**:
