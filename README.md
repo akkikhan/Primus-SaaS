@@ -3,6 +3,8 @@
 **Version**: 1.1 MVP  
 **Type**: Developer Platform for Reusable Backend Modules
 
+📚 **[View Documentation](QUICK_START.md)** | 🚀 **[GitHub Pages Setup](GITHUB_PAGES_SETUP.md)**
+
 ---
 
 ## Overview
